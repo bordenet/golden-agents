@@ -12,11 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cross-platform documentation** - Clear platform support in README and --help
 - **Windows installation guide** - WSL, Git Bash, MSYS2, Cygwin instructions
 - **Platform support table** - Linux, macOS, Windows WSL, Windows Native
+- **PowerShell wrapper** - `generate-agents.ps1` auto-detects WSL or Git Bash
 
 ### Documentation
 
 - README: Added Platform Support section at top
 - README: Added Windows Installation section with step-by-step instructions
+- README: Added PowerShell wrapper option for Windows users
 - --help: Added PLATFORM SUPPORT section with requirements
 - --help: Added Windows-specific examples
 

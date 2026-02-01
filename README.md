@@ -83,7 +83,8 @@ golden-agents/
 ├── GEMINI.md              # Redirect → Agents.md
 ├── COPILOT.md             # Redirect → Agents.md
 ├── README.md              # This file
-├── generate-agents.sh     # Generator script
+├── generate-agents.sh     # Generator script (Linux/macOS/WSL/Git Bash)
+├── generate-agents.ps1    # PowerShell wrapper (Windows - auto-detects WSL/Git Bash)
 ├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
 └── templates/
@@ -179,11 +180,21 @@ git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 ~/.golden-agents/generate-agents.sh --language=python --path=./my-project
 ```
 
-### Option 3: MSYS2 / Cygwin
+### Option 3: PowerShell Wrapper (Auto-detects WSL/Git Bash)
+
+```powershell
+# Clone the repo
+git clone https://github.com/bordenet/golden-agents.git $HOME\.golden-agents
+
+# Use the PowerShell wrapper (auto-detects WSL or Git Bash)
+~\.golden-agents\generate-agents.ps1 --language=python --path=.\my-project
+```
+
+The `.ps1` wrapper automatically uses WSL if available, falls back to Git Bash, or shows installation instructions if neither is found.
+
+### Option 4: MSYS2 / Cygwin
 
 Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), then run from their bash shell.
-
-**Note:** Native PowerShell/cmd.exe is NOT supported. This is a bash script.
 
 ## Contributing
 
