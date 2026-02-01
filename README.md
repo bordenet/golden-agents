@@ -30,18 +30,32 @@ git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 cp ~/.golden-agents/Agents.core.md ./Agents.md
 ```
 
-### Option 3: Sync existing projects
+### Option 3: Upgrade existing Agents.md (safe)
 
 ```bash
-# Update your local templates from GitHub
-~/.golden-agents/generate-agents.sh --sync
+# Preview what would change (dry-run, writes nothing)
+~/.golden-agents/generate-agents.sh --upgrade --path=./my-project
 
-# Regenerate Agents.md with latest templates
-~/.golden-agents/generate-agents.sh --language=javascript --path=./my-project
+# Apply upgrade (creates .backup first, preserves project-specific content)
+~/.golden-agents/generate-agents.sh --upgrade --apply --path=./my-project
+```
+
+**Upgrade safety:**
+- Dry-run by default (shows diff, writes nothing)
+- Creates backup before any modification
+- REFUSES to modify files without framework markers
+- Preserves all project-specific content outside markers
+
+### Option 4: Sync templates from GitHub
+
+```bash
+# Update your local templates
+~/.golden-agents/generate-agents.sh --sync
 ```
 
 ## Features
 
+- **Safe upgrades** - Update framework sections while preserving project-specific content
 - **Modular templates** - Mix and match languages, project types, and workflows
 - **Compact mode** - 6x smaller files with essential guidance only
 - **Self-contained output** - Generated files have no external dependencies
