@@ -69,14 +69,29 @@ foreach ($path in $gitBashLocations) {
     }
 }
 
-# Run with WSL (preferred)
+# Check for native bash (macOS/Linux with PowerShell installed)
+$nativeBash = $null
+if (Test-Path "/bin/bash") {
+    $nativeBash = "/bin/bash"
+} elseif (Test-Path "/usr/bin/bash") {
+    $nativeBash = "/usr/bin/bash"
+}
+
+# Run with native bash (macOS/Linux)
+if ($nativeBash) {
+    Write-Host "[INFO] Running via native bash..." -ForegroundColor Cyan
+    & $nativeBash $BashScript $Arguments
+    exit $LASTEXITCODE
+}
+
+# Run with WSL (Windows preferred)
 if ($wslAvailable) {
     $wslScriptPath = Convert-ToWslPath $BashScript
     if (-not $wslScriptPath) {
         Write-Error "Failed to convert script path for WSL"
         exit 1
     }
-    
+
     # Convert --path argument if present
     $convertedArgs = @()
     for ($i = 0; $i -lt $Arguments.Count; $i++) {
@@ -93,7 +108,7 @@ if ($wslAvailable) {
             $convertedArgs += $arg
         }
     }
-    
+
     Write-Host "[INFO] Running via WSL..." -ForegroundColor Cyan
     wsl bash $wslScriptPath $convertedArgs
     exit $LASTEXITCODE
