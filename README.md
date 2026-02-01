@@ -19,7 +19,20 @@
 
 ## What is this?
 
-Golden Agents is a modular framework for generating project-specific `Agents.md` files that guide AI coding assistants (Claude Code, Augment Code, OpenAI Codex CLI, Gemini, GitHub Copilot) to produce consistent, high-quality output.
+Golden Agents is a modular framework for generating project-specific `Agents.md` files that guide AI coding assistants to produce consistent, high-quality output.
+
+### Supported AI Coding Assistants
+
+| Assistant | Config File | Notes |
+|-----------|-------------|-------|
+| **Claude Code** | `CLAUDE.md` → `Agents.md` | Anthropic's terminal-based agent |
+| **Augment Code** | Reads `Agents.md` directly | Also reads `CLAUDE.md`, `AGENTS.md` |
+| **OpenAI Codex CLI** | `CODEX.md` → `Agents.md` | Hierarchical instruction system |
+| **Amp by Sourcegraph** | `AGENT.md` → `Agents.md` | Frontier coding agent |
+| **Google Gemini** | `GEMINI.md` → `Agents.md` | Also accepts `AGENT.md` |
+| **GitHub Copilot** | `COPILOT.md`, `.github/copilot-instructions.md` → `Agents.md` | Knowledge bases + custom instructions |
+
+The generator creates all necessary redirect files automatically.
 
 ## Quick Start
 
@@ -79,23 +92,25 @@ cp ~/.golden-agents/Agents.core.md ./Agents.md
 
 ```
 golden-agents/
-├── .github/workflows/     # CI/CD configuration
-│   └── test.yml           # BATS, Pester, ShellCheck on Linux/macOS/Windows
-├── Agents.md              # AI guidance for this repo
-├── CLAUDE.md              # Redirect → Agents.md
-├── CODEX.md               # Redirect → Agents.md
-├── GEMINI.md              # Redirect → Agents.md
-├── COPILOT.md             # Redirect → Agents.md
+├── .github/
+│   ├── workflows/test.yml              # CI: BATS, Pester, ShellCheck
+│   └── copilot-instructions.md         # GitHub Copilot custom instructions
+├── Agents.md              # Primary AI guidance (canonical source)
+├── AGENT.md               # Redirect → Amp by Sourcegraph
+├── CLAUDE.md              # Redirect → Claude Code
+├── CODEX.md               # Redirect → OpenAI Codex CLI
+├── COPILOT.md             # Redirect → GitHub Copilot
+├── GEMINI.md              # Redirect → Google Gemini
 ├── README.md              # This file
 ├── generate-agents.sh     # Generator script (Linux/macOS/WSL/Git Bash)
-├── generate-agents.ps1    # PowerShell wrapper (Windows - auto-detects WSL/Git Bash)
+├── generate-agents.ps1    # PowerShell wrapper (Windows)
 ├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
 ├── docs/
 │   └── TEST-PLAN.md       # Comprehensive test plan
 ├── test/
 │   ├── *.bats             # BATS tests (53 tests)
-│   ├── *.Tests.ps1        # Pester tests for PowerShell wrapper (14 tests)
+│   ├── *.Tests.ps1        # Pester tests (14 tests)
 │   └── test_helper.bash   # Shared test utilities
 └── templates/
     ├── core/              # Superpowers, anti-slop, communication
@@ -245,5 +260,15 @@ Matt J Bordenet ([@bordenet](https://github.com/bordenet))
 
 ---
 
-*Based on [Anthropic's context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) and [Spotify's golden path](https://engineering.atspotify.com/2020/08/how-we-use-golden-paths-to-solve-fragmentation-in-our-software-ecosystem/) concepts.*
+### Best Practices Sources
+
+This framework incorporates official guidance from:
+
+| Source | Key Concepts |
+|--------|--------------|
+| [Anthropic Context Engineering](https://www.anthropic.com/engineering/claude-code-best-practices) | CLAUDE.md hierarchy, subagents, explore-plan-code-commit workflow |
+| [GitHub Copilot Best Practices](https://docs.github.com/en/copilot/get-started/best-practices) | Prompt engineering, context management, validation |
+| [OpenAI Codex Prompting Guide](https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide/) | AGENTS.md specification, tool-use directives, autonomy settings |
+| [Gemini Code Assist](https://developers.google.com/gemini-code-assist/docs/use-agentic-chat-pair-programmer) | GEMINI.md context files, MCP integration |
+| [Spotify Golden Path](https://engineering.atspotify.com/2020/08/how-we-use-golden-paths-to-solve-fragmentation-in-our-software-ecosystem/) | Standardization philosophy |
 

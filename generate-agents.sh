@@ -22,7 +22,7 @@ APPLY=false
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
-FRAMEWORK_VERSION="1.3.0"
+FRAMEWORK_VERSION="1.4.0"
 
 usage() {
     cat << 'EOF'
@@ -573,16 +573,73 @@ if [[ "$UPGRADE" == "true" ]]; then
     exit 0
 fi
 
+# Create redirect file helper
+create_redirect() {
+    local path="$1"
+    local title="$2"
+    cat > "$path" << EOF
+# $title
+
+See **[Agents.md](./Agents.md)** for all AI guidance.
+EOF
+}
+
 # Output (new file generation)
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "=== DRY RUN ($mode_label mode): Would generate the following Agents.md ==="
     echo ""
     $generator
+    echo ""
+    echo "=== Would also create redirect files: ==="
+    echo "  CLAUDE.md        → Claude Code"
+    echo "  CODEX.md         → OpenAI Codex CLI"
+    echo "  AGENT.md         → Amp by Sourcegraph"
+    echo "  GEMINI.md        → Google Gemini Code Assist"
+    echo "  COPILOT.md       → GitHub Copilot"
+    echo "  .github/copilot-instructions.md → GitHub Copilot (custom instructions)"
+    echo ""
+    echo "Note: AGENTS.md not created (conflicts with Agents.md on case-insensitive filesystems)"
 else
     mkdir -p "$OUTPUT_PATH"
     output_file="$OUTPUT_PATH/Agents.md"
     $generator > "$output_file"
     echo "Generated ($mode_label): $output_file"
     echo "Lines: $(wc -l < "$output_file")"
+
+    # Create redirect files for all AI coding assistants
+    echo ""
+    echo "Creating redirect files for AI assistants..."
+
+    create_redirect "$OUTPUT_PATH/CLAUDE.md" "Claude Code Instructions"
+    create_redirect "$OUTPUT_PATH/CODEX.md" "OpenAI Codex CLI Instructions"
+    create_redirect "$OUTPUT_PATH/AGENT.md" "Amp by Sourcegraph Instructions"
+    create_redirect "$OUTPUT_PATH/GEMINI.md" "Google Gemini Code Assist Instructions"
+    create_redirect "$OUTPUT_PATH/COPILOT.md" "GitHub Copilot Instructions"
+
+    # Note: We do NOT create AGENTS.md because it conflicts with Agents.md
+    # on case-insensitive filesystems (macOS default, Windows).
+    # OpenAI Codex CLI will use CODEX.md or read Agents.md directly.
+
+    # Create GitHub Copilot custom instructions file
+    mkdir -p "$OUTPUT_PATH/.github"
+    cat > "$OUTPUT_PATH/.github/copilot-instructions.md" << EOF
+# GitHub Copilot Custom Instructions
+
+See **[../Agents.md](../Agents.md)** for all AI guidance.
+
+## Summary
+
+This project uses the Golden Agents Framework for AI coding assistant guidance.
+All instructions are consolidated in Agents.md at the project root.
+EOF
+
+    echo "  ✓ CLAUDE.md        (Claude Code)"
+    echo "  ✓ CODEX.md         (OpenAI Codex CLI)"
+    echo "  ✓ AGENT.md         (Amp by Sourcegraph)"
+    echo "  ✓ GEMINI.md        (Google Gemini)"
+    echo "  ✓ COPILOT.md       (GitHub Copilot)"
+    echo "  ✓ .github/copilot-instructions.md (GitHub Copilot custom)"
+    echo ""
+    echo "Note: AGENTS.md not created (conflicts with Agents.md on case-insensitive filesystems)"
 fi
 

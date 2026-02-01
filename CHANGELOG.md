@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-01
+
+### Added
+
+- **Multi-assistant redirect files** - Generator now creates redirect files for all major AI coding assistants:
+  - `CLAUDE.md` → Claude Code
+  - `CODEX.md` → OpenAI Codex CLI
+  - `AGENT.md` → Amp by Sourcegraph
+  - `GEMINI.md` → Google Gemini Code Assist
+  - `COPILOT.md` → GitHub Copilot
+  - `.github/copilot-instructions.md` → GitHub Copilot custom instructions
+- **Best practices documentation** - README now cites official guidance from:
+  - Anthropic Context Engineering
+  - GitHub Copilot Best Practices
+  - OpenAI Codex Prompting Guide
+  - Gemini Code Assist documentation
+
+### Changed
+
+- Version tests now use flexible pattern matching (no hardcoded version)
+- Directory structure in README updated to show all redirect files
+
+### Fixed
+
+- AGENTS.md no longer created as redirect (conflicts with Agents.md on case-insensitive filesystems)
+
+### Documentation
+
+- README: Added "Supported AI Coding Assistants" table
+- README: Added "Best Practices Sources" section with citations
+
+---
+
 ## [1.3.0] - 2026-02-01
 
 ### Added

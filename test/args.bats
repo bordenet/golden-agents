@@ -31,14 +31,15 @@ teardown() {
 @test "--version shows version" {
     run "$GENERATE_SCRIPT" --version
     [ "$status" -eq 0 ]
-    [[ "$output" == *"v1.2"* ]]
+    # Match version pattern v1.x.x or v2.x.x etc
+    [[ "$output" =~ v[0-9]+\.[0-9]+ ]]
 }
 
 # Test 4: -v shows version
 @test "-v shows version" {
     run "$GENERATE_SCRIPT" -v
     [ "$status" -eq 0 ]
-    [[ "$output" == *"v1.2"* ]]
+    [[ "$output" =~ v[0-9]+\.[0-9]+ ]]
 }
 
 # Test 5: Unknown flag fails
