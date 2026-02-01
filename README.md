@@ -2,6 +2,8 @@
 
 > **Standardized AI agent guidance for consistent, high-quality code generation**
 
+[![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
+[![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Platform Support
@@ -77,6 +79,8 @@ cp ~/.golden-agents/Agents.core.md ./Agents.md
 
 ```
 golden-agents/
+├── .github/workflows/     # CI/CD configuration
+│   └── test.yml           # BATS, Pester, ShellCheck on Linux/macOS/Windows
 ├── Agents.md              # AI guidance for this repo
 ├── CLAUDE.md              # Redirect → Agents.md
 ├── CODEX.md               # Redirect → Agents.md
@@ -87,6 +91,12 @@ golden-agents/
 ├── generate-agents.ps1    # PowerShell wrapper (Windows - auto-detects WSL/Git Bash)
 ├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
+├── docs/
+│   └── TEST-PLAN.md       # Comprehensive test plan
+├── test/
+│   ├── *.bats             # BATS tests (53 tests)
+│   ├── *.Tests.ps1        # Pester tests for PowerShell wrapper (14 tests)
+│   └── test_helper.bash   # Shared test utilities
 └── templates/
     ├── core/              # Superpowers, anti-slop, communication
     ├── languages/         # Go, Python, JS, Shell, Dart-Flutter
@@ -196,11 +206,33 @@ The `.ps1` wrapper automatically uses WSL if available, falls back to Git Bash, 
 
 Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), then run from their bash shell.
 
+## Testing
+
+**67 automated tests** run on every push/PR via GitHub Actions:
+
+| Test Suite | Framework | Tests | Platforms |
+|------------|-----------|-------|-----------|
+| Core script | BATS | 53 | Linux, macOS, Windows (Git Bash) |
+| PowerShell wrapper | Pester | 14 | Linux, macOS, Windows |
+| Linting | ShellCheck | - | Linux |
+
+```bash
+# Run BATS tests locally
+brew install bats-core  # macOS
+bats test/*.bats
+
+# Run Pester tests locally
+Install-Module -Name Pester -Force -MinimumVersion 5.0
+Invoke-Pester test/*.Tests.ps1 -Output Detailed
+```
+
+See [docs/TEST-PLAN.md](docs/TEST-PLAN.md) for the full test plan.
+
 ## Contributing
 
 1. Fork this repository
 2. Add or modify templates in `templates/`
-3. Test with `./generate-agents.sh --dry-run`
+3. Run tests: `bats test/*.bats`
 4. Submit a pull request
 
 ## License

@@ -22,7 +22,7 @@ APPLY=false
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
-FRAMEWORK_VERSION="1.2.1"
+FRAMEWORK_VERSION="1.3.0"
 
 usage() {
     cat << 'EOF'

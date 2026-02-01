@@ -181,6 +181,36 @@ jobs:
 | 1 | Sync in git repo succeeds | In git directory | status=0, "Templates updated" |
 | 2 | Sync in non-git directory fails | Remove .git | status=1, "Not a git repo" |
 
+### 2.7 Edge Case Tests (`edge-cases.bats`)
+
+| # | Test Case | Setup | Expected |
+|---|-----------|-------|----------|
+| 1 | Unicode in project name | Path with unicode chars | status=0, file created |
+| 2 | Spaces in path | Path with spaces | status=0, file created |
+| 3 | Special characters in name | Dashes, underscores, dots | status=0, name in output |
+| 4 | Empty --name uses directory | `--name=""` | Directory name used |
+| 5 | Long project name | 50+ char name | status=0, name in output |
+| 6 | Read-only directory fails | `chmod a-w` | status≠0, clear error |
+
+### 2.8 PowerShell Wrapper Tests (`generate-agents.Tests.ps1`)
+
+| # | Test Case | Command | Expected |
+|---|-----------|---------|----------|
+| 1 | Script file exists | Test-Path | File present |
+| 2 | Bash script exists | Test-Path | File present |
+| 3 | --help shows usage | `.\generate-agents.ps1 --help` | status=0, SYNOPSIS |
+| 4 | --version shows version | `.\generate-agents.ps1 --version` | status=0, v1.x |
+| 5 | -h equivalent to --help | `.\generate-agents.ps1 -h` | status=0, SYNOPSIS |
+| 6 | -v equivalent to --version | `.\generate-agents.ps1 -v` | status=0, v1.x |
+| 7 | --dry-run shows output | With --language | status=0, "DRY RUN" |
+| 8 | --compact in dry-run | With --compact | status=0, "compact" |
+| 9 | --language passed correctly | `--language=javascript` | Output contains language |
+| 10 | Multiple languages passed | `--language=go,python` | Output contains languages |
+| 11 | --type passed correctly | `--type=cli-tools` | Output contains type |
+| 12 | Missing --language fails | No --language | status≠0 |
+| 13 | Unknown option fails | `--invalid` | status≠0 |
+| 14 | Reports bash environment | Any command | "[INFO] Running via" |
+
 ---
 
 ## 3. Test Priority Matrix
@@ -190,7 +220,9 @@ jobs:
 | **P0 - Critical** | Upgrade Safety (2.3) | Data loss prevention is paramount |
 | **P1 - High** | Argument Parsing (2.1) | User-facing errors, first line of defense |
 | **P1 - High** | Auto-Detection (2.4) | Upgrade depends on correct detection |
+| **P1 - High** | PowerShell Wrapper (2.8) | Windows users depend on this |
 | **P2 - Medium** | New File Generation (2.2) | Core functionality, well-tested manually |
+| **P2 - Medium** | Edge Cases (2.7) | Robustness for diverse inputs |
 | **P3 - Low** | Template Tests (2.5) | Structural validation, less likely to regress |
 | **P3 - Low** | Sync Tests (2.6) | Simple functionality, minimal code paths |
 
@@ -202,11 +234,13 @@ jobs:
 2. **P0: upgrade.bats** — Upgrade safety tests (10 tests)
 3. **P1: args.bats** — Argument parsing tests (10 tests)
 4. **P1: autodetect.bats** — Auto-detection tests (7 tests)
-5. **P2: generate.bats** — Generation tests (10 tests)
-6. **P3: templates.bats** — Template tests (8 tests)
-7. **P3: sync.bats** — Sync tests (2 tests)
+5. **P1: generate-agents.Tests.ps1** — PowerShell wrapper tests (14 tests)
+6. **P2: generate.bats** — Generation tests (10 tests)
+7. **P2: edge-cases.bats** — Edge case tests (6 tests)
+8. **P3: templates.bats** — Template tests (8 tests)
+9. **P3: sync.bats** — Sync tests (2 tests)
 
-**Total: 47 test cases**
+**Total: 67 test cases (53 BATS + 14 Pester)**
 
 ---
 
@@ -222,8 +256,8 @@ brew install bats-core
 git clone https://github.com/bats-core/bats-support.git test/test_helper/bats-support
 git clone https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
 
-# Run all tests
-bats test/
+# Run all BATS tests
+bats test/*.bats
 
 # Run specific test file
 bats test/upgrade.bats
@@ -232,17 +266,31 @@ bats test/upgrade.bats
 bats --verbose-run test/
 ```
 
+### Local (PowerShell - any platform)
+
+```powershell
+# Install Pester
+Install-Module -Name Pester -Force -MinimumVersion 5.0
+
+# Run PowerShell tests
+Invoke-Pester test/*.Tests.ps1 -Output Detailed
+```
+
 ### CI (GitHub Actions)
 
-See section 1.3 for workflow configuration.
+Tests run automatically on push/PR via `.github/workflows/test.yml`:
+- **BATS tests** on Linux, macOS, and Windows (Git Bash)
+- **Pester tests** on Linux, macOS, and Windows
+- **ShellCheck** linting on Linux
 
 ---
 
 ## 6. Success Criteria
 
-- [ ] All 47 tests pass
+- [x] All 53 BATS tests pass
+- [ ] All 14 Pester tests pass
 - [ ] No test takes longer than 5 seconds
 - [ ] Upgrade safety tests cover all documented safety guarantees
-- [ ] CI runs on every push and PR
+- [x] CI runs on every push and PR
 - [ ] Test coverage documented in README badge
 
