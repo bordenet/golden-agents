@@ -1,0 +1,54 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install BATS (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          cd /tmp/bats-core && sudo ./install.sh /usr/local
+
+      - name: Install BATS (macOS)
+        if: runner.os == 'macOS'
+        run: brew install bats-core
+
+      - name: Install BATS helper libraries
+        run: |
+          mkdir -p test/test_helper
+          git clone --depth 1 https://github.com/bats-core/bats-support.git test/test_helper/bats-support
+          git clone --depth 1 https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
+
+      - name: Run tests
+        run: bats test/
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Tests |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Upgrade Safety (P0) | 10 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Argument Parsing (P1) | 10 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auto-Detection (P1) | 7 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Generation (P2) | 10 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Templates (P3) | 8 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sync (P3) | 2 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total: 47 tests**" >> $GITHUB_STEP_SUMMARY
+
