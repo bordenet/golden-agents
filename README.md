@@ -4,6 +4,17 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Linux** | ✅ Native | Works out of the box |
+| **macOS** | ✅ Native | Works out of the box |
+| **Windows WSL** | ✅ Native | Run from WSL bash shell |
+| **Windows Native** | ✅ Supported | Requires Git Bash, Cygwin, or MSYS2 |
+
+**Requirements:** Bash 4.0+ and Git
+
 ## What is this?
 
 Golden Agents is a modular framework for generating project-specific `Agents.md` files that guide AI coding assistants (Claude Code, Augment Code, OpenAI Codex CLI, Gemini, GitHub Copilot) to produce consistent, high-quality output.
@@ -143,6 +154,36 @@ This framework integrates with [obra/superpowers](https://github.com/obra/superp
 - `superpowers:systematic-debugging` - Before fixing bugs
 - `superpowers:test-driven-development` - Before implementation
 - `superpowers:verification-before-completion` - Before claiming done
+
+## Windows Installation
+
+### Option 1: WSL (Recommended)
+
+```powershell
+# Install WSL if not already installed
+wsl --install
+
+# Then from WSL bash:
+git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
+~/.golden-agents/generate-agents.sh --language=python --path=./my-project
+```
+
+### Option 2: Git Bash
+
+1. Install [Git for Windows](https://git-scm.com/download/win) (includes Git Bash)
+2. Open Git Bash
+3. Run:
+
+```bash
+git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
+~/.golden-agents/generate-agents.sh --language=python --path=./my-project
+```
+
+### Option 3: MSYS2 / Cygwin
+
+Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), then run from their bash shell.
+
+**Note:** Native PowerShell/cmd.exe is NOT supported. This is a bash script.
 
 ## Contributing
 

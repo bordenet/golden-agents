@@ -22,7 +22,7 @@ APPLY=false
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
-FRAMEWORK_VERSION="1.2.0"
+FRAMEWORK_VERSION="1.2.1"
 
 usage() {
     cat << 'EOF'
@@ -41,6 +41,17 @@ DESCRIPTION
 
     When upgrading existing files, only framework sections (between markers) are
     replaced. Project-specific content is preserved.
+
+PLATFORM SUPPORT
+    Linux ........... Native (works out of the box)
+    macOS ........... Native (works out of the box)
+    Windows WSL ..... Native (run from WSL bash shell)
+    Windows Native .. Requires Git Bash, Cygwin, or MSYS2
+
+    Requirements: Bash 4.0+, Git
+
+    NOTE: Native PowerShell/cmd.exe is NOT supported. This is a bash script.
+          On Windows, use WSL (recommended), Git Bash, Cygwin, or MSYS2.
 
 OPTIONS
     --language=LANG     Languages to include (comma-separated: go,python,javascript,shell,dart-flutter)
@@ -76,6 +87,12 @@ EXAMPLES
 
     # Apply upgrade after preview
     generate-agents.sh --upgrade --apply --path=./my-project
+
+    # Windows (Git Bash)
+    ~/.golden-agents/generate-agents.sh --language=python --path=./my-project
+
+    # Windows (WSL)
+    wsl ~/.golden-agents/generate-agents.sh --language=go --path=./my-project
 EOF
 }
 

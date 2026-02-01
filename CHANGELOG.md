@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-02-01
+
+### Added
+
+- **Cross-platform documentation** - Clear platform support in README and --help
+- **Windows installation guide** - WSL, Git Bash, MSYS2, Cygwin instructions
+- **Platform support table** - Linux, macOS, Windows WSL, Windows Native
+
+### Documentation
+
+- README: Added Platform Support section at top
+- README: Added Windows Installation section with step-by-step instructions
+- --help: Added PLATFORM SUPPORT section with requirements
+- --help: Added Windows-specific examples
+
+---
+
+## [1.2.0] - 2026-02-01
+
+### Added
+
+- **Safe upgrade system** - `--upgrade` and `--apply` flags for marker-based updates
+- **Framework markers** - `<!-- GOLDEN:framework:start -->` and `<!-- GOLDEN:framework:end -->`
+- **Backup on upgrade** - Creates `.backup` before modifying files
+- **Dry-run by default** - `--upgrade` shows diff without writing
+
+### Changed
+
+- Renamed `seed.sh` to `generate-agents.sh` for clarity
+- Improved error messages for upgrade failures
+
+---
+
+## [1.1.0] - 2026-02-01
+
+### Added
+
+- **AI guidance files** - Agents.md, CLAUDE.md, CODEX.md, GEMINI.md, COPILOT.md for this repo
+- **5 AI assistants** - Support for Claude Code, Augment Code, OpenAI Codex CLI, Gemini, GitHub Copilot
+
+---
+
 ## [1.0.0] - 2026-02-01
 
 ### Added
