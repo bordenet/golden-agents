@@ -17,10 +17,10 @@ Golden Agents is a modular framework for generating project-specific `Agents.md`
 git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 
 # Generate for your project
-~/.golden-agents/seed.sh --language=go --type=cli-tools --path=./my-project
+~/.golden-agents/generate-agents.sh --language=go --type=cli-tools --path=./my-project
 
 # Or use compact mode (~130 lines instead of ~800)
-~/.golden-agents/seed.sh --language=python --compact --path=./my-project
+~/.golden-agents/generate-agents.sh --language=python --compact --path=./my-project
 ```
 
 ### Option 2: Use the pre-generated core file
@@ -34,10 +34,10 @@ cp ~/.golden-agents/Agents.core.md ./Agents.md
 
 ```bash
 # Update your local templates from GitHub
-~/.golden-agents/seed.sh --sync
+~/.golden-agents/generate-agents.sh --sync
 
 # Regenerate Agents.md with latest templates
-~/.golden-agents/seed.sh --language=javascript --path=./my-project
+~/.golden-agents/generate-agents.sh --language=javascript --path=./my-project
 ```
 
 ## Features
@@ -53,7 +53,7 @@ cp ~/.golden-agents/Agents.core.md ./Agents.md
 ```
 golden-agents/
 ├── README.md              # This file
-├── seed.sh                # Generator script
+├── generate-agents.sh     # Generator script
 ├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
 └── templates/
@@ -98,22 +98,22 @@ golden-agents/
 
 ```bash
 # Go CLI tool
-./seed.sh --language=go --type=cli-tools --path=./my-cli
+./generate-agents.sh --language=go --type=cli-tools --path=./my-cli
 
 # Python web app
-./seed.sh --language=python --type=web-apps --path=./my-api
+./generate-agents.sh --language=python --type=web-apps --path=./my-api
 
 # Flutter mobile app
-./seed.sh --language=dart-flutter --type=mobile-apps --path=./my-app
+./generate-agents.sh --language=dart-flutter --type=mobile-apps --path=./my-app
 
 # Multi-language project
-./seed.sh --language=go,shell --type=cli-tools --path=./my-project
+./generate-agents.sh --language=go,shell --type=cli-tools --path=./my-project
 
 # Compact mode (recommended for most projects)
-./seed.sh --language=javascript --compact --path=./my-project
+./generate-agents.sh --language=javascript --compact --path=./my-project
 
 # Dry run (preview without writing)
-./seed.sh --language=python --compact --dry-run
+./generate-agents.sh --language=python --compact --dry-run
 ```
 
 ## Integration with Superpowers
@@ -129,7 +129,7 @@ This framework integrates with [obra/superpowers](https://github.com/obra/superp
 
 1. Fork this repository
 2. Add or modify templates in `templates/`
-3. Test with `./seed.sh --dry-run`
+3. Test with `./generate-agents.sh --dry-run`
 4. Submit a pull request
 
 ## License
