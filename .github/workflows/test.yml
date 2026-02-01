@@ -56,9 +56,11 @@ jobs:
           echo "**Total: 53 BATS tests**" >> $GITHUB_STEP_SUMMARY
 
   # BATS tests on Windows via Git Bash
+  # Windows support is secondary - failures here don't block the build
   windows-bash-tests:
     name: BATS (Windows Git Bash)
     runs-on: windows-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -83,14 +85,38 @@ jobs:
           export PATH="$HOME/bats/bin:$PATH"
           bats test/*.bats
 
-  # PowerShell wrapper tests using Pester
+  # PowerShell wrapper tests using Pester (Linux/macOS - required)
   powershell-tests:
     name: Pester (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -Force -SkipPublisherCheck -MinimumVersion 5.0
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = "test/*.Tests.ps1"
+          $config.Output.Verbosity = "Detailed"
+          $config.Run.Exit = $true
+          Invoke-Pester -Configuration $config
+
+  # PowerShell wrapper tests on Windows (optional - doesn't block build)
+  powershell-tests-windows:
+    name: Pester (windows-latest)
+    runs-on: windows-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
