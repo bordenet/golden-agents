@@ -1,10 +1,27 @@
 # Golden Agents Framework
 
-> **Standardized AI agent guidance for consistent, high-quality code generation**
+> **Stop repeating yourself to AI coding assistants. Standardize once, enforce everywhere.**
 
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
-[![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## The Problem
+
+AI coding assistants drift. They bypass quality gates, skip tests, ignore style guides, and make random choices about tooling. You find yourself repeating the same instructions across every project, every session.
+
+## The Solution
+
+Golden Agents generates a single `Agents.md` file that all major AI assistants read automatically. One file. Consistent behavior. No more drift.
+
+**What you get:**
+
+- **Quality gates** - Lint → Build → Test order enforced before every commit
+- **Anti-slop rules** - Banned phrases, no flattery, evidence-based claims only
+- **Skill integration** - Automatic invocation of brainstorming, TDD, debugging workflows
+- **Language-specific guidance** - Go, Python, JavaScript, Shell, Dart/Flutter
+- **Project-type templates** - CLI tools, web apps, mobile apps
+
+**[→ See sample output](docs/SAMPLE.md)** to inspect what gets generated.
 
 ## Platform Support
 
@@ -16,10 +33,6 @@
 | **Windows Native** | ✅ Supported | Requires Git Bash, Cygwin, or MSYS2 |
 
 **Requirements:** Bash 4.0+ and Git
-
-## What is this?
-
-Golden Agents is a modular framework for generating project-specific `Agents.md` files that guide AI coding assistants to produce consistent, high-quality output.
 
 ### Supported AI Coding Assistants
 
@@ -33,6 +46,8 @@ Golden Agents is a modular framework for generating project-specific `Agents.md`
 | **GitHub Copilot** | `COPILOT.md`, `.github/copilot-instructions.md` → `Agents.md` | Knowledge bases + custom instructions |
 
 The generator creates all necessary redirect files automatically.
+
+**Tip:** You can safely delete redirect files for AI assistants you don't use (e.g., delete `GEMINI.md` if you only use Claude Code).
 
 ## Quick Start
 
@@ -271,4 +286,27 @@ This framework incorporates official guidance from:
 | [OpenAI Codex Prompting Guide](https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide/) | AGENTS.md specification, tool-use directives, autonomy settings |
 | [Gemini Code Assist](https://developers.google.com/gemini-code-assist/docs/use-agentic-chat-pair-programmer) | GEMINI.md context files, MCP integration |
 | [Spotify Golden Path](https://engineering.atspotify.com/2020/08/how-we-use-golden-paths-to-solve-fragmentation-in-our-software-ecosystem/) | Standardization philosophy |
+
+---
+
+## Why I Built This
+
+Over six months of vibe coding, I created around 20 repositories. I noticed patterns in how even my favorite AI agents drifted off the golden path:
+
+- **Bypassing quality gates** - Skipping linters, ignoring test failures, committing anyway
+- **Scope creep excuses** - "That's a preexisting issue, not in scope" (always false)
+- **Random tooling choices** - Different testing frameworks in every project, inconsistent coverage thresholds
+- **Style guide violations** - Adopting coding standards only to watch agents ignore them
+
+I found myself repeating the same instructions in every session. It got tiring.
+
+So I consolidated all my guidance into a single document. But 800 lines is too much—no AI agent can faithfully follow that. Borrowing from [obra/superpowers](https://github.com/obra/superpowers), I factored the guidance into progressively loaded modules.
+
+This repo exists for three reasons:
+
+1. **Community contribution** - Share what works
+2. **Learn from others** - See how you solve these problems
+3. **Continuous improvement** - More eyes, better guidance
+
+If you've experienced similar drift, give it a try. If you have better solutions, open a PR.
 

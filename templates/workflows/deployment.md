@@ -47,6 +47,7 @@ When uncertain, check these canonical implementations:
 ## Setup Scripts
 
 **Rule**: ALL dependencies installed via setup scripts, NEVER manual `npm install`:
+
 ```bash
 ./scripts/setup.sh          # Full setup
 ./scripts/setup-web.sh      # Web-specific setup

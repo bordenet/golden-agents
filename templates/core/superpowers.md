@@ -53,11 +53,13 @@ This loads available skills and the `using-superpowers` skill.
 ## Skill Commands
 
 **Load a skill:**
+
 ```bash
 node ~/.codex/superpowers-augment/superpowers-augment.js use-skill superpowers:<skill-name>
 ```
 
 **List all skills:**
+
 ```bash
 node ~/.codex/superpowers-augment/superpowers-augment.js find-skills
 ```
