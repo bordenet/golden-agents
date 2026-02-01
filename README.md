@@ -6,7 +6,7 @@
 
 ## What is this?
 
-Golden Agents is a modular framework for generating project-specific `Agents.md` files that guide AI coding assistants (Claude Code, Augment, Gemini, etc.) to produce consistent, high-quality output.
+Golden Agents is a modular framework for generating project-specific `Agents.md` files that guide AI coding assistants (Claude Code, Augment Code, OpenAI Codex CLI, Gemini, GitHub Copilot) to produce consistent, high-quality output.
 
 ## Quick Start
 
@@ -52,6 +52,11 @@ cp ~/.golden-agents/Agents.core.md ./Agents.md
 
 ```
 golden-agents/
+├── Agents.md              # AI guidance for this repo
+├── CLAUDE.md              # Redirect → Agents.md
+├── CODEX.md               # Redirect → Agents.md
+├── GEMINI.md              # Redirect → Agents.md
+├── COPILOT.md             # Redirect → Agents.md
 ├── README.md              # This file
 ├── generate-agents.sh     # Generator script
 ├── Agents.core.md         # Pre-generated compact version (standalone)
