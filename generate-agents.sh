@@ -315,20 +315,29 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 
 1. Read the **Existing Content** below (from the old guidance files)
 2. Read the **New Framework** in `Agents.md` (already generated)
-3. Identify all **project-specific** guidance in the existing content:
-   - Project-specific rules, workflows, conventions
-   - File paths, commands, scripts unique to this project
-   - Team policies, deployment procedures
-   - Technology-specific guidance not covered by the framework
-4. Add the project-specific content to `Agents.md` in the section after `<!-- GOLDEN:framework:end -->`
-5. **DO NOT** duplicate content already in the framework (superpowers, anti-slop, etc.)
-6. **DO NOT** lose any project-specific information
-7. Delete this file when done
+3. Apply the **10-word test** to each piece of content:
+   - Can you express this in under 10 words with specific names/paths/commands?
+   - YES → Keep it (project-specific)
+   - NO → Skip it (framework already covers it)
+4. Add ONLY project-specific content to `Agents.md` after `<!-- GOLDEN:framework:end -->`
+5. **DO NOT** duplicate content already in the framework (quality gates, anti-slop, etc.)
+6. **DO NOT** lose any genuinely project-specific information
+
+## Target Sizes
+
+| Project Complexity | Target Size |
+|-------------------|-------------|
+| Simple (single language, standard tooling) | **0-20 lines** |
+| Moderate (multi-language, some custom workflows) | **20-50 lines** |
+| Complex (many integrations, strict domain rules) | **50-100 lines** |
 
 ## Source Files
 PROMPT_EOF
     echo ""
     echo "Migrated from: $source_file"
+    local source_lines
+    source_lines=$(echo "$existing_content" | wc -l | tr -d ' ')
+    echo "Original size: $source_lines lines"
     echo ""
     echo "## Existing Content"
     echo ""
@@ -336,12 +345,28 @@ PROMPT_EOF
     echo "$existing_content"
     echo '```'
     echo ""
+    echo "## Report Metrics"
+    echo ""
+    echo "After adding project-specific content to Agents.md, report:"
+    echo ""
+    echo '```'
+    echo "MIGRATION SUMMARY"
+    echo "━━━━━━━━━━━━━━━━━"
+    echo "Original guidance file: $source_lines lines"
+    echo "Project-specific content added: ~[Y] lines"
+    echo "Reduction: [Z]%"
+    echo ""
+    echo "Kept [M] project-specific items (paths, commands, policies, domain rules)"
+    echo "Skipped [N] generic items (covered by framework)"
+    echo '```'
+    echo ""
     echo "## Next Steps"
     echo ""
     echo "1. Open \`Agents.md\` and find the \`<!-- GOLDEN:framework:end -->\` marker"
     echo "2. Add your project-specific content after that marker"
-    echo "3. Delete this \`MIGRATION-PROMPT.md\` file"
-    echo "4. Commit the changes"
+    echo "3. Report the metrics above"
+    echo "4. Delete this \`MIGRATION-PROMPT.md\` file"
+    echo "5. Commit the changes"
 }
 
 # Parse arguments
