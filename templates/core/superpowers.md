@@ -1,63 +1,83 @@
-# Workflow Checklists
+# Superpowers Integration
 
-Use these checklists to maintain quality and consistency across all development work.
+> **Priority**: CRITICAL - Configure at session start
+> **Source**: obra/superpowers, bordenet/superpowers-plus, RecipeArchive Agents.md
 
-## Optional: Enhanced Workflows
+## Superpowers Bootstrap
 
-If you have [superpowers](https://github.com/obra/superpowers) installed, run at session start:
+At the **START of every conversation**, run:
 
 ```bash
 node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
 ```
 
-Superpowers provides interactive skill-based workflows. If not installed, use the checklists below.
+This loads available skills from:
+- **obra/superpowers** - Core skills: brainstorming, TDD, debugging, verification
+- **bordenet/superpowers-plus** - Extended skills: slop detection, security upgrades, code review
 
----
+To load a specific skill:
+```bash
+node ~/.codex/superpowers-augment/superpowers-augment.js use-skill superpowers:<skill-name>
+```
 
-## Before Creative/Feature Work
+## The Rule
 
-- [ ] Clarify the problem being solved
-- [ ] Identify acceptance criteria and success metrics
-- [ ] Consider edge cases and error scenarios
-- [ ] Explore 2-3 approaches with trade-offs
-- [ ] Document decision rationale before implementing
+**IF A SKILL APPLIES TO YOUR TASK (even 1% chance), YOU MUST INVOKE IT.**
 
-## Before Implementation (TDD Cycle)
+This is not optional. Skills exist to ensure quality and consistency.
 
-- [ ] Write failing test describing desired behavior
-- [ ] Implement minimal code to pass test
-- [ ] Refactor for clarity and consistency
-- [ ] Verify all existing tests still pass
-- [ ] Repeat until feature complete
+## Critical Checkpoints
 
-## When Debugging
+**STOP and verify skill applicability before these actions:**
 
-- [ ] Gather complete error information (logs, stack traces)
-- [ ] Identify the exact failure point
-- [ ] Form hypothesis before changing code
-- [ ] Test hypothesis with minimal, isolated change
-- [ ] Verify fix doesn't break other functionality
-- [ ] Add test to prevent regression
+| Action | Required Check | Skill to Consider |
+|--------|----------------|-------------------|
+| Creating a branch | Did I invoke code review? | `superpowers:requesting-code-review` |
+| Creating a PR | Did I invoke code review? | `superpowers:requesting-code-review` |
+| Pushing to main | Did I verify completion? | `superpowers:verification-before-completion` |
+| Starting feature work | Did I brainstorm first? | `superpowers:brainstorming` |
+| Fixing a bug | Did I debug systematically? | `superpowers:systematic-debugging` |
+| Writing implementation | Did I write tests first? | `superpowers:test-driven-development` |
+| Claiming "done" | Did I run verification? | `superpowers:verification-before-completion` |
 
-## Before Claiming Done
+## Key Skills Reference
 
+| Skill | When to Use |
+|-------|-------------|
+| `superpowers:brainstorming` | Before ANY creative/feature work |
+| `superpowers:systematic-debugging` | Before fixing bugs |
+| `superpowers:test-driven-development` | Before writing implementation |
+| `superpowers:verification-before-completion` | Before claiming done |
+| `superpowers:writing-plans` | Before multi-step tasks |
+| `superpowers:requesting-code-review` | Before PRs or merging |
+
+## Perplexity Escalation
+
+**After 5 minutes OR 3 failed attempts**, escalate:
+
+1. Stop trying to fix manually
+2. Generate a Perplexity prompt with:
+   - Exact error message
+   - Version info (language, framework)
+   - What you've already tried
+3. Research before more attempts
+
+## Fallback Checklists (Without Superpowers)
+
+If superpowers not installed, use these minimal checklists:
+
+### Before Implementation
+- [ ] Write failing test first
+- [ ] Implement minimal code to pass
+- [ ] Refactor while keeping tests green
+
+### Before Claiming Done
 - [ ] All tests pass locally
-- [ ] No linting errors or warnings
-- [ ] Code reviewed (or self-reviewed against standards)
-- [ ] No secrets, credentials, or sensitive data in code
-- [ ] Documentation updated if behavior changed
-- [ ] Commit messages are descriptive
+- [ ] No linting errors
+- [ ] No secrets in code
+- [ ] Documentation updated
 
-## Before Creating PR or Merging
-
-- [ ] Branch is up to date with target branch
-- [ ] CI pipeline passes
-- [ ] Changes match the original requirements
-- [ ] No unrelated changes included
-
-## When Stuck (2+ Failed Attempts)
-
-- [ ] Step back and re-read the error message carefully
-- [ ] Search documentation or reliable sources
-- [ ] Ask the user for clarification if requirements are unclear
-- [ ] Consider if the approach itself is wrong, not just the implementation
+### When Stuck
+- [ ] Re-read error message carefully
+- [ ] Search documentation
+- [ ] Ask user for clarification if needed

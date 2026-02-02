@@ -85,3 +85,66 @@ npm audit
 
 NEVER defer linting fixes. Fix them before committing.
 
+---
+
+## UI/Web Application Patterns
+
+> Source: genesis-tools Agents.md
+
+### 🚨 Stillborn Apps Prevention
+
+**All clickable elements MUST have working event handlers.**
+
+```javascript
+// ✅ CORRECT - event handler attached
+button.addEventListener('click', handleSubmit);
+
+// ❌ WRONG - element exists but does nothing
+const button = document.createElement('button');
+// No event handler = stillborn element
+```
+
+**Before claiming UI work complete:**
+1. Click every button - verify response
+2. Submit every form - verify processing
+3. Check every link - verify navigation
+
+### UI Workflow Principles
+
+1. **Never assume linear behavior** - Users skip steps, go back, refresh
+2. **State survives refresh** - Save to storage, restore on load
+3. **Errors are visible** - Show user-facing messages, not console.log
+4. **Loading states exist** - Show spinners during async operations
+
+### Dark Mode Requirements
+
+For web tools requiring dark mode:
+
+```css
+:root {
+  --bg-primary: #1a1a2e;
+  --text-primary: #eee;
+  --accent: #4a90d9;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+```
+
+### Clipboard Operations Pattern
+
+```javascript
+// ✅ CORRECT - throw on error, user sees failure
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showNotification('Copied!');
+  } catch (err) {
+    showNotification('Copy failed - check permissions', 'error');
+    throw err; // Don't silently fail
+  }
+}
+```
+

@@ -152,8 +152,9 @@ golden-agents/
 │   ├── SAMPLE.md          # Example generated output
 │   └── TEST-PLAN.md       # Test plan
 ├── test/
-│   ├── *.bats             # BATS tests (94 tests)
+│   ├── *.bats             # BATS tests (115 tests)
 │   ├── *.Tests.ps1        # Pester tests (14 tests)
+│   ├── fixtures/          # Real-world test fixtures (.gitignored)
 │   └── test_helper.bash   # Shared test utilities
 └── templates/
     ├── core/              # Superpowers, anti-slop, communication
@@ -195,16 +196,47 @@ golden-agents/
 
 ## Integration with Superpowers (Optional)
 
-This framework optionally integrates with [obra/superpowers](https://github.com/obra/superpowers) for enhanced AI skill management. Superpowers is **not required** — all generated Agents.md files include self-contained workflow checklists that work with any AI assistant.
+This framework optionally integrates with skill-based AI workflow tools for enhanced automation. **Superpowers is NOT required** — all generated Agents.md files include self-contained workflow checklists that work with any AI assistant.
 
-If superpowers is installed, users get interactive skill-based workflows:
+### Available Skill Frameworks
 
-- `superpowers:brainstorming` - Before creative work
-- `superpowers:systematic-debugging` - Before fixing bugs
-- `superpowers:test-driven-development` - Before implementation
-- `superpowers:verification-before-completion` - Before claiming done
+| Framework | What It Provides | Install |
+|-----------|------------------|---------|
+| [obra/superpowers](https://github.com/obra/superpowers) | Core skills: brainstorming, TDD, debugging, verification | See setup below |
+| [bordenet/superpowers-plus](https://github.com/bordenet/superpowers-plus) | Extended: slop detection, security upgrades, code review | Adds to ~/.codex/skills/ |
 
-If not installed, the inline checklists provide equivalent guidance.
+### Quick Setup
+
+```bash
+# 1. Install obra/superpowers (core skills)
+git clone https://github.com/obra/superpowers.git ~/.codex/superpowers
+
+# 2. Create augment adapter (if using Augment)
+mkdir -p ~/.codex/superpowers-augment
+cat > ~/.codex/superpowers-augment/superpowers-augment.js << 'EOF'
+// Adapter for Augment - see obra/superpowers for full implementation
+const action = process.argv[2];
+if (action === 'bootstrap') console.log('Superpowers loaded');
+if (action === 'use-skill') console.log(`Loading skill: ${process.argv[3]}`);
+EOF
+
+# 3. (Optional) Add extended skills
+git clone https://github.com/bordenet/superpowers-plus.git /tmp/sp-plus
+cp -r /tmp/sp-plus/skills/* ~/.codex/skills/
+```
+
+### Key Skills
+
+| Skill | When to Use |
+|-------|-------------|
+| `superpowers:brainstorming` | Before ANY creative/feature work |
+| `superpowers:systematic-debugging` | Before fixing bugs |
+| `superpowers:test-driven-development` | Before writing implementation |
+| `superpowers:verification-before-completion` | Before claiming done |
+| `detecting-ai-slop` | Analyze text for AI slop density |
+| `security-upgrade` | Scan and fix dependency vulnerabilities |
+
+If not installed, the inline checklists in generated Agents.md provide equivalent guidance.
 
 ## Windows Installation
 
@@ -248,11 +280,11 @@ Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), th
 
 ## Testing
 
-**108 automated tests** run on every push/PR via GitHub Actions:
+**129 automated tests** run on every push/PR via GitHub Actions:
 
 | Test Suite | Framework | Tests | Platforms |
 |------------|-----------|-------|-----------|
-| Core script | BATS | 94 | Linux, macOS, Windows (Git Bash) |
+| Core script | BATS | 115 | Linux, macOS, Windows (Git Bash) |
 | PowerShell wrapper | Pester | 14 | Linux, macOS, Windows |
 | Linting | ShellCheck | - | Linux |
 
@@ -313,24 +345,131 @@ Some projects genuinely have extensive project-specific documentation (mobile bu
 
 1. **Create `.ai-guidance/` in your repo** with topic-specific modules
 2. **Add a loading table to Agents.md** referencing when to load each module
-3. **Keep Agents.md under 150 lines** with quick reference + loading instructions
+3. **Keep Agents.md under 100 lines** with quick reference + loading instructions
 
 Example structure:
 ```
 your-repo/
-├── Agents.md                           # ~100-150 lines (quick ref + loading table)
+├── Agents.md                           # ~60-100 lines (quick ref + loading table)
 └── .ai-guidance/
     ├── mobile-builds.md                # iOS/Android build details
     ├── architecture.md                 # System architecture
     └── security-protocols.md           # Security requirements
 ```
 
-Example loading table in Agents.md:
-```markdown
-| When... | Load |
-|---------|------|
-| Building iOS/Android | [.ai-guidance/mobile-builds.md](.ai-guidance/mobile-builds.md) |
-| System design | [.ai-guidance/architecture.md](.ai-guidance/architecture.md) |
+---
+
+### How Progressive Loading Works
+
+**The Problem:** Large Agents.md files (500+ lines) waste context tokens and cause AI assistants to miss critical rules buried in walls of text.
+
+**The Solution:** Progressive loading inspired by [obra/superpowers](https://github.com/obra/superpowers) - load guidance on-demand based on what the AI is actually doing.
+
+#### Flow Diagram: Session Lifecycle
+
 ```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        SESSION START                                 │
+└─────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  1. AI READS Agents.md (~60-100 lines)                              │
+│     • Superpowers bootstrap command                                  │
+│     • Anti-slop rules (always active)                                │
+│     • Quality gates (quick reference)                                │
+│     • Progressive loading table with triggers                        │
+└─────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  2. AI IDENTIFIES TASK TYPE                                          │
+│     User: "Generate a blog about leadership"                         │
+│     AI thinks: "This is content generation → need corpus-rules.md"   │
+└─────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  3. AI LOADS RELEVANT MODULE                                         │
+│     `view .ai-guidance/corpus-rules.md`                              │
+│     → Now has detailed guidance for this specific task               │
+└─────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  4. AI EXECUTES TASK with full context                               │
+│     Follows corpus rules, voice matching, deduplication...           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Module Loading Table Pattern
+
+The key to successful progressive loading is a **clear loading table** with explicit triggers:
+
+```markdown
+## 🚨 CRITICAL: Progressive Guidance Modules
+
+| Module | When to Load | Command |
+|--------|--------------|---------|
+| **corpus-rules.md** | 🔴 ALWAYS before ANY content generation | `view .ai-guidance/corpus-rules.md` |
+| **llm-backend.md** | When acting as LLM backend | `view .ai-guidance/llm-backend.md` |
+| **quality-gates.md** | Before commits or PRs | `view .ai-guidance/quality-gates.md` |
+| **troubleshooting.md** | When debugging issues | `view .ai-guidance/troubleshooting.md` |
+```
+
+**Critical success factors:**
+- 🔴 Mark critical modules with emoji/color
+- Use action words: "Before", "When", "During"
+- One module per task type (don't make AI load 5 files)
+- Keep module names descriptive
+
+#### Decision Tree: When to Load What
+
+```
+User Request Received
+        │
+        ▼
+┌───────────────────┐
+│ Is this content   │──YES──▶ Load corpus-rules.md FIRST
+│ generation?       │         Then load llm-backend.md
+└───────────────────┘
+        │ NO
+        ▼
+┌───────────────────┐
+│ Is this a commit  │──YES──▶ Load quality-gates.md
+│ or PR?            │
+└───────────────────┘
+        │ NO
+        ▼
+┌───────────────────┐
+│ Is this debugging │──YES──▶ Load troubleshooting.md
+│ or error fixing?  │
+└───────────────────┘
+        │ NO
+        ▼
+┌───────────────────┐
+│ Proceed with      │
+│ core Agents.md    │
+│ guidance only     │
+└───────────────────┘
+```
+
+#### Why This Works (obra/superpowers Pattern)
+
+This pattern is borrowed from [obra/superpowers](https://github.com/obra/superpowers), which pioneered skill-based AI guidance:
+
+| Aspect | superpowers | golden-agents |
+|--------|-------------|---------------|
+| **Bootstrap** | `superpowers-augment.js bootstrap` | Reads Agents.md |
+| **Skills** | `use-skill superpowers:debugging` | `view .ai-guidance/debugging.md` |
+| **Trigger** | Skill description says when | Loading table says when |
+| **Loading** | On-demand per task | On-demand per task |
+
+The key insight: **describe WHEN to load in the description/table**, not just WHAT the content is.
+
+**Bad:** `| debugging.md | Debugging guidance |`
+**Good:** `| debugging.md | When you've tried 2+ approaches without success |`
+
+---
 
 This mirrors how the framework uses `~/.golden-agents/templates/` for generic content, but with project-specific modules in the repo itself.

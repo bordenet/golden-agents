@@ -1,152 +1,174 @@
 # AI Agent Guidelines - Golden Agents Framework
 
-> **Last Updated**: 2026-02-01
-> **Languages**: shell
-> **Type**: genesis-tools (framework/tooling)
-
-This framework generates Agents.md files for other projects. It should follow its own guidance.
+> **Last Updated**: 2026-02-02
+> **Purpose**: Teach AI assistants how to USE this framework to apply AI guidance to other repos
 
 ---
 
-## Workflow Checklists
+## 🚨 CRITICAL: How to Use This Framework
 
-### Optional: Enhanced Workflows
+**You are an AI assistant reading this file.** This repo contains tools that generate `Agents.md` files for OTHER projects. When a user asks you to "apply golden-agents" or "set up AI guidance" for a repo, follow these instructions.
 
-If [superpowers](https://github.com/obra/superpowers) is installed, run at session start:
+### Step 1: Determine the Target Repo's State
+
+Run the generator with `--path` pointing to the target repo:
 
 ```bash
-node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+# From this repo's directory (e.g., ~/.golden-agents or wherever cloned)
+./generate-agents.sh --path=/path/to/target/repo --dry-run
 ```
 
-Otherwise, use the checklists below.
+The script will auto-detect the situation and tell you what to do.
 
-### Before Creative/Feature Work
+### Step 2: Follow the Script's Guidance
 
-- [ ] Clarify the problem being solved
-- [ ] Identify acceptance criteria
-- [ ] Explore 2-3 approaches with trade-offs
-- [ ] Document decision rationale
+| Situation | Script Output | Your Action |
+|-----------|---------------|-------------|
+| **No Agents.md** | Prompts for `--language` | Run with language flag, review output |
+| **Existing CLAUDE.md/CODEX.md** | Suggests `--migrate` | Run migrate, then execute the generated prompt |
+| **Existing Agents.md (no markers)** | Suggests `--adopt` | Run adopt, then execute the generated prompt |
+| **Existing Agents.md (with markers)** | Suggests `--upgrade` | Run upgrade preview, then `--apply` if good |
+| **Bloated Agents.md (>100 lines)** | Suggests `--dedupe` | Run dedupe, then execute the generated prompt |
 
-### Before Implementation (TDD)
+### Step 3: Execute Generated Prompts
 
-- [ ] Write failing test first
-- [ ] Implement minimal code to pass
-- [ ] Refactor for clarity
-- [ ] Verify all tests pass
-
-### When Debugging
-
-- [ ] Gather error information
-- [ ] Form hypothesis before changing code
-- [ ] Test with minimal change
-- [ ] Add regression test
-
-### Before Claiming Done
-
-- [ ] All tests pass (`bats test/`)
-- [ ] ShellCheck passes (`shellcheck *.sh`)
-- [ ] No secrets in code
-- [ ] CHANGELOG.md updated
-
----
-
-## Communication Standards
-
-- **No flattery** - Skip "Great question!" or "Excellent point!"
-- **No hype words** - Avoid "revolutionary", "game-changing", "cutting-edge"
-- **Evidence-based** - Cite sources, provide data, or qualify as opinion
-- **Direct** - State facts without embellishment
-
-### Banned Phrases
-
-| Category | Avoid |
-|----------|-------|
-| Self-Promotion | production-grade, world-class, enterprise-ready |
-| Filler | incredibly, extremely, very, really, truly |
-| AI Tells | leverage, utilize, facilitate, streamline, optimize |
-| Sycophancy | Happy to help!, Absolutely!, I appreciate... |
-
----
-
-## Shell Script Standards
-
-### Required Header
+**THIS IS CRITICAL.** The scripts generate prompt files (e.g., `MIGRATION-PROMPT.md`, `ADOPT-PROMPT.md`) that YOU must read and execute.
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
+# After running --migrate or --adopt or --dedupe:
+cat /path/to/target/repo/MIGRATION-PROMPT.md  # or ADOPT-PROMPT.md
 ```
+
+**Read the prompt file and follow its instructions.** These prompts guide you through:
+- Deduplicating content
+- Preserving project-specific guidance
+- Removing redundant framework content
+- Organizing into the right structure
+
+### Step 4: Verify Zero Data Loss
+
+After applying changes, verify:
+
+1. **All original content preserved** - Nothing from the original file was lost
+2. **Size within limits** - Progressive mode ≤100 lines, Compact ≤200 lines
+3. **Markers present** - `<!-- GOLDEN:framework:start -->` and `<!-- GOLDEN:framework:end -->`
+
+---
+
+## Command Reference
+
+### For New Projects (No Agents.md)
+
+```bash
+./generate-agents.sh --language=go --path=/path/to/repo
+./generate-agents.sh --language=python,shell --type=cli-tools --path=/path/to/repo
+```
+
+### For Existing CLAUDE.md/CODEX.md (Migration)
+
+```bash
+./generate-agents.sh --migrate --path=/path/to/repo
+# Then read and execute: /path/to/repo/MIGRATION-PROMPT.md
+```
+
+### For Existing Agents.md Without Markers (Adoption)
+
+```bash
+./generate-agents.sh --adopt --language=go --path=/path/to/repo
+# Then read and execute: /path/to/repo/ADOPT-PROMPT.md
+```
+
+### For Existing Agents.md With Markers (Upgrade)
+
+```bash
+./generate-agents.sh --upgrade --path=/path/to/repo          # Preview
+./generate-agents.sh --upgrade --apply --path=/path/to/repo  # Apply
+```
+
+### For Bloated Files (Deduplication)
+
+```bash
+./generate-agents.sh --dedupe --path=/path/to/repo
+# Then read and execute: /path/to/repo/ADOPT-PROMPT.md
+```
+
+---
+
+## Example Workflow
+
+User says: "Apply golden-agents to my recipe-app repo"
+
+```bash
+# 1. Check current state
+./generate-agents.sh --path=../recipe-app --dry-run
+
+# Output: "Found existing CLAUDE.md (584 lines). Use --migrate to preserve content."
+
+# 2. Run migration
+./generate-agents.sh --migrate --path=../recipe-app
+
+# Output: "Created MIGRATION-PROMPT.md with instructions"
+
+# 3. Read and execute the prompt
+cat ../recipe-app/MIGRATION-PROMPT.md
+# Follow the instructions in the prompt to:
+# - Review the original content
+# - Identify project-specific vs framework content
+# - Create the new Agents.md with proper structure
+# - Verify zero data loss
+
+# 4. Verify result
+wc -l ../recipe-app/Agents.md  # Should be ≤100 lines for progressive
+grep "GOLDEN:framework" ../recipe-app/Agents.md  # Should find markers
+```
+
+---
+
+## For Complex Projects (>100 Lines of Project-Specific Content)
+
+If a project has extensive project-specific guidance that can't fit in 100 lines:
+
+1. Create `.ai-guidance/` directory in target repo
+2. Split content into focused modules (e.g., `mobile-builds.md`, `api-patterns.md`)
+3. Reference modules from main Agents.md with on-demand loading table
+
+See `templates/core/superpowers.md` for the module loading pattern.
+
+---
+
+## When Developing THIS Framework
 
 ### Quality Gates
 
-1. **ShellCheck**: `shellcheck generate-agents.sh` must pass
-2. **BSD compatibility**: Use flags that work on macOS (no GNU-only options)
-3. **Quote variables**: Always `"$var"`, never `$var`
-4. **Explicit returns**: Use `return 0` or `return 1`
-
-### Before Committing
-
-- [ ] `shellcheck *.sh` passes
-- [ ] Tested on macOS (BSD tools)
-- [ ] No hardcoded paths (use `$HOME`, `~/.golden-agents`)
-- [ ] Help text updated if options changed
-
----
-
-## Project Structure
-
-```
-golden-agents/
-├── Agents.md              # This file (AI guidance)
-├── Agents.core.md         # Pre-generated compact template
-├── generate-agents.sh     # Main generator script
-├── README.md              # User documentation
-├── CHANGELOG.md           # Version history
-└── templates/
-    ├── core/              # Always-included guidance
-    ├── languages/         # Language-specific (go, python, etc.)
-    ├── project-types/     # Project type guidance
-    └── workflows/         # Development workflow guidance
-```
-
----
-
-## Template Authoring
-
-When editing templates in `templates/`:
-
-1. **Keep modules self-contained** - No cross-references between modules
-2. **Use placeholders** - `{{PROJECT_NAME}}`, `{{LANGUAGE}}` for substitution
-3. **Test generation** - Run `./generate-agents.sh --dry-run` after changes
-4. **Update CHANGELOG.md** - Document template changes
-
----
-
-## Context Management
-
-- **Context rot**: Model accuracy degrades as context fills. Keep tokens high-signal.
-- **Progressive disclosure**: Load Agents.md always, modules on-demand.
-- **Session resume**: Check `git log -5`, `git status` before proceeding.
-
----
-
-## Quick Commands
-
 ```bash
+# Run all tests (115 BATS tests)
+bats test/*.bats
+
 # Lint shell scripts
-shellcheck *.sh
+shellcheck generate-agents.sh
 
-# Test generation (dry run)
-./generate-agents.sh --language=go --type=cli-tools --dry-run
-
-# Generate for a project
-./generate-agents.sh --language=python --path=../my-project
-
-# Sync templates from GitHub
-./generate-agents.sh --sync
+# Test generation
+./generate-agents.sh --language=go --dry-run
 ```
+
+### Template Authoring
+
+When editing `templates/`:
+- Keep modules self-contained
+- Test with `--dry-run` after changes
+- Verify size limits still met
+- Update CHANGELOG.md
 
 ---
 
-*This framework eats its own dog food.*
+## Anti-Slop Rules
+
+- **No flattery** - Skip "Great question!"
+- **No hype** - Avoid "revolutionary", "game-changing"
+- **Evidence-based** - Cite sources or qualify as opinion
+- **Direct** - State facts without embellishment
+
+---
+
+*This framework teaches AI assistants to teach other AI assistants.*
 

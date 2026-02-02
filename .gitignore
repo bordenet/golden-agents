@@ -1,0 +1,14 @@
+# Test fixtures (copied from workspace repos or generated)
+test/fixtures/
+
+# BATS helper libraries (cloned during CI)
+test/test_helper/bats-support/
+test/test_helper/bats-assert/
+
+# Coverage output
+coverage/
+
+# Temp files
+*.backup
+*.tmp
+

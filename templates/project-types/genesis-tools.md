@@ -67,3 +67,67 @@ project/
 - Keep README current with setup instructions
 - Cross-reference related documents
 
+---
+
+## Adversarial Workflow Pattern
+
+> Source: genesis-tools Agents.md - For document-generation apps
+
+**Assume users will NOT follow the happy path.** Design for:
+
+### 7-Step Adversarial Design
+
+1. **Skip steps** - User jumps directly to step 5
+   - Each step must be independently accessible
+   - Show "incomplete" warnings but allow progression
+
+2. **Go backwards** - User returns to edit earlier input
+   - Re-fetching from storage, not stale variables
+   - Downstream outputs may need regeneration
+
+3. **Refresh mid-workflow** - Browser reloads
+   - All state in persistent storage
+   - Restore exact position on load
+
+4. **Multiple tabs** - Same project open twice
+   - Storage sync between tabs
+   - Last-write-wins or conflict detection
+
+5. **Empty inputs** - User clicks "Generate" with nothing
+   - Validate before API calls
+   - Show helpful error, not crash
+
+6. **Paste garbage** - User pastes wrong content
+   - Graceful handling of malformed input
+   - Clear error messages
+
+7. **Export nothing** - User exports before generating
+   - Disable export until content exists
+   - Or show "nothing to export" message
+
+### Phase Navigation Pattern
+
+```javascript
+// ✅ CORRECT - Always re-fetch from storage
+goToPhase(phaseNumber) {
+  const project = storage.getProject(this.projectId);  // Fresh data
+  this.render(project, phaseNumber);
+}
+
+// ❌ WRONG - Uses stale instance data
+goToPhase(phaseNumber) {
+  this.render(this.project, phaseNumber);  // Stale!
+}
+```
+
+## CI Quality Gates
+
+All genesis-derived tools must pass:
+
+| Gate | Requirement |
+|------|-------------|
+| Lint | Zero errors, zero warnings |
+| Build | Compiles without errors |
+| Tests | All pass, ≥80% coverage |
+| Security | No vulnerabilities |
+

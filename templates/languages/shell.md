@@ -97,3 +97,40 @@ shellcheck -x script.sh
 bash -n script.sh
 ```
 
+---
+
+## Failure Cases & Lessons Learned
+
+> Source: scripts/Agents.md - Document failures to prevent recurrence
+
+### Failure 1: Untested Export
+**Symptom**: Script works standalone, fails when sourced
+**Cause**: Variables not exported for subshells
+**Fix**: Test both `./script.sh` AND `source script.sh`
+
+### Failure 2: Silent Data Loss
+**Symptom**: Script completes "successfully" but data missing
+**Cause**: `set -e` not used, errors not checked
+**Fix**: Always use `set -euo pipefail`, check critical operations
+
+### Failure 3: Path Assumptions
+**Symptom**: Works on dev machine, fails in CI
+**Cause**: Hardcoded paths, assumed tools installed
+**Fix**: Use `$SCRIPT_DIR` pattern, check for required tools
+
+### Failure 4: Quote-itis
+**Symptom**: Breaks on filenames with spaces
+**Cause**: Unquoted variables
+**Fix**: Quote everything: `"$var"` not `$var`
+
+## Pre-Commit Validation Checklist
+
+Before committing shell scripts:
+
+1. [ ] `shellcheck -x script.sh` passes
+2. [ ] `bash -n script.sh` passes (syntax check)
+3. [ ] Test with empty inputs
+4. [ ] Test with paths containing spaces
+5. [ ] Test sourcing AND direct execution
+6. [ ] Verify on both macOS and Linux if cross-platform
+

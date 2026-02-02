@@ -55,3 +55,60 @@ For new features, follow TDD:
 - NEVER reduce coverage thresholds to pass CI
 - Fix the code, not the tests
 
+---
+
+## 🚨 CLI Integration Testing - QUALITY GATE
+
+> Source: codebase-reviewer Agents.md
+
+CLI tools MUST have integration tests that verify:
+
+| Aspect | Test Requirement |
+|--------|------------------|
+| Exit codes | 0 for success, non-zero for errors |
+| Output format | Matches expected structure |
+| Error messages | Helpful and actionable |
+| Edge cases | Empty input, missing files, invalid args |
+
+```bash
+# Example CLI integration test (BATS)
+@test "exits 0 on valid input" {
+  run ./tool.sh valid-input.txt
+  [ "$status" -eq 0 ]
+}
+
+@test "exits 1 on missing file" {
+  run ./tool.sh nonexistent.txt
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not found"* ]]
+}
+```
+
+## Pre-Push Audit Checklist
+
+> Source: scripts/Agents.md
+
+Before pushing to remote, verify ALL of these:
+
+1. [ ] All new code has tests
+2. [ ] All tests pass locally (`npm test`, `go test`, etc.)
+3. [ ] Coverage hasn't decreased
+4. [ ] Linting passes with zero warnings
+5. [ ] Type checking passes (TypeScript/mypy)
+6. [ ] Build succeeds (`go build`, `npm run build`)
+7. [ ] No debug code left in (console.log, print, etc.)
+8. [ ] No secrets or credentials in code
+9. [ ] Commit messages are descriptive
+10. [ ] Documentation updated if behavior changed
+
+## Impact Analysis Before Changes
+
+> Source: scripts/Agents.md
+
+Before modifying shared code:
+
+1. **Find all callers**: `grep -r "function_name" .`
+2. **Identify downstream effects**: What breaks if this changes?
+3. **Plan migration**: If signature changes, update all call sites
+4. **Test affected code**: Run tests for all affected components
+
