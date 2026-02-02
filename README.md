@@ -7,6 +7,16 @@ Generate `Agents.md` files that enforce consistent AI coding assistant behavior 
 [![codecov](https://codecov.io/gh/bordenet/golden-agents/graph/badge.svg)](https://codecov.io/gh/bordenet/golden-agents)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+---
+
+> **⚠️ What This Is (And Isn't)**
+>
+> This project generates **plain text Markdown files** that AI coding assistants read as instructions. The shell script is a simple text generator—it does NOT execute code in your project, install software, modify your system, or run autonomously.
+>
+> **[→ Read the full explanation: How It Works](docs/HOW-IT-WORKS.md)**
+
+---
+
 ## Quick Start
 
 ```bash
@@ -149,6 +159,7 @@ golden-agents/
 ├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
 ├── docs/
+│   ├── HOW-IT-WORKS.md    # Security & transparency explanation
 │   ├── SAMPLE.md          # Example generated output
 │   └── TEST-PLAN.md       # Test plan
 ├── test/
