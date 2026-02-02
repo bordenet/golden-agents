@@ -114,6 +114,39 @@ sync_templates() {
     fi
 }
 
+# Resolve language aliases to canonical names
+resolve_language_alias() {
+    local lang="$1"
+    case "$lang" in
+        js|javascript|node|nodejs|ts|typescript) echo "javascript" ;;
+        py|python|python3) echo "python" ;;
+        bash|sh|zsh|shell) echo "shell" ;;
+        flutter|dart|dart-flutter) echo "dart-flutter" ;;
+        golang|go) echo "go" ;;
+        *) echo "$lang" ;;
+    esac
+}
+
+# Resolve all languages in comma-separated list
+resolve_languages() {
+    local input="$1"
+    local resolved=""
+    local IFS=','
+    for lang in $input; do
+        local canonical
+        canonical=$(resolve_language_alias "$lang")
+        if [[ -z "$resolved" ]]; then
+            resolved="$canonical"
+        else
+            # Avoid duplicates
+            if [[ ! ",$resolved," == *",$canonical,"* ]]; then
+                resolved="$resolved,$canonical"
+            fi
+        fi
+    done
+    echo "$resolved"
+}
+
 # Parse arguments
 for arg in "$@"; do
     case $arg in
@@ -136,6 +169,11 @@ done
 if [[ "$APPLY" == "true" && "$UPGRADE" != "true" ]]; then
     echo "Error: --apply requires --upgrade" >&2
     exit 1
+fi
+
+# Resolve language aliases
+if [[ -n "$LANGUAGES" ]]; then
+    LANGUAGES=$(resolve_languages "$LANGUAGES")
 fi
 
 # Handle sync mode

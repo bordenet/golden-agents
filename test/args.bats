@@ -86,3 +86,42 @@ teardown() {
     [ ! -f "$TEST_DIR/Agents.md" ]  # Should not create file in test dir
 }
 
+# Test 11-16: Language alias resolution
+@test "js alias resolves to javascript" {
+    run "$GENERATE_SCRIPT" --language=js --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"javascript"* ]]
+}
+
+@test "node alias resolves to javascript" {
+    run "$GENERATE_SCRIPT" --language=node --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"javascript"* ]]
+}
+
+@test "ts alias resolves to javascript" {
+    run "$GENERATE_SCRIPT" --language=ts --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"javascript"* ]]
+}
+
+@test "bash alias resolves to shell" {
+    run "$GENERATE_SCRIPT" --language=bash --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"shell"* ]]
+}
+
+@test "flutter alias resolves to dart-flutter" {
+    run "$GENERATE_SCRIPT" --language=flutter --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"dart-flutter"* ]]
+}
+
+@test "mixed aliases resolve correctly" {
+    run "$GENERATE_SCRIPT" --language=js,go,bash --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"javascript"* ]]
+    [[ "$output" == *"go"* ]]
+    [[ "$output" == *"shell"* ]]
+}
+
