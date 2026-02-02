@@ -13,11 +13,11 @@ Generate `Agents.md` files that enforce consistent AI coding assistant behavior 
 # Clone once
 git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 
-# Generate for your project (30 seconds)
-~/.golden-agents/generate-agents.sh --language=go --path=./my-project
+# Generate for your project (recommended: progressive mode)
+~/.golden-agents/generate-agents.sh --progressive --language=go --path=./my-project
 ```
 
-Done. Your AI assistant now follows lint→build→test order, avoids slop phrases, and respects your project conventions.
+Done. Your AI assistant now follows lint→build→test order, avoids slop phrases, and loads detailed guidance on-demand.
 
 **[→ See sample output](docs/SAMPLE.md)**
 
@@ -103,13 +103,13 @@ The generator creates all necessary redirect files automatically.
 ## Usage Examples
 
 ```bash
-# Go CLI tool
-./generate-agents.sh --language=go --type=cli-tools --path=./my-cli
+# Progressive mode (recommended) - ~60 lines core + on-demand loading
+./generate-agents.sh --progressive --language=go --type=cli-tools --path=./my-cli
 
-# Python web app with compact mode (~130 lines)
-./generate-agents.sh --language=python --type=web-apps --compact --path=./my-api
+# Compact mode - ~130 lines, inlined but condensed
+./generate-agents.sh --compact --language=python --type=web-apps --path=./my-api
 
-# Multi-language project
+# Full mode - ~800 lines, everything inlined (legacy)
 ./generate-agents.sh --language=go,shell --path=./my-project
 
 # Upgrade existing file (dry-run first, then apply)
@@ -125,6 +125,14 @@ The generator creates all necessary redirect files automatically.
 - `--dedupe` - Trim bloated project-specific sections (>100 lines)
 - `--sync` - Update local templates from GitHub
 - `--dry-run` - Preview without writing
+
+### Output Mode Comparison
+
+| Mode | Lines | Use Case |
+|------|-------|----------|
+| `--progressive` | ~60 | Recommended. Minimal core, templates loaded on-demand from `~/.golden-agents/templates/` |
+| `--compact` | ~130 | Self-contained but condensed. Good for repos without template access |
+| (default) | ~800 | Everything inlined. Large context consumption, not recommended |
 
 ## Directory Structure
 
