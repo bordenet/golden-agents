@@ -1,86 +1,63 @@
-# Superpowers Integration
+# Workflow Checklists
 
-> **Priority**: CRITICAL - Load at conversation start  
-> **Source**: Workspace root Agents.md, all project Agents.md files
+Use these checklists to maintain quality and consistency across all development work.
 
-## Bootstrap Command
+## Optional: Enhanced Workflows
 
-At the START of every conversation, run:
+If you have [superpowers](https://github.com/obra/superpowers) installed, run at session start:
 
 ```bash
 node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
 ```
 
-This loads available skills and the `using-superpowers` skill.
+Superpowers provides interactive skill-based workflows. If not installed, use the checklists below.
 
-## Key Skills Reference
+---
 
-| Skill | When to Use |
-|-------|-------------|
-| `superpowers:brainstorming` | Before creative/feature work |
-| `superpowers:systematic-debugging` | Before fixing bugs |
-| `superpowers:test-driven-development` | Before writing implementation |
-| `superpowers:verification-before-completion` | Before committing, creating PRs, or claiming done |
-| `superpowers:writing-plans` | Before multi-step tasks |
-| `superpowers:perplexity-research` | When stuck or uncertain (see below) |
-| `superpowers:requesting-code-review` | Before creating PRs or merging to main |
-| `superpowers:finishing-a-development-branch` | When completing work (merge/PR/cleanup decisions) |
-| `enforce-style-guide` | Before committing shell scripts |
+## Before Creative/Feature Work
 
-## 🔍 Perplexity Research - Automatic Invocation
+- [ ] Clarify the problem being solved
+- [ ] Identify acceptance criteria and success metrics
+- [ ] Consider edge cases and error scenarios
+- [ ] Explore 2-3 approaches with trade-offs
+- [ ] Document decision rationale before implementing
 
-**CRITICAL**: This skill has AUTOMATIC triggers. You MUST invoke `superpowers:perplexity-research` when:
+## Before Implementation (TDD Cycle)
 
-| Trigger | Action |
-|---------|--------|
-| **2+ Failed Attempts** | Same operation failed twice → invoke Perplexity |
-| **Uncertainty/Guessing** | About to guess at an answer → invoke Perplexity |
-| **Cutting Corners** | About to violate Agents.md guidance → invoke Perplexity |
-| **Hallucination Risk** | Unsure about API/library/fact → invoke Perplexity |
-| **Outdated Knowledge** | Post-training-cutoff topic → invoke Perplexity |
-| **Unknown Errors** | Can't interpret error message → invoke Perplexity |
+- [ ] Write failing test describing desired behavior
+- [ ] Implement minimal code to pass test
+- [ ] Refactor for clarity and consistency
+- [ ] Verify all existing tests still pass
+- [ ] Repeat until feature complete
 
-**Decision tree**:
-- Personal preference question? → Ask the user
-- Broader/extrinsic research needed? → Invoke Perplexity
+## When Debugging
 
-**Manual override**: User can always say "Use Perplexity to research X"
+- [ ] Gather complete error information (logs, stack traces)
+- [ ] Identify the exact failure point
+- [ ] Form hypothesis before changing code
+- [ ] Test hypothesis with minimal, isolated change
+- [ ] Verify fix doesn't break other functionality
+- [ ] Add test to prevent regression
 
-**ALWAYS announce**: `🔍 **Consulting Perplexity**: [topic] - Reason: [trigger]`
+## Before Claiming Done
 
-**Stats tracking**: Update `~/.codex/perplexity-stats.json` after every invocation
+- [ ] All tests pass locally
+- [ ] No linting errors or warnings
+- [ ] Code reviewed (or self-reviewed against standards)
+- [ ] No secrets, credentials, or sensitive data in code
+- [ ] Documentation updated if behavior changed
+- [ ] Commit messages are descriptive
 
-## Skill Commands
+## Before Creating PR or Merging
 
-**Load a skill:**
+- [ ] Branch is up to date with target branch
+- [ ] CI pipeline passes
+- [ ] Changes match the original requirements
+- [ ] No unrelated changes included
 
-```bash
-node ~/.codex/superpowers-augment/superpowers-augment.js use-skill superpowers:<skill-name>
-```
+## When Stuck (2+ Failed Attempts)
 
-**List all skills:**
-
-```bash
-node ~/.codex/superpowers-augment/superpowers-augment.js find-skills
-```
-
-## The Rule
-
-> **IF A SKILL APPLIES TO YOUR TASK (even 1% chance), YOU MUST INVOKE IT.**
-
-This is not optional. Skills exist to ensure quality and consistency.
-
-## Skill Locations
-
-| Location | Prefix | Purpose |
-|----------|--------|---------|
-| `~/.codex/superpowers/skills/` | `superpowers:` | Core framework skills |
-| `~/.codex/skills/` | (none) | Personal skills (override superpowers) |
-| `.claude/skills/` | (repo-local) | Repo-specific skills |
-
-## Cross-Machine Compatibility
-
-- All paths use `~/` for home directory (works on any machine)
-- Superpowers should be installed on all development machines
-- Each repo is self-contained and can be cloned independently
-
+- [ ] Step back and re-read the error message carefully
+- [ ] Search documentation or reliable sources
+- [ ] Ask the user for clarification if requirements are unclear
+- [ ] Consider if the approach itself is wrong, not just the implementation

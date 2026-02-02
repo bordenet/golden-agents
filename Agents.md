@@ -8,26 +8,45 @@ This framework generates Agents.md files for other projects. It should follow it
 
 ---
 
-## Superpowers Integration
+## Workflow Checklists
 
-At the START of every conversation, run:
+### Optional: Enhanced Workflows
+
+If [superpowers](https://github.com/obra/superpowers) is installed, run at session start:
 
 ```bash
 node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
 ```
 
-### Key Skills
+Otherwise, use the checklists below.
 
-| Skill | When to Invoke |
-|-------|---------------|
-| `superpowers:brainstorming` | Before creative/feature work |
-| `superpowers:systematic-debugging` | Before fixing bugs |
-| `superpowers:test-driven-development` | Before writing implementation |
-| `superpowers:verification-before-completion` | Before claiming done |
-| `superpowers:writing-plans` | Before multi-step tasks |
-| `enforce-style-guide` | Before committing shell scripts |
+### Before Creative/Feature Work
 
-**The Rule**: IF A SKILL APPLIES (even 1% chance), YOU MUST INVOKE IT.
+- [ ] Clarify the problem being solved
+- [ ] Identify acceptance criteria
+- [ ] Explore 2-3 approaches with trade-offs
+- [ ] Document decision rationale
+
+### Before Implementation (TDD)
+
+- [ ] Write failing test first
+- [ ] Implement minimal code to pass
+- [ ] Refactor for clarity
+- [ ] Verify all tests pass
+
+### When Debugging
+
+- [ ] Gather error information
+- [ ] Form hypothesis before changing code
+- [ ] Test with minimal change
+- [ ] Add regression test
+
+### Before Claiming Done
+
+- [ ] All tests pass (`bats test/`)
+- [ ] ShellCheck passes (`shellcheck *.sh`)
+- [ ] No secrets in code
+- [ ] CHANGELOG.md updated
 
 ---
 
