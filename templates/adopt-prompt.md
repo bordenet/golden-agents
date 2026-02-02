@@ -81,9 +81,9 @@ For each piece of content, ask: *"Can I express this project-specific info in un
 Confirm these exist in `Agents.md`:
 - `<!-- GOLDEN:framework:start -->` marker
 - `<!-- GOLDEN:framework:end -->` marker
-- `## Preserved Project Content` section
+- Project-specific section after the end marker (may be titled `## Preserved Project Content`, `## Project-Specific Rules`, `## Project-Specific Guidelines`, or similar)
 
-If missing, STOP and report.
+If markers are missing, STOP and report.
 
 ### Step 2: Extract Project-Specifics
 
@@ -126,9 +126,9 @@ Present the proposed result and wait for:
 ### Step 5: Apply Changes
 
 After approval:
-1. Replace `## Preserved Project Content` with `## Project-Specific Guidelines`
+1. Rename the project section to `## Project-Specific Guidelines` (if not already named that)
 2. Replace the content with the approved minimal version
-3. Remove any migration notes
+3. Remove any migration notes or preserved content headers
 4. Verify framework markers are untouched
 
 ### Step 6: Confirm Completion

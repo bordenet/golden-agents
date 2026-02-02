@@ -20,6 +20,7 @@ UPGRADE=false
 APPLY=false
 MIGRATE=false
 ADOPT=false
+DEDUPE=false
 
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
@@ -37,6 +38,7 @@ SYNOPSIS
     generate-agents.sh --language=LANG [--type=TYPE] [--path=PATH] [--compact]
     generate-agents.sh --upgrade [--apply] --path=PATH
     generate-agents.sh --adopt --language=LANG --path=PATH
+    generate-agents.sh --dedupe --path=PATH
 
 DESCRIPTION
     Generates a self-contained Agents.md file by combining modular templates.
@@ -66,6 +68,7 @@ OPTIONS
     --dry-run           Print what would be generated without writing
     --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
     --adopt             Adopt existing Agents.md (backs up, appends, creates ADOPT-PROMPT.md)
+    --dedupe            Deduplicate bloated project-specific section (for files WITH markers)
     --upgrade           Upgrade existing Agents.md (dry-run by default, shows diff)
     --apply             Apply upgrade changes (requires --upgrade, creates backup first)
     -h, --help          Show this help message
@@ -113,6 +116,18 @@ ADOPTION (Existing Agents.md without markers)
 
     If your result exceeds 100 lines, you kept too much generic advice.
 
+DEDUPLICATION (Existing Agents.md with bloated project section)
+    Use --dedupe when you have an Agents.md that WAS created by golden-agents
+    but has a bloated project-specific section (>100 lines). This mode:
+
+    1. Verifies the file has framework markers
+    2. Counts project-specific lines (after the end marker)
+    3. Creates ADOPT-PROMPT.md with deduplication instructions
+    4. Does NOT modify the Agents.md (you apply changes after review)
+
+    This is for files that already have markers but need aggressive pruning.
+    The --adopt command is for files WITHOUT markers.
+
 EXAMPLES
     # Generate for a Go CLI project
     generate-agents.sh --language=go --type=cli-tools --path=./my-cli
@@ -128,6 +143,9 @@ EXAMPLES
 
     # Adopt existing Agents.md (backs up, appends, generates dedup prompt)
     generate-agents.sh --adopt --language=typescript --path=./existing-project
+
+    # Deduplicate bloated project section (for files already using golden-agents)
+    generate-agents.sh --dedupe --path=./bloated-project
 
     # Preview upgrade (safe, writes nothing)
     generate-agents.sh --upgrade --path=./my-project
@@ -334,6 +352,7 @@ for arg in "$@"; do
         --apply) APPLY=true ;;
         --migrate) MIGRATE=true ;;
         --adopt) ADOPT=true ;;
+        --dedupe) DEDUPE=true ;;
         -h|--help) usage; exit 0 ;;
         -v|--version) version; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
@@ -363,8 +382,14 @@ if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
     exit 1
 fi
 
-# Validate (skip language check for upgrade mode)
-if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" ]]; then
+# Validate --dedupe requires --path
+if [[ "$DEDUPE" == "true" && "$OUTPUT_PATH" == "." ]]; then
+    echo "Error: --dedupe requires --path" >&2
+    exit 1
+fi
+
+# Validate (skip language check for upgrade mode and dedupe mode)
+if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
     echo "[ERROR] --language is required for new file generation" >&2
     echo "" >&2
     echo "Available languages:" >&2
@@ -384,8 +409,8 @@ if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" ]]; then
     exit 1
 fi
 
-# Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dry-run is used)
-if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DRY_RUN" != "true" ]]; then
+# Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dedupe or --dry-run is used)
+if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DEDUPE" != "true" && "$DRY_RUN" != "true" ]]; then
     existing=$(check_existing_guidance "$OUTPUT_PATH")
     if [[ -n "$existing" ]]; then
         echo "[ERROR] Found existing guidance files: $existing" >&2
@@ -485,6 +510,82 @@ if [[ "$ADOPT" == "true" ]]; then
     ADOPT_ORIGINAL_LINES="$original_lines"
 
     # Fall through to normal generation, which will append the original content
+fi
+
+# Handle dedupe mode - generate deduplication prompt for files WITH markers
+if [[ "$DEDUPE" == "true" ]]; then
+    # Check for existing Agents.md WITH markers
+    if [[ ! -f "$OUTPUT_PATH/Agents.md" ]]; then
+        echo "[ERROR] No Agents.md found at $OUTPUT_PATH" >&2
+        echo "  --dedupe requires an existing Agents.md file with framework markers." >&2
+        exit 1
+    fi
+
+    if ! grep -q "$MARKER_START" "$OUTPUT_PATH/Agents.md"; then
+        echo "[ERROR] Agents.md does not have framework markers" >&2
+        echo "  Use --adopt instead for files created without golden-agents." >&2
+        exit 1
+    fi
+
+    # Count lines in project-specific section (after MARKER_END)
+    marker_end_line=$(grep -n "$MARKER_END" "$OUTPUT_PATH/Agents.md" | head -1 | cut -d: -f1)
+    total_lines=$(wc -l < "$OUTPUT_PATH/Agents.md" | tr -d ' ')
+    project_lines=$((total_lines - marker_end_line))
+
+    echo "[INFO] Analyzing Agents.md for deduplication..."
+    echo "  Total lines: $total_lines"
+    echo "  Framework section ends at line: $marker_end_line"
+    echo "  Project-specific section: $project_lines lines"
+    echo ""
+
+    if [[ $project_lines -le 100 ]]; then
+        echo "[OK] Project-specific section is already within target (<100 lines)"
+        echo "  No deduplication needed."
+        exit 0
+    fi
+
+    echo "[WARN] Project-specific section exceeds target (>100 lines)"
+    echo "  Target for complex projects: 50-100 lines"
+    echo "  Current: $project_lines lines"
+    echo ""
+
+    # Copy ADOPT-PROMPT.md template (same prompt works for dedupe)
+    if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+    else
+        echo "[ERROR] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+        exit 1
+    fi
+
+    # Add to .gitignore if not already there
+    if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+        if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
+            echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+            echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
+        fi
+    else
+        echo "ADOPT-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+        echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
+    fi
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "                    NEXT STEPS"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+    echo "  1. Open ADOPT-PROMPT.md in your AI assistant"
+    echo "  2. Paste the contents of Agents.md after the prompt"
+    echo "  3. The AI will propose aggressive deduplication"
+    echo "  4. Review and approve the proposed changes"
+    echo "  5. Apply the minimal result to Agents.md"
+    echo "  6. Delete ADOPT-PROMPT.md and commit"
+    echo ""
+    echo "  Target: Reduce project-specific section from $project_lines to <100 lines"
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+
+    exit 0
 fi
 
 # Set project name from directory if not specified
