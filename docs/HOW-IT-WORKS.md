@@ -1,37 +1,46 @@
 # How Golden Agents Works
 
-> **TL;DR:** Golden Agents generates **text files** (Markdown) that AI coding assistants read as instructions. It does NOT execute code, install software, modify your system, or run autonomously. The shell script is a simple text generator.
+> **TL;DR:** Golden Agents generates instruction files that AI coding assistants read. The generator script only creates text files. But the AI assistant that reads those files **will modify your code** — that's the whole point.
 
 ---
 
-## What This Project Actually Does
+## Two Separate Things
 
-Golden Agents is a **documentation generator**. It creates `Agents.md` files—plain Markdown text—that AI coding assistants (Claude Code, GitHub Copilot, Augment, etc.) read when you open a project.
+There are two distinct components:
+
+1. **The generator script** (`generate-agents.sh`) — Creates text files. Safe, auditable, no side effects.
+2. **Your AI coding assistant** — Reads those files and acts on them. **Will modify your project files.**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    WHAT GOLDEN AGENTS DOES                          │
+│                         THE FULL PICTURE                             │
 └─────────────────────────────────────────────────────────────────────┘
 
-    You run:                        It creates:
-    ┌──────────────────┐            ┌──────────────────┐
-    │ generate-agents  │ ────────▶  │ Agents.md        │
-    │ .sh              │            │ (text file)      │
-    └──────────────────┘            └──────────────────┘
-           │                               │
-           │                               │
-           ▼                               ▼
-    Reads template                  AI assistant reads
-    files (text)                    this when you chat
+    generate-agents.sh              Agents.md              Your AI Assistant
+    ┌──────────────────┐           ┌──────────────┐       ┌──────────────────┐
+    │ Creates text     │ ────────▶ │ Instructions │ ────▶ │ MODIFIES YOUR    │
+    │ files only       │           │ for AI       │       │ PROJECT FILES    │
+    └──────────────────┘           └──────────────┘       └──────────────────┘
+           │                              │                        │
+           ▼                              ▼                        ▼
+    ✅ Safe, auditable            📄 Plain text             ⚠️ Real changes
+    ✅ No side effects            📄 No executable code     ⚠️ Writes code
+    ✅ Runs once, exits           📄 Just guidelines        ⚠️ Runs commands
 ```
 
-**That's it.** The script reads template files, concatenates them based on your options, and writes a Markdown file to your project directory.
+**Be clear about this:** When you tell your AI assistant to "set up golden-agents and apply it," the AI will:
+- Clone repositories
+- Create and modify files
+- Run shell commands
+- Make commits (if you allow it)
+
+This is normal and expected. That's what AI coding assistants do.
 
 ---
 
 ## What The Shell Script Does (And Doesn't Do)
 
-### ✅ What `generate-agents.sh` DOES:
+### ✅ What `generate-agents.sh` DOES
 
 1. **Reads command-line arguments** (`--language=go`, `--path=./my-project`)
 2. **Reads template files** from `templates/` directory (plain text)
@@ -39,7 +48,7 @@ Golden Agents is a **documentation generator**. It creates `Agents.md` files—p
 4. **Writes a Markdown file** (`Agents.md`) to your project
 5. **Optionally creates redirect files** (`CLAUDE.md`, `GEMINI.md`) that point to `Agents.md`
 
-### ❌ What `generate-agents.sh` DOES NOT DO:
+### ❌ What `generate-agents.sh` DOES NOT DO
 
 - ❌ Execute any code in your project
 - ❌ Install packages or dependencies
@@ -86,8 +95,8 @@ When you open a project in an AI-enabled editor:
 
 1. **You** open your project folder
 2. **The AI assistant** (Claude Code, Copilot, etc.) automatically reads `Agents.md`
-3. **The AI** uses these instructions to guide its responses
-4. **You** interact with the AI as normal
+3. **The AI** follows these instructions when you ask it to do things
+4. **The AI modifies your files** based on your requests + the guidance
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -100,71 +109,57 @@ When you open a project in an AI-enabled editor:
     │  Copilot)    │                └──────────────┘
     └──────────────┘
            │
-           │ responds to
+           │ writes code, runs commands
            ▼
     ┌──────────────┐
-    │ You (human)  │
-    │ asking       │
-    │ questions    │
+    │ Your Project │
+    │ (files get   │
+    │  modified)   │
     └──────────────┘
 ```
 
-The AI assistant is **already running** in your editor. Golden Agents doesn't start it, control it, or interact with it. We just create a text file it reads.
+**Important:** The AI assistant will modify your project files. That's the point. The `Agents.md` file just influences *how* it does so (coding style, quality gates, etc.).
 
 ---
 
 ## Security Model
 
-### No Elevated Privileges Required
+### The Generator Script (`generate-agents.sh`)
 
-- The script runs as your normal user
-- No `sudo`, no admin rights, no special permissions
-- Only writes to the directory you specify with `--path`
+The script itself is safe and auditable:
 
-### No Network Access
+| Property | Status |
+|----------|--------|
+| Elevated privileges | ❌ Not required — runs as normal user |
+| Network access | ❌ None — entirely offline |
+| Persistence | ❌ None — runs once, exits |
+| Side effects | ✅ Creates text files only |
+| Auditable | ✅ ~600 lines of readable Bash |
 
-- The script is entirely offline
-- No telemetry, no analytics, no phone-home
-- No external dependencies to download
+### Your AI Assistant (Separate Concern)
 
-### No Persistence
+Your AI coding assistant is a different story. When it reads `Agents.md` and you ask it to do work:
 
-- Runs once, creates files, exits
-- No background processes
-- No scheduled tasks or cron jobs
-- No startup scripts
+| Action | Will It Happen? |
+|--------|-----------------|
+| Read your project files | ✅ Yes |
+| Write/modify code files | ✅ Yes |
+| Run shell commands | ✅ Yes (lint, build, test) |
+| Create commits | ⚠️ If you allow it |
+| Push to remote | ⚠️ If you allow it |
+| Install dependencies | ⚠️ If you ask it to |
 
-### Fully Auditable
+**This is normal.** That's what AI coding assistants do. The `Agents.md` file just provides guidelines for *how* the AI should work — it doesn't limit *what* the AI can do.
 
-- The entire script is ~600 lines of Bash
-- All templates are plain Markdown files
-- No minified code, no binaries, no obfuscation
-- MIT licensed, fully open source
+### Controlling Your AI Assistant
 
----
+Most AI coding assistants have permission controls:
 
-## Why Shell Scripts?
+- **Claude Code**: Asks before running commands, can be set to auto-approve
+- **GitHub Copilot**: Suggests code, you accept or reject
+- **Augment**: Configurable approval settings
 
-We use shell scripts because:
-
-1. **Transparency** - You can read every line of code
-2. **No dependencies** - Works with just Bash and Git (already on your system)
-3. **No installation** - Clone and run, nothing to install
-4. **Cross-platform** - Works on Linux, macOS, Windows (WSL/Git Bash)
-
----
-
-## Comparison: What We Are vs. What We're Not
-
-| Aspect | Golden Agents | Malware/Suspicious Software |
-|--------|---------------|----------------------------|
-| **Purpose** | Generate documentation | Harm, steal, or control |
-| **Execution** | Runs once when you invoke it | Runs persistently/hidden |
-| **Output** | Text files only | Modifies system, installs software |
-| **Network** | None | Phones home, exfiltrates data |
-| **Privileges** | Normal user | Requests admin/root |
-| **Transparency** | Fully readable source | Obfuscated/encrypted |
-| **Persistence** | None | Startup scripts, services |
+Golden Agents doesn't change these controls. Your AI assistant's existing permission model still applies.
 
 ---
 

@@ -1,610 +1,69 @@
-# Golden-Agents Test Plan v2.0
+# Test Coverage
 
-> **Last Updated**: 2026-02-02
-> **Philosophy**: Tests must verify tools ACTUALLY WORK, not just that they produce output
-
----
-
-## The Problem This Plan Solves
-
-The previous test plan had these critical failures:
-1. **Allowed 800+ line "full" mode files** that AI assistants cannot follow
-2. **No data loss verification** — content could disappear during migrations
-3. **Synthetic fixtures only** — tests used tiny fake files, not real 600+ line Agents.md
-4. **Output verification only** — tested that files were created, not that they were usable
-
-### What "Actually Works" Means
-
-| Requirement | Verification |
-|-------------|--------------|
-| Progressive mode (~60 lines) | Hard failure if >100 lines |
-| Compact mode (~130 lines) | Hard failure if >200 lines |
-| Zero data loss | Line count + unique content comparison before/after |
-| Usable output | AI can follow the Agents.md (no 800-line monstrosities) |
+Golden Agents is tested on every commit. Here's what we verify.
 
 ---
 
-## 1. Test Infrastructure
+## Test Summary
 
-### 1.1 Directory Structure
+| Category | Tests | What We Verify |
+|----------|-------|----------------|
+| **Data Safety** | 6 | Your existing content is never lost during migrations or upgrades |
+| **Output Quality** | 6 | Generated files stay under 100 lines (usable by AI assistants) |
+| **End-to-End Scenarios** | 5 | Complete workflows work from start to finish |
+| **Argument Parsing** | 10 | CLI flags work correctly, errors are clear |
+| **Mode Detection** | 8 | Correct mode chosen based on existing files |
+| **Migrations** | 10 | CLAUDE.md/GEMINI.md content preserved |
+| **Adoptions** | 12 | Existing Agents.md content preserved |
+| **Upgrades** | 10 | Framework updates don't lose project rules |
+| **Edge Cases** | 6 | Unicode, spaces in paths, special characters |
+| **Windows** | 14 | PowerShell wrapper works correctly |
 
-```
-golden-agents/
-├── test/
-│   ├── fixtures/                # Real-world test fixtures (.gitignored)
-│   │   ├── bloated-full-mode.md   # 600+ line old-style Agents.md
-│   │   ├── good-progressive.md    # 128-line example (RecipeArchive style)
-│   │   └── huge-claude-md.md      # 1000+ line CLAUDE.md for migration testing
-│   ├── scenarios.bats            # SCENARIO-based end-to-end tests (NEW)
-│   ├── data-loss.bats            # Data loss verification tests (NEW)
-│   ├── size-limits.bats          # Output size enforcement tests (NEW)
-│   ├── test_helper.bash          # Enhanced helper functions
-│   ├── args.bats                 # Argument parsing tests
-│   ├── generate.bats             # Generation tests
-│   ├── upgrade.bats              # Upgrade safety tests
-│   ├── autodetect.bats           # Auto-detection tests
-│   ├── templates.bats            # Template tests
-│   ├── migrate.bats              # Migration tests
-│   ├── adopt.bats                # Adoption tests
-│   ├── dedupe.bats               # Deduplication tests
-│   ├── sync.bats                 # Template sync tests
-│   ├── edge-cases.bats           # Edge case tests
-│   └── generate-agents.Tests.ps1 # PowerShell wrapper tests
-├── .gitignore                     # Must include test/fixtures/
-└── docs/
-    └── TEST-PLAN.md              # This file
-```
+**Total: 112 tests** (98 BATS + 14 Pester)
 
-### 1.2 Test Helper Functions
+---
+
+## Key Guarantees
+
+### 1. Zero Data Loss
+
+Every migration, adoption, and upgrade operation is tested to ensure your existing content is preserved:
+
+- Unique content markers are verified before and after
+- Backup files are created automatically
+- Backups are verified byte-for-byte identical to originals
+
+### 2. Usable Output Size
+
+Generated files are tested to stay within limits AI assistants can actually follow:
+
+- Progressive mode: **< 100 lines** (hard limit)
+- Even with all 5 languages enabled: stays under limit
+
+### 3. Cross-Platform
+
+Tests run on:
+- Linux (CI)
+- macOS (CI)
+- Windows via PowerShell wrapper (Pester tests)
+
+---
+
+## Running Tests Locally
 
 ```bash
-# ========== SIZE ENFORCEMENT ==========
-
-# HARD LIMIT: Progressive mode must be under this
-MAX_PROGRESSIVE_LINES=100
-
-# Assert output is within size limits for progressive mode
-assert_progressive_size() {
-    local file="$1"
-    local line_count
-    line_count=$(wc -l < "$file" | tr -d ' ')
-    if [[ "$line_count" -gt "$MAX_PROGRESSIVE_LINES" ]]; then
-        echo "FAIL: Progressive mode generated $line_count lines (max: $MAX_PROGRESSIVE_LINES)" >&2
-        echo "ERROR: Files this large defeat the purpose of AI guidance." >&2
-        return 1
-    fi
-}
-
-# ========== DATA LOSS VERIFICATION ==========
-
-# Count unique non-empty, non-whitespace lines (for content comparison)
-count_unique_content_lines() {
-    local file="$1"
-    grep -v '^[[:space:]]*$' "$file" | grep -v '^#' | sort -u | wc -l | tr -d ' '
-}
-
-# Assert no data loss: all original unique lines still present
-assert_zero_data_loss() {
-    local original="$1"
-    local result="$2"
-    local context="$3"  # Description for error message
-
-    local original_lines
-    local result_lines
-    original_lines=$(count_unique_content_lines "$original")
-    result_lines=$(count_unique_content_lines "$result")
-
-    if [[ "$result_lines" -lt "$original_lines" ]]; then
-        echo "FAIL: Data loss detected in $context" >&2
-        echo "  Original: $original_lines unique content lines" >&2
-        echo "  Result:   $result_lines unique content lines" >&2
-        echo "  Lost:     $((original_lines - result_lines)) lines" >&2
-        return 1
-    fi
-}
-
-# Assert specific content is preserved
-assert_content_preserved() {
-    local file="$1"
-    local marker="$2"
-    local context="$3"
-
-    if ! grep -q "$marker" "$file"; then
-        echo "FAIL: Content lost in $context" >&2
-        echo "  Missing: $marker" >&2
-        return 1
-    fi
-}
-
-# ========== FIXTURES ==========
-
-# Create bloated fixture (simulates old full-mode file)
-create_bloated_fixture() {
-    local path="$1"
-    local lines="${2:-600}"
-
-    mkdir -p "$path"
-    {
-        echo "# AI Agent Guidelines"
-        echo ""
-        echo "> **Auto-generated by Golden Agents Framework**"
-        echo ""
-        echo "<!-- GOLDEN:framework:start -->"
-
-        # Generate bloated framework content
-        for i in $(seq 1 "$lines"); do
-            echo "Framework line $i with some padding content here"
-        done
-
-        echo "<!-- GOLDEN:framework:end -->"
-        echo ""
-        echo "## Project-Specific Rules"
-        echo ""
-        echo "### Custom Rule 1"
-        echo "UNIQUE_MARKER_CUSTOM_RULE_1"
-        echo ""
-        echo "### Custom Rule 2"
-        echo "UNIQUE_MARKER_CUSTOM_RULE_2"
-    } > "$path/Agents.md"
-}
-
-# Create realistic CLAUDE.md for migration testing
-create_realistic_claude_md() {
-    local path="$1"
-
-    mkdir -p "$path"
-    cat > "$path/CLAUDE.md" << 'EOF'
-# Project AI Guidelines
-
-> Last Updated: 2026-01-15
-
-## Build Commands
-
-```bash
-npm run build
-npm run test
-npm run lint
-```
-
-## Architecture
-
-This project uses a three-tier architecture:
-
-1. **Frontend**: React with TypeScript
-2. **Backend**: Go microservices
-3. **Database**: PostgreSQL
-
-UNIQUE_MARKER_ARCHITECTURE_SECTION
-
-## Development Conventions
-
-### Git Workflow
-- Feature branches from main
-- PR requires 2 approvals
-- Squash merge only
-
-UNIQUE_MARKER_GIT_WORKFLOW
-
-### Code Style
-- Use Prettier for formatting
-- ESLint for linting
-- Go fmt for Go code
-
-UNIQUE_MARKER_CODE_STYLE
-
-## Testing Requirements
-
-- Unit tests required for all new code
-- Integration tests for API endpoints
-- E2E tests for critical flows
-
-UNIQUE_MARKER_TESTING
-
-## AI Behavior Rules
-
-- Never expose API keys
-- Always use environment variables for secrets
-- Check for security vulnerabilities before committing
-
-UNIQUE_MARKER_AI_BEHAVIOR
-
-## Custom Domain Knowledge
-
-This is project-specific knowledge that must be preserved:
-- The Validation Dashboard uses terminal UI
-- Recipe Capture has three tiers: iOS Safari, Android Chrome, Desktop
-- AppLogger uses specific patterns
-
-UNIQUE_MARKER_DOMAIN_KNOWLEDGE
-EOF
-}
-```
-
-### 1.3 Fixtures Setup
-
-The `test/fixtures/` directory should contain real-world examples copied from actual repos. These are `.gitignored` but created during test setup:
-
-```bash
-# In setup_file() or via make target
-setup_fixtures() {
-    mkdir -p test/fixtures
-
-    # Copy from actual workspace repos (if available)
-    # These paths are examples - adjust for actual workspace structure
-    if [[ -f "../genesis/Agents.md" ]]; then
-        cp "../genesis/Agents.md" test/fixtures/bloated-full-mode.md
-    fi
-
-    if [[ -f "../RecipeArchive/Agents.md" ]]; then
-        cp "../RecipeArchive/Agents.md" test/fixtures/good-progressive.md
-    fi
-
-    # Or generate synthetic fixtures if real ones unavailable
-    create_bloated_fixture test/fixtures 600
-}
-```
-
----
-
-## 2. SCENARIO-Based Tests (NEW - P0)
-
-### Philosophy
-
-SCENARIO tests verify **end-to-end workflows**, not individual features. Each scenario represents a real-world user journey that must succeed without data loss or unusable output.
-
-### 2.1 Scenario Tests (`scenarios.bats`)
-
-```bash
-@test "SCENARIO: Greenfield project gets usable progressive Agents.md" {
-    # User has no existing guidance files
-    mkdir -p "$TEST_DIR/new-project"
-
-    # Run generation
-    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR/new-project"
-    [ "$status" -eq 0 ]
-
-    # Verify usable output
-    assert_file_exists "$TEST_DIR/new-project/Agents.md"
-    assert_progressive_size "$TEST_DIR/new-project/Agents.md"
-    assert_file_contains "$TEST_DIR/new-project/Agents.md" "GOLDEN:framework:start"
-}
-
-@test "SCENARIO: Migrate 500-line CLAUDE.md without data loss" {
-    # User has substantial existing guidance
-    create_realistic_claude_md "$TEST_DIR"
-
-    # Count original unique content
-    local original_markers=6  # We have 6 UNIQUE_MARKER_* strings
-
-    # Run migration
-    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Verify MIGRATION-PROMPT.md preserves all content
-    assert_file_exists "$TEST_DIR/MIGRATION-PROMPT.md"
-    for marker in ARCHITECTURE WORKFLOW STYLE TESTING AI_BEHAVIOR DOMAIN_KNOWLEDGE; do
-        assert_content_preserved "$TEST_DIR/MIGRATION-PROMPT.md" "UNIQUE_MARKER_${marker}" "migration"
-    done
-
-    # Verify Agents.md is usable size
-    assert_progressive_size "$TEST_DIR/Agents.md"
-}
-
-@test "SCENARIO: Adopt existing Agents.md without data loss" {
-    # User has existing Agents.md without framework markers
-    mkdir -p "$TEST_DIR"
-    cat > "$TEST_DIR/Agents.md" << 'EOF'
-# My Existing Guide
-
-Custom content line 1: UNIQUE_ADOPT_MARKER_1
-Custom content line 2: UNIQUE_ADOPT_MARKER_2
-Custom content line 3: UNIQUE_ADOPT_MARKER_3
-
-## Important Rules
-- Rule A
-- Rule B
-- Rule C
-EOF
-
-    # Run adoption
-    run "$GENERATE_SCRIPT" --adopt --language=python --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Verify all markers preserved
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_ADOPT_MARKER_1" "adoption"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_ADOPT_MARKER_2" "adoption"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_ADOPT_MARKER_3" "adoption"
-}
-
-@test "SCENARIO: Upgrade 600-line bloated file to progressive" {
-    # User has old full-mode file (the problem we discovered)
-    create_bloated_fixture "$TEST_DIR" 600
-
-    # Run upgrade
-    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Verify file is now usable size
-    local line_count
-    line_count=$(wc -l < "$TEST_DIR/Agents.md" | tr -d ' ')
-    [ "$line_count" -lt 200 ]  # Must shrink significantly
-
-    # Verify custom content preserved
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_MARKER_CUSTOM_RULE_1" "upgrade"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_MARKER_CUSTOM_RULE_2" "upgrade"
-}
-
-@test "SCENARIO: Full workflow - migrate, then upgrade, preserves content" {
-    # Start with CLAUDE.md
-    create_realistic_claude_md "$TEST_DIR"
-
-    # Step 1: Migrate
-    run "$GENERATE_SCRIPT" --migrate --language=javascript --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Step 2: Simulate AI completing migration (move content to Agents.md)
-    # This tests the complete workflow
-
-    # Step 3: Upgrade
-    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Verify still within size limits
-    assert_progressive_size "$TEST_DIR/Agents.md"
-}
-```
-
----
-
-## 3. Data Loss Verification Tests (NEW - P0)
-
-### 3.1 Data Loss Tests (`data-loss.bats`)
-
-```bash
-@test "DATA LOSS: Migration preserves 100% of unique content lines" {
-    create_realistic_claude_md "$TEST_DIR"
-    local original_count
-    original_count=$(count_unique_content_lines "$TEST_DIR/CLAUDE.md")
-
-    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # All original content must appear in MIGRATION-PROMPT.md
-    local prompt_count
-    prompt_count=$(count_unique_content_lines "$TEST_DIR/MIGRATION-PROMPT.md")
-
-    # MIGRATION-PROMPT should have MORE lines (adds instructions)
-    [ "$prompt_count" -ge "$original_count" ]
-}
-
-@test "DATA LOSS: Upgrade preserves project-specific section exactly" {
-    create_agents_with_markers "$TEST_DIR"
-    echo "UNIQUE_PROJECT_CONTENT_LINE_1" >> "$TEST_DIR/Agents.md"
-    echo "UNIQUE_PROJECT_CONTENT_LINE_2" >> "$TEST_DIR/Agents.md"
-    echo "UNIQUE_PROJECT_CONTENT_LINE_3" >> "$TEST_DIR/Agents.md"
-
-    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_PROJECT_CONTENT_LINE_1" "upgrade"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_PROJECT_CONTENT_LINE_2" "upgrade"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_PROJECT_CONTENT_LINE_3" "upgrade"
-}
-
-@test "DATA LOSS: Adoption appends ALL original content" {
-    mkdir -p "$TEST_DIR"
-
-    # Create file with known content count
-    {
-        echo "# Original Guide"
-        for i in $(seq 1 50); do
-            echo "Original line $i with unique content MARKER_$i"
-        done
-    } > "$TEST_DIR/Agents.md"
-
-    local original_count=51  # 50 lines + header
-
-    run "$GENERATE_SCRIPT" --adopt --language=go --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Verify all markers present
-    for i in $(seq 1 50); do
-        assert_content_preserved "$TEST_DIR/Agents.md" "MARKER_$i" "adoption line $i"
-    done
-}
-
-@test "DATA LOSS: Backup file is byte-for-byte identical to original" {
-    create_agents_with_markers "$TEST_DIR"
-    local original_hash
-    original_hash=$(md5sum "$TEST_DIR/Agents.md" 2>/dev/null | cut -d' ' -f1 || md5 -q "$TEST_DIR/Agents.md")
-
-    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    local backup_hash
-    backup_hash=$(md5sum "$TEST_DIR/Agents.md.backup" 2>/dev/null | cut -d' ' -f1 || md5 -q "$TEST_DIR/Agents.md.backup")
-
-    [ "$original_hash" = "$backup_hash" ]
-}
-```
-
----
-
-## 4. Size Limit Enforcement Tests (NEW - P0)
-
-### 4.1 Size Limits Tests (`size-limits.bats`)
-
-```bash
-@test "SIZE LIMIT: Progressive mode NEVER exceeds 100 lines" {
-    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    assert_progressive_size "$TEST_DIR/Agents.md"
-}
-
-@test "SIZE LIMIT: Progressive mode with ALL languages stays under limit" {
-    run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    assert_progressive_size "$TEST_DIR/Agents.md"
-}
-
-@test "SIZE LIMIT: Upgrade of bloated file produces usable output" {
-    create_bloated_fixture "$TEST_DIR" 800
-
-    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    # Result must be DRAMATICALLY smaller
-    local line_count
-    line_count=$(wc -l < "$TEST_DIR/Agents.md" | tr -d ' ')
-    [ "$line_count" -lt 200 ]
-}
-
-@test "SIZE LIMIT: Full mode shows DEPRECATION warning" {
-    run "$GENERATE_SCRIPT" --language=go --full --dry-run --path="$TEST_DIR"
-
-    # Should show deprecation warning
-    [[ "$output" == *"DEPRECATED"* ]] || [[ "$output" == *"deprecated"* ]]
-}
-```
-
----
-
-## 5. Existing Test Categories (Retained)
-
-The following test categories remain from the original plan with minor updates:
-
-### 5.1 Argument Parsing Tests (`args.bats`) — 10 tests
-### 5.2 New File Generation Tests (`generate.bats`) — 11 tests
-### 5.3 Upgrade Safety Tests (`upgrade.bats`) — 10 tests (P0)
-### 5.4 Auto-Detection Tests (`autodetect.bats`) — 8 tests
-### 5.5 Template Tests (`templates.bats`) — 8 tests
-### 5.6 Migration Tests (`migrate.bats`) — 10 tests (P0)
-### 5.7 Adoption Tests (`adopt.bats`) — 12 tests (P0)
-### 5.8 Deduplication Tests (`dedupe.bats`) — 6 tests
-### 5.9 Sync Tests (`sync.bats`) — 2 tests
-### 5.10 Edge Case Tests (`edge-cases.bats`) — 6 tests
-### 5.11 PowerShell Wrapper Tests — 14 tests
-
----
-
-## 6. Test Priority Matrix (Updated)
-
-| Priority | Category | Tests | Rationale |
-|----------|----------|-------|-----------|
-| **P0 - Critical** | Scenarios (NEW) | 5 | End-to-end workflow verification |
-| **P0 - Critical** | Data Loss (NEW) | 4 | Content preservation is non-negotiable |
-| **P0 - Critical** | Size Limits (NEW) | 6 | Usable output is non-negotiable |
-| **P0 - Critical** | Upgrade Safety | 10 | Existing data protection |
-| **P0 - Critical** | Migration | 10 | Data loss prevention |
-| **P0 - Critical** | Adoption | 12 | Data loss prevention |
-| **P1 - High** | Argument Parsing | 10 | User-facing errors |
-| **P1 - High** | Auto-Detection | 8 | Correct mode detection |
-| **P1 - High** | PowerShell | 14 | Windows users |
-| **P2 - Medium** | Generation | 11 | Core functionality |
-| **P2 - Medium** | Deduplication | 6 | Quality of life |
-| **P2 - Medium** | Edge Cases | 6 | Robustness |
-| **P3 - Low** | Templates | 8 | Structural validation |
-| **P3 - Low** | Sync | 2 | Simple functionality |
-
-**Total: 112 tests (98 BATS + 14 Pester)**
-
----
-
-## 7. Implementation Order (Updated)
-
-### Phase 1: Critical Safety Tests (NEW)
-1. Add size enforcement helpers to `test_helper.bash`
-2. Create `test/fixtures/` directory and add to `.gitignore`
-3. Implement `scenarios.bats` — 5 scenario tests
-4. Implement `data-loss.bats` — 4 data loss tests
-5. Implement `size-limits.bats` — 6 size limit tests
-
-### Phase 2: Existing P0 Tests (Update)
-6. Update `upgrade.bats` with size assertions
-7. Update `migrate.bats` with data loss assertions
-8. Update `adopt.bats` with data loss assertions
-
-### Phase 3: Remaining Tests
-9. Update remaining test files as needed
-
----
-
-## 8. Running Tests
-
-### Quick Validation (P0 only)
-
-```bash
-# Run only critical tests
-bats test/scenarios.bats test/data-loss.bats test/size-limits.bats test/upgrade.bats
-
-# Should complete in <30 seconds
-```
-
-### Full Suite
-
-```bash
-# All BATS tests
+# Full test suite
 bats test/*.bats
 
-# With verbose output
-bats --verbose-run test/
-```
-
-### Coverage Check
-
-```bash
-# Run with kcov (CI)
-kcov --include-path=. --exclude-path=test coverage bats test/*.bats
+# Quick validation
+bats test/scenarios.bats test/data-loss.bats test/size-limits.bats
 ```
 
 ---
 
-## 9. Success Criteria (Updated)
+## CI Status
 
-### Hard Requirements (Must Pass)
+Tests run automatically on every push and pull request.
 
-- [ ] All SCENARIO tests pass
-- [ ] All DATA LOSS tests pass
-- [ ] All SIZE LIMIT tests pass
-- [ ] Progressive mode output NEVER exceeds 100 lines
-- [ ] Compact mode output NEVER exceeds 200 lines
-- [ ] Zero data loss verified with unique content markers
-
-### Quality Requirements
-
-- [ ] All 98 BATS tests pass
-- [ ] All 14 Pester tests pass
-- [ ] No test takes longer than 5 seconds
-- [ ] CI runs on every push and PR
-
----
-
-## 10. Fixtures Reference
-
-### Required Fixtures
-
-| Fixture | Description | Source |
-|---------|-------------|--------|
-| `bloated-full-mode.md` | 600+ line old-style file | `genesis/Agents.md` or synthetic |
-| `good-progressive.md` | 128-line correct example | `RecipeArchive/Agents.md` |
-| `huge-claude-md.md` | 500+ line CLAUDE.md | Synthetic |
-
-### Fixture Generation
-
-If real workspace files unavailable, generate synthetic fixtures in `setup_file()`:
-
-```bash
-setup_file() {
-    export FIXTURES_DIR="${BATS_TEST_DIRNAME}/fixtures"
-    mkdir -p "$FIXTURES_DIR"
-
-    # Generate if not exists
-    if [[ ! -f "$FIXTURES_DIR/bloated-full-mode.md" ]]; then
-        create_bloated_fixture "$FIXTURES_DIR" 600
-        mv "$FIXTURES_DIR/Agents.md" "$FIXTURES_DIR/bloated-full-mode.md"
-    fi
-}
-```
+[![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 

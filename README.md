@@ -1,113 +1,95 @@
 # Golden Agents
 
-**AI coding assistants need guidance, but guidance files don't scale.**
-
-A 50-line `CLAUDE.md` works fine. A 500-line one wastes context tokens and buries critical rules. A 1000-line one means the AI misses half of what you wrote.
-
-Golden Agents solves this with **progressive loading**: a minimal core file (~60 lines) that loads detailed guidance on-demand based on what the AI is actually doing.
+Generates AI guidance files that don't grow out of control.
 
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## Who Should Use This
-
-- **Developers with 3+ AI-assisted repos** who are tired of repeating the same instructions
-- **Teams standardizing AI behavior** across projects (linting, testing, commit hygiene)
-- **Anyone whose CLAUDE.md/AGENTS.md has grown past 200 lines** and noticed the AI ignoring rules
-
-**Not for you if:** You're happy with a simple 50-line guidance file, or you prefer manual per-session instructions.
-
----
-
-## The Problem
-
-| Project Stage | Guidance Size | What Happens |
-|---------------|---------------|--------------|
-| New project | 50 lines | Works fine |
-| 6 months in | 200 lines | Still manageable |
-| 1 year in | 500+ lines | AI skims, misses rules |
-| Complex project | 1000+ lines | Critical guidance buried |
-
-## The Solution
-
-Instead of one massive file:
-
-```
-your-project/
-├── Agents.md                    # ~60 lines - core rules, always loaded
-└── .ai-guidance/                # Detailed modules, loaded on-demand
-    ├── quality-gates.md         # Loaded before commits
-    ├── debugging.md             # Loaded when fixing bugs
-    └── architecture.md          # Loaded for design work
-```
-
-The AI reads the minimal core at session start, then loads specific modules when relevant.
-
-**[→ How Progressive Loading Works](docs/PROGRESSIVE-LOADING.md)**
-
----
-
 ## Quick Start
 
-```bash
-# Clone once
-git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
+**Step 1:** Clone this repo locally:
 
-# Generate for your project
-~/.golden-agents/generate-agents.sh --language=go --path=./my-project
+```bash
+git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 ```
+
+**Step 2:** Tell your AI coding assistant:
+
+> "Read the instructions in ~/.golden-agents and apply them to my project at ~/my-project. Start with --dry-run so I can preview what will be created."
+
+**Step 3:** Review the preview. If it looks good:
+
+> "Apply the changes for real. Verify no existing content was lost."
+
+That's it. Your AI handles the rest.
 
 **[→ Full Usage Guide](docs/USAGE.md)** | **[→ Sample Output](docs/SAMPLE.md)** | **[→ Windows Installation](docs/WINDOWS.md)**
 
 ---
 
-## What's Included
+## What Gets Created
 
-| Category | Content |
-|----------|---------|
-| **Languages** | Go, Python, JavaScript, Shell, Dart/Flutter |
-| **Project types** | CLI tools, web apps, mobile apps |
-| **Workflows** | Testing, security, deployment, context management |
-| **Core rules** | Quality gates, anti-slop phrases, build hygiene |
+```
+my-project/
+├── Agents.md      # ~60 lines - core rules + triggers to load modules
+├── CLAUDE.md      # Redirect: "See Agents.md"
+├── GEMINI.md      # Redirect: "See Agents.md"
+└── COPILOT.md     # Redirect: "See Agents.md"
+```
+
+The detailed modules stay in `~/.golden-agents/templates/`. Your project only gets the small core file with triggers like:
+
+```markdown
+🔴 BEFORE writing ANY `.go` file → Read `~/.golden-agents/templates/languages/go.md`
+🔴 WHEN tests fail → Read `~/.golden-agents/templates/workflows/testing.md`
+```
+
+The AI loads modules on-demand instead of reading 500+ lines at session start.
+
+**[→ How Progressive Loading Works](docs/PROGRESSIVE-LOADING.md)**
 
 ---
 
-## vs. Other Tools
+## Why This Exists
 
-### vs. Spec Kit
+A 50-line `CLAUDE.md` works fine. A 500-line one wastes context tokens. A 1000-line one means the AI misses half of what you wrote.
 
-| Aspect | Golden Agents | [Spec Kit](https://github.com/github/spec-kit) |
-|--------|---------------|----------|
-| **Focus** | HOW the AI behaves | WHAT to build |
-| **Problem** | AI drift, skipped tests | Vague requirements |
-| **Output** | `Agents.md` with rules | Spec→Plan→Tasks workflow |
+Golden Agents keeps the core small (~60 lines) and loads detailed guidance only when relevant.
 
-**Use together:** Spec Kit for project structure, Golden Agents for quality enforcement.
+---
 
-### vs. Raw CLAUDE.md
+## Templates Included
 
-| Aspect | Golden Agents | Manual CLAUDE.md |
-|--------|---------------|------------------|
-| **Scaling** | Progressive loading | Everything in one file |
-| **Maintenance** | Templates updated centrally | Copy-paste across repos |
-| **Size** | ~60 lines core | Grows unbounded |
+```
+~/.golden-agents/templates/
+├── languages/          # Go, Python, JavaScript, Shell, Dart/Flutter
+├── project-types/      # cli-tools, web-apps, mobile-apps, genesis-tools
+├── workflows/          # testing, security, deployment, context-management
+└── core/               # anti-slop phrases, communication rules
+```
+
+Run `--sync` periodically to get template updates:
+
+```bash
+~/.golden-agents/generate-agents.sh --sync
+```
 
 ---
 
 ## Supported AI Assistants
 
-| Assistant | Config File |
-|-----------|-------------|
-| Claude Code | `CLAUDE.md` → `Agents.md` |
+| Assistant | Redirect File Created |
+|-----------|----------------------|
+| Claude Code | `CLAUDE.md` |
 | Augment Code | Reads `Agents.md` directly |
-| OpenAI Codex CLI | `CODEX.md` → `Agents.md` |
-| Amp by Sourcegraph | `AGENT.md` → `Agents.md` |
-| Google Gemini | `GEMINI.md` → `Agents.md` |
-| GitHub Copilot | `COPILOT.md` → `Agents.md` |
+| OpenAI Codex CLI | `CODEX.md` |
+| Amp by Sourcegraph | `AGENT.md` |
+| Google Gemini | `GEMINI.md` |
+| GitHub Copilot | `COPILOT.md` + `.github/copilot-instructions.md` |
 
-The generator creates redirect files automatically.
+All redirect files point to `Agents.md`. Created automatically.
 
 ---
 
@@ -130,13 +112,14 @@ The generator creates redirect files automatically.
 
 | Doc | Purpose |
 |-----|---------|
-| **[USAGE.md](docs/USAGE.md)** | Modes, options, examples |
-| **[PROGRESSIVE-LOADING.md](docs/PROGRESSIVE-LOADING.md)** | How on-demand loading works |
-| **[SUPERPOWERS.md](docs/SUPERPOWERS.md)** | Optional skill framework integration |
-| **[SAMPLE.md](docs/SAMPLE.md)** | Example generated output |
-| **[HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)** | Security & transparency |
-| **[TEST-PLAN.md](docs/TEST-PLAN.md)** | Test strategy |
-| **[REFERENCES.md](docs/REFERENCES.md)** | Best practices sources |
+| **[USAGE.md](docs/USAGE.md)** | CLI options, AI-driven examples, migration workflows |
+| **[SAMPLE.md](docs/SAMPLE.md)** | What the generated output looks like |
+| **[PROGRESSIVE-LOADING.md](docs/PROGRESSIVE-LOADING.md)** | Why small core + on-demand modules works |
+| **[TRIGGER-DESIGN.md](docs/TRIGGER-DESIGN.md)** | How to write triggers the AI won't miss |
+| **[HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)** | What the script does vs. what the AI does |
+| **[REFERENCES.md](docs/REFERENCES.md)** | How we implement Anthropic, GitHub, OpenAI guidance |
+| **[TEST-PLAN.md](docs/TEST-PLAN.md)** | 112 tests, what we verify |
+| **[SUPERPOWERS.md](docs/SUPERPOWERS.md)** | Optional: obra/superpowers integration |
 
 ---
 

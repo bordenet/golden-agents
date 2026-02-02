@@ -707,26 +707,33 @@ Before ANY commit:
 
 ---
 
-## Progressive Module Loading
+## 🚨 Progressive Module Loading
 
-**Load these templates ON-DEMAND when the context applies:**
+**STOP and load the relevant module BEFORE these actions:**
 
-### When working with specific languages:
+### Language Modules (🔴 Required)
 HEADER
 
-    # Generate language loading instructions
+    # Generate language loading instructions with specific triggers
     for lang in "${LANG_ARRAY[@]}"; do
-        echo "- **$lang**: Read \`$golden_agents_path/templates/languages/${lang}.md\`"
+        case "$lang" in
+            go) echo "- 🔴 **BEFORE writing ANY \`.go\` file**: Read \`$golden_agents_path/templates/languages/go.md\`" ;;
+            python) echo "- 🔴 **BEFORE writing ANY \`.py\` file**: Read \`$golden_agents_path/templates/languages/python.md\`" ;;
+            javascript) echo "- 🔴 **BEFORE writing ANY \`.js\`, \`.ts\`, \`.jsx\`, \`.tsx\` file**: Read \`$golden_agents_path/templates/languages/javascript.md\`" ;;
+            shell) echo "- 🔴 **BEFORE writing ANY \`.sh\` file or bash code block**: Read \`$golden_agents_path/templates/languages/shell.md\`" ;;
+            dart-flutter) echo "- 🔴 **BEFORE writing ANY \`.dart\` file**: Read \`$golden_agents_path/templates/languages/dart-flutter.md\`" ;;
+            *) echo "- 🔴 **BEFORE writing $lang code**: Read \`$golden_agents_path/templates/languages/${lang}.md\`" ;;
+        esac
     done
 
     cat << MIDDLE
 
-### When performing specific workflows:
-- **Before debugging**: Read \`$golden_agents_path/templates/workflows/testing.md\`
-- **Before deploying**: Read \`$golden_agents_path/templates/workflows/deployment.md\`
-- **Security concerns**: Read \`$golden_agents_path/templates/workflows/security.md\`
-- **Build issues**: Read \`$golden_agents_path/templates/workflows/build-hygiene.md\`
-- **Context overflow**: Read \`$golden_agents_path/templates/workflows/context-management.md\`
+### Workflow Modules (🔴 Required)
+- 🔴 **BEFORE any commit, PR, push, or merge**: Read \`$golden_agents_path/templates/workflows/security.md\`
+- 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read \`$golden_agents_path/templates/workflows/testing.md\`
+- 🔴 **WHEN build fails OR lint errors appear**: Read \`$golden_agents_path/templates/workflows/build-hygiene.md\`
+- 🟡 **BEFORE deploying to any environment**: Read \`$golden_agents_path/templates/workflows/deployment.md\`
+- 🟡 **WHEN conversation exceeds 50 exchanges**: Read \`$golden_agents_path/templates/workflows/context-management.md\`
 
 MIDDLE
 

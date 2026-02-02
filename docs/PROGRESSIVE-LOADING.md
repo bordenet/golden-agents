@@ -14,7 +14,7 @@
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  1. AI READS Agents.md (~60-100 lines)                              │
-│     • Superpowers bootstrap command                                  │
+│     • Workflow checklists (always active)                            │
 │     • Anti-slop rules (always active)                                │
 │     • Quality gates (quick reference)                                │
 │     • Progressive loading table with triggers                        │
@@ -78,12 +78,12 @@ This mirrors how the framework uses `~/.golden-agents/templates/` for generic co
 
 ## Why This Works
 
-This pattern is borrowed from [obra/superpowers](https://github.com/obra/superpowers):
+This pattern is inspired by on-demand skill loading (e.g., [obra/superpowers](https://github.com/obra/superpowers)):
 
-| Aspect | superpowers | golden-agents |
-|--------|-------------|---------------|
-| **Bootstrap** | `superpowers-augment.js bootstrap` | Reads Agents.md |
-| **Skills** | `use-skill superpowers:debugging` | `view .ai-guidance/debugging.md` |
+| Aspect | Skill Frameworks | golden-agents |
+|--------|------------------|---------------|
+| **Bootstrap** | Load available skills | Reads Agents.md |
+| **Detail** | `use-skill debugging` | `view .ai-guidance/debugging.md` |
 | **Trigger** | Skill description says when | Loading table says when |
 | **Loading** | On-demand per task | On-demand per task |
 
@@ -91,4 +91,6 @@ The key insight: **describe WHEN to load in the description/table**, not just WH
 
 **Bad:** `| debugging.md | Debugging guidance |`
 **Good:** `| debugging.md | When you've tried 2+ approaches without success |`
+
+> **Note:** Golden Agents works standalone. Superpowers integration is optional—see [SUPERPOWERS.md](SUPERPOWERS.md).
 
