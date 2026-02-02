@@ -153,3 +153,49 @@ jobs:
           echo "## ShellCheck Results" >> $GITHUB_STEP_SUMMARY
           shellcheck generate-agents.sh --format=gcc >> $GITHUB_STEP_SUMMARY 2>&1 || true
 
+  # Code coverage with kcov
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install BATS
+        run: |
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          cd /tmp/bats-core && sudo ./install.sh /usr/local
+
+      - name: Install BATS helper libraries
+        run: |
+          mkdir -p test/test_helper
+          git clone --depth 1 https://github.com/bats-core/bats-support.git test/test_helper/bats-support
+          git clone --depth 1 https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
+
+      - name: Install kcov
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y kcov
+
+      - name: Run BATS tests with coverage
+        run: |
+          mkdir -p coverage
+          kcov --include-path=. --exclude-path=test,coverage coverage bats test/*.bats
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## Code Coverage" >> $GITHUB_STEP_SUMMARY
+          if [[ -f coverage/bats/coverage.json ]]; then
+            PERCENT=$(jq -r '.percent_covered' coverage/bats/coverage.json 2>/dev/null || echo "N/A")
+            echo "Coverage: ${PERCENT}%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi

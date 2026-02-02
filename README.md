@@ -3,6 +3,7 @@
 > **Stop repeating yourself to AI coding assistants. Standardize once, enforce everywhere.**
 
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/bordenet/golden-agents/graph/badge.svg)](https://codecov.io/gh/bordenet/golden-agents)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## The Problem
