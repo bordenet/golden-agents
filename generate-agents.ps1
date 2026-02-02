@@ -44,15 +44,17 @@ function Convert-ToWslPath {
     return "/mnt/$drive$rest"
 }
 
-# Check for WSL
+# Check for WSL (skip on GitHub Actions where it's unreliable)
 $wslAvailable = $false
-try {
-    $wslCheck = wsl --status 2>&1
-    if ($LASTEXITCODE -eq 0 -or $wslCheck -match "Default Distribution") {
-        $wslAvailable = $true
+if (-not $env:GITHUB_ACTIONS) {
+    try {
+        $wslCheck = wsl --status 2>&1
+        if ($LASTEXITCODE -eq 0 -or $wslCheck -match "Default Distribution") {
+            $wslAvailable = $true
+        }
+    } catch {
+        $wslAvailable = $false
     }
-} catch {
-    $wslAvailable = $false
 }
 
 # Check for Git Bash

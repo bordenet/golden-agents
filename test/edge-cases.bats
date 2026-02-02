@@ -4,6 +4,24 @@
 
 load 'test_helper'
 
+# Helper: Skip test if running as root
+skip_if_root() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+        skip "Test not applicable when running as root"
+    fi
+}
+
+# Helper: Skip test on Windows (Git Bash/MSYS/Cygwin)
+skip_if_windows() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        skip "Test not applicable on Windows (chmod behaves differently)"
+    fi
+    # Also check uname as fallback
+    if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* ]]; then
+        skip "Test not applicable on Windows (chmod behaves differently)"
+    fi
+}
+
 setup() {
     TEST_DIR="$(mktemp -d)"
     export TEST_DIR
@@ -68,22 +86,15 @@ teardown() {
 # Test 6: Read-only directory fails gracefully
 @test "read-only directory fails with clear error" {
     skip_if_root  # Root can write anywhere
-    
+    skip_if_windows  # Windows handles file permissions differently
+
     local readonly_dir="$TEST_DIR/readonly"
     mkdir -p "$readonly_dir"
     chmod a-w "$readonly_dir"
-    
+
     run "$GENERATE_SCRIPT" --language=go --compact --path="$readonly_dir"
     [ "$status" -ne 0 ]
-    
+
     # Restore for cleanup
     chmod u+w "$readonly_dir"
 }
-
-# Helper: Skip test if running as root
-skip_if_root() {
-    if [[ "$(id -u)" -eq 0 ]]; then
-        skip "Test not applicable when running as root"
-    fi
-}
-
