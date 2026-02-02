@@ -470,12 +470,18 @@ if [[ "$MIGRATE" == "true" ]]; then
     # Check if there's content to migrate
     existing=$(check_existing_guidance "$OUTPUT_PATH")
     if [[ -n "$existing" ]]; then
+        # Extract filename and count lines
+        source_file=$(echo "$existing" | cut -d' ' -f1)
+        source_lines=$(wc -l < "$OUTPUT_PATH/$source_file" | tr -d ' ')
+
         echo "[INFO] Found existing guidance: $existing"
+        echo "[INFO] Source file: $source_file ($source_lines lines)"
         echo "[INFO] Generating migration prompt..."
 
         # Generate the migration prompt
         generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
         echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+        echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
 
         # Add to .gitignore
         if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
