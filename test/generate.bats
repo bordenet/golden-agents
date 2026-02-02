@@ -22,16 +22,17 @@ teardown() {
     assert_line_count_between "$TEST_DIR/Agents.md" 80 200
 }
 
-# Test 2: Full mode generates larger file
-@test "full mode generates larger file than compact" {
+# Test 2: Default mode (progressive) generates minimal file
+@test "default mode generates minimal file" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    
+
     assert_file_exists "$TEST_DIR/Agents.md"
-    # Full mode should be significantly larger
+    # Progressive mode generates ~60-80 lines (minimal core with on-demand loading)
     local line_count
     line_count=$(wc -l < "$TEST_DIR/Agents.md" | tr -d ' ')
-    [ "$line_count" -gt 200 ]
+    [ "$line_count" -gt 40 ]  # Must have some content
+    [ "$line_count" -lt 150 ] # Progressive should be under 150 lines
 }
 
 # Test 3: Output contains start marker

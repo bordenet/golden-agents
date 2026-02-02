@@ -14,7 +14,7 @@ PROJECT_TYPE=""
 OUTPUT_PATH="."
 PROJECT_NAME=""
 COMPACT=false
-PROGRESSIVE=true  # Progressive is now the default
+# Mode is progressive by default (controlled by COMPACT and FULL flags)
 FULL=false        # Legacy mode, deprecated
 DRY_RUN=false
 SYNC=false
@@ -382,11 +382,10 @@ for arg in "$@"; do
         --type=*) PROJECT_TYPE="${arg#*=}" ;;
         --path=*) OUTPUT_PATH="${arg#*=}" ;;
         --name=*) PROJECT_NAME="${arg#*=}" ;;
-        --compact) COMPACT=true; PROGRESSIVE=false ;;
-        --progressive) PROGRESSIVE=true ;;
+        --compact) COMPACT=true ;;
+        --progressive) ;; # Already the default, flag accepted for clarity
         --full)
             FULL=true
-            PROGRESSIVE=false
             echo "[DEPRECATED] --full mode generates 800+ line files that AI assistants cannot follow." >&2
             echo "[DEPRECATED] Use --progressive (default) or --compact instead." >&2
             ;;
@@ -1119,11 +1118,10 @@ upgrade_agents_md() {
         PROJECT_TYPE="$existing_type"
     fi
     # Auto-detect mode if not explicitly set via flags
-    # Note: PROGRESSIVE defaults to true, so we only need to detect compact
+    # Progressive is the default; we only need to detect compact mode
     if [[ "$COMPACT" != "true" && "$FULL" != "true" ]]; then
         if [[ "$existing_mode" == "compact" ]]; then
             COMPACT=true
-            PROGRESSIVE=false
             generator="generate_compact"
             mode_label="compact"
         else

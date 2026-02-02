@@ -45,17 +45,19 @@ teardown() {
     [ "$line_count" -lt 200 ]  # Compact mode should be under 200 lines
 }
 
-# Test 4: Full mode auto-detected
-@test "full mode auto-detected when no compact marker" {
+# Test 4: Legacy full mode is upgraded to progressive
+@test "legacy full mode upgraded to progressive on upgrade" {
     create_agents_full_mode "$TEST_DIR" "go"
-    
+
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    
-    # Result should be full mode (more lines)
+
+    # Result should be upgraded to progressive mode (legacy full mode is deprecated)
+    # Progressive mode generates ~60-80 lines core with on-demand loading
     local line_count
     line_count=$(wc -l < "$TEST_DIR/Agents.md" | tr -d ' ')
-    [ "$line_count" -gt 200 ]  # Full mode should be over 200 lines
+    [ "$line_count" -gt 40 ]   # Must have content
+    [ "$line_count" -lt 150 ]  # Progressive should be under 150 lines
 }
 
 # Test 5: Flag overrides auto-detect language
