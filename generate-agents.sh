@@ -55,17 +55,38 @@ PLATFORM SUPPORT
           On Windows, use WSL (recommended), Git Bash, Cygwin, or MSYS2.
 
 OPTIONS
-    --language=LANG     Languages to include (comma-separated: go,python,javascript,shell,dart-flutter)
+    --language=LANG     Languages to include (comma-separated, see LANGUAGE ALIASES below)
     --type=TYPE         Project type (genesis-tools, cli-tools, web-apps, mobile-apps)
     --path=PATH         Output directory (default: current directory)
     --name=NAME         Project name for header (default: directory name)
     --compact           Generate compact version (~130 lines) instead of full (~800)
     --sync              Update local templates from GitHub
     --dry-run           Print what would be generated without writing
+    --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
     --upgrade           Upgrade existing Agents.md (dry-run by default, shows diff)
     --apply             Apply upgrade changes (requires --upgrade, creates backup first)
     -h, --help          Show this help message
     -v, --version       Show version information
+
+LANGUAGE ALIASES
+    Canonical names and their aliases:
+
+    go ............. golang
+    javascript ..... js, node, nodejs, ts, typescript
+    python ......... py, python3
+    shell .......... bash, sh, zsh
+    dart-flutter ... flutter, dart
+
+MIGRATION (First-time adoption)
+    When existing guidance files are detected (CLAUDE.md, AGENTS.md with content),
+    generation is blocked to prevent data loss. Use --migrate to:
+
+    1. Generate the framework Agents.md
+    2. Create MIGRATION-PROMPT.md with your existing content
+    3. Add MIGRATION-PROMPT.md to .gitignore
+
+    Then paste MIGRATION-PROMPT.md content into your AI assistant to complete migration.
+    Delete MIGRATION-PROMPT.md after migration is complete.
 
 UPGRADE SAFETY
     - Without --apply: shows diff of what would change (safe)
@@ -82,6 +103,9 @@ EXAMPLES
 
     # Update templates from GitHub
     generate-agents.sh --sync
+
+    # Migrate existing CLAUDE.md/AGENTS.md into golden-agents framework
+    generate-agents.sh --migrate --language=js,go --type=web-apps --path=./my-project
 
     # Preview upgrade (safe, writes nothing)
     generate-agents.sh --upgrade --path=./my-project
