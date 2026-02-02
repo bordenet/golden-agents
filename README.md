@@ -13,8 +13,8 @@ Generate `Agents.md` files that enforce consistent AI coding assistant behavior 
 # Clone once
 git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 
-# Generate for your project (recommended: progressive mode)
-~/.golden-agents/generate-agents.sh --progressive --language=go --path=./my-project
+# Generate for your project
+~/.golden-agents/generate-agents.sh --language=go --path=./my-project
 ```
 
 Done. Your AI assistant now follows lint→build→test order, avoids slop phrases, and loads detailed guidance on-demand.
@@ -103,14 +103,11 @@ The generator creates all necessary redirect files automatically.
 ## Usage Examples
 
 ```bash
-# Progressive mode (recommended) - ~60 lines core + on-demand loading
-./generate-agents.sh --progressive --language=go --type=cli-tools --path=./my-cli
+# Default: ~60 lines core + on-demand loading
+./generate-agents.sh --language=go --type=cli-tools --path=./my-cli
 
 # Compact mode - ~130 lines, inlined but condensed
 ./generate-agents.sh --compact --language=python --type=web-apps --path=./my-api
-
-# Full mode - ~800 lines, everything inlined (legacy)
-./generate-agents.sh --language=go,shell --path=./my-project
 
 # Upgrade existing file (dry-run first, then apply)
 ./generate-agents.sh --upgrade --path=./my-project
@@ -130,9 +127,8 @@ The generator creates all necessary redirect files automatically.
 
 | Mode | Lines | Use Case |
 |------|-------|----------|
-| `--progressive` | ~60 | Recommended. Minimal core, templates loaded on-demand from `~/.golden-agents/templates/` |
+| (default) | ~60 | Minimal core, templates loaded on-demand from `~/.golden-agents/templates/` |
 | `--compact` | ~130 | Self-contained but condensed. Good for repos without template access |
-| (default) | ~800 | Everything inlined. Large context consumption, not recommended |
 
 ## Directory Structure
 
@@ -307,8 +303,6 @@ This framework incorporates official guidance from:
 
 AI coding assistants drift: they skip linters, ignore test failures, make random tooling choices, and forget project conventions. After 20+ repos, I got tired of repeating the same instructions every session.
 
-**The problem:** 800 lines of guidance is too much—AIs ignore bloated instructions.
-
-**The solution:** Progressive loading via [superpowers](https://github.com/obra/superpowers). Core framework loads at startup (~150 lines), language/workflow modules load on-demand, project-specific content stays under 50 lines.
+**The solution:** Progressive loading. Core framework loads at startup (~60 lines), language/workflow modules load on-demand from `~/.golden-agents/templates/`, project-specific content stays under 50 lines.
 
 If your Agents.md project section exceeds 100 lines, use `--adopt` with deduplication.

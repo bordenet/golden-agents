@@ -14,7 +14,8 @@ PROJECT_TYPE=""
 OUTPUT_PATH="."
 PROJECT_NAME=""
 COMPACT=false
-PROGRESSIVE=false
+PROGRESSIVE=true  # Progressive is now the default
+FULL=false        # Legacy mode, deprecated
 DRY_RUN=false
 SYNC=false
 UPGRADE=false
@@ -44,10 +45,9 @@ SYNOPSIS
 DESCRIPTION
     Generates an Agents.md file from modular templates.
 
-    Three modes available:
-    - --progressive (recommended): ~60 lines core with on-demand module loading
+    Output modes:
+    - (default): ~60 lines core with on-demand module loading (progressive)
     - --compact: ~130 lines, inlined but condensed
-    - (default): ~800 lines, everything inlined
 
     When upgrading existing files, only framework sections (between markers) are
     replaced. Project-specific content is preserved.
@@ -351,8 +351,14 @@ for arg in "$@"; do
         --type=*) PROJECT_TYPE="${arg#*=}" ;;
         --path=*) OUTPUT_PATH="${arg#*=}" ;;
         --name=*) PROJECT_NAME="${arg#*=}" ;;
-        --compact) COMPACT=true ;;
+        --compact) COMPACT=true; PROGRESSIVE=false ;;
         --progressive) PROGRESSIVE=true ;;
+        --full)
+            FULL=true
+            PROGRESSIVE=false
+            echo "[DEPRECATED] --full mode generates 800+ line files that AI assistants cannot follow." >&2
+            echo "[DEPRECATED] Use --progressive (default) or --compact instead." >&2
+            ;;
         --sync) SYNC=true ;;
         --dry-run) DRY_RUN=true ;;
         --upgrade) UPGRADE=true ;;
@@ -1075,20 +1081,19 @@ upgrade_agents_md() {
     if [[ -z "$PROJECT_TYPE" && "$existing_type" != "general" ]]; then
         PROJECT_TYPE="$existing_type"
     fi
-    # Auto-detect mode if not explicitly set
-    if [[ "$PROGRESSIVE" != "true" && "$COMPACT" != "true" ]]; then
-        case "$existing_mode" in
-            progressive)
-                PROGRESSIVE=true
-                generator="generate_progressive"
-                mode_label="progressive"
-                ;;
-            compact)
-                COMPACT=true
-                generator="generate_compact"
-                mode_label="compact"
-                ;;
-        esac
+    # Auto-detect mode if not explicitly set via flags
+    # Note: PROGRESSIVE defaults to true, so we only need to detect compact
+    if [[ "$COMPACT" != "true" && "$FULL" != "true" ]]; then
+        if [[ "$existing_mode" == "compact" ]]; then
+            COMPACT=true
+            PROGRESSIVE=false
+            generator="generate_compact"
+            mode_label="compact"
+        else
+            # Default to progressive (even for legacy "full" files - upgrade them)
+            generator="generate_progressive"
+            mode_label="progressive"
+        fi
     fi
 
     if [[ -z "$LANGUAGES" ]]; then
@@ -1141,16 +1146,17 @@ ${after_marker}"
     fi
 }
 
-# Select generator
-if [[ "$PROGRESSIVE" == "true" ]]; then
-    generator="generate_progressive"
-    mode_label="progressive"
+# Select generator (progressive is default)
+if [[ "$FULL" == "true" ]]; then
+    generator="generate_full"
+    mode_label="full"
 elif [[ "$COMPACT" == "true" ]]; then
     generator="generate_compact"
     mode_label="compact"
 else
-    generator="generate_full"
-    mode_label="full"
+    # Default: progressive
+    generator="generate_progressive"
+    mode_label="progressive"
 fi
 
 # Handle upgrade mode
