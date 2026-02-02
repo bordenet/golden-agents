@@ -1,6 +1,10 @@
 # Golden Agents
 
-Generate `Agents.md` files that enforce consistent AI coding assistant behavior across all your projects.
+**AI coding assistants need guidance, but guidance files don't scale.**
+
+A 50-line `CLAUDE.md` works fine. A 500-line one wastes context tokens and buries critical rules. A 1000-line one means the AI misses half of what you wrote.
+
+Golden Agents solves this with **progressive loading**: a compact core file (~60 lines) that loads detailed guidance on-demand based on what the AI is actually doing.
 
 [![GitHub Stars](https://img.shields.io/github/stars/bordenet/golden-agents?style=social)](https://github.com/bordenet/golden-agents)
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
@@ -11,11 +15,45 @@ Generate `Agents.md` files that enforce consistent AI coding assistant behavior 
 
 > **⚠️ What This Is (And Isn't)**
 >
-> This project generates **plain text Markdown files** that AI coding assistants read as instructions. The shell script is a simple text generator—it does NOT execute code in your project, install software, modify your system, or run autonomously.
+> This project generates **plain text Markdown files** that AI coding assistants read as instructions. The shell script is a simple text generator—it does NOT execute code, install software, or run autonomously.
 >
-> **[→ Read the full explanation: How It Works](docs/HOW-IT-WORKS.md)**
+> **[→ Full explanation: How It Works](docs/HOW-IT-WORKS.md)**
 
 ---
+
+## The Problem
+
+As projects grow, AI guidance files grow too:
+
+| Project Stage | Typical Guidance Size | What Happens |
+|---------------|----------------------|--------------|
+| New project | 50 lines | Works fine |
+| 6 months in | 200 lines | Still manageable |
+| 1 year in | 500+ lines | AI skims, misses rules |
+| Complex project | 1000+ lines | Critical guidance buried, context wasted |
+
+**The result:** You write detailed guidance, but the AI ignores half of it because it's drowning in text.
+
+## The Solution: Progressive Loading
+
+Instead of one massive file, golden-agents creates:
+
+```
+your-project/
+├── Agents.md                    # ~60 lines - core rules, always loaded
+└── .ai-guidance/                # Detailed modules, loaded on-demand
+    ├── quality-gates.md         # Loaded before commits
+    ├── debugging.md             # Loaded when fixing bugs
+    └── architecture.md          # Loaded for design work
+```
+
+The AI reads the compact core at session start, then loads specific modules when relevant:
+
+- Writing tests? → Load `testing.md`
+- Debugging? → Load `debugging.md`
+- Committing? → Load `quality-gates.md`
+
+**Result:** The AI always has the right guidance without wasting context on irrelevant details.
 
 ## Quick Start
 
@@ -27,19 +65,17 @@ git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 ~/.golden-agents/generate-agents.sh --language=go --path=./my-project
 ```
 
-Done. Your AI assistant now follows lint→build→test order, avoids slop phrases, and loads detailed guidance on-demand.
-
 **[→ See sample output](docs/SAMPLE.md)**
 
-## What It Does
+## What's Included
 
-| Feature | Description |
-|---------|-------------|
-| Quality gates | Enforces Lint → Build → Test before commits |
-| Anti-slop rules | Bans "revolutionary", "seamless", "Happy to help!" |
-| Language templates | Go, Python, JavaScript, Shell, Dart/Flutter |
-| Project types | CLI tools, web apps, mobile apps |
-| Skill integration | Works with [superpowers](https://github.com/obra/superpowers) |
+| Category | Content |
+|----------|---------|
+| **Core rules** | Quality gates (lint→build→test), anti-slop phrases, context management |
+| **Languages** | Go, Python, JavaScript, Shell, Dart/Flutter conventions |
+| **Project types** | CLI tools, web apps, mobile apps |
+| **Workflows** | Testing, security, deployment checklists |
+| **Skill integration** | Works with [obra/superpowers](https://github.com/obra/superpowers) |
 
 ## vs. Spec Kit
 
