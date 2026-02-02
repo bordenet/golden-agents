@@ -95,8 +95,40 @@ cp ~/.golden-agents/Agents.core.md ./Agents.md
 ~/.golden-agents/generate-agents.sh --sync
 ```
 
+### Option 5: Adopt existing Agents.md (aggressive deduplication)
+
+Have an existing Agents.md that wasn't created by golden-agents? Adopt it:
+
+```bash
+# Adopt your existing file (backs up original, generates deduplication prompt)
+~/.golden-agents/generate-agents.sh --adopt --language=python --path=./my-project
+```
+
+**What happens:**
+
+1. Your original `Agents.md` is backed up to `Agents.md.original`
+2. Framework content is generated with markers
+3. Your original content is appended under `## Preserved Project Content`
+4. `ADOPT-PROMPT.md` is created with aggressive deduplication instructions
+
+**The goal is minimal output.** The deduplication prompt guides your AI assistant to:
+
+- DELETE generic advice (testing, commits, style) — the framework covers it
+- KEEP only project-specific content (paths, commands, policies, domain rules)
+- Target: **0-50 lines** of project-specific content for most projects
+
+| Project Complexity | Target Size |
+|--------------------|-------------|
+| Simple (single language, standard tooling) | **0-20 lines** |
+| Moderate (multi-language, some custom workflows) | **20-50 lines** |
+| Complex (many integrations, strict domain rules) | **50-100 lines** |
+
+**Safety:** Original content is always preserved in `Agents.md.original`. Nothing is deleted automatically.
+
 ## Features
 
+- **Minimal output** - Progressive loading: 800 lines is too much, modules load on demand
+- **Adoption workflow** - Bring existing Agents.md files into the framework with aggressive deduplication
 - **Safe upgrades** - Update framework sections while preserving project-specific content
 - **Modular templates** - Mix and match languages, project types, and workflows
 - **Compact mode** - 6x smaller files with essential guidance only
@@ -186,6 +218,9 @@ golden-agents/
 
 # Dry run (preview without writing)
 ./generate-agents.sh --language=python --compact --dry-run
+
+# Adopt existing Agents.md (brings it into framework, generates dedup prompt)
+./generate-agents.sh --adopt --language=typescript --path=./existing-project
 ```
 
 ## Integration with Superpowers
@@ -301,7 +336,28 @@ Over six months of vibe coding, I created around 20 repositories. I noticed patt
 
 I found myself repeating the same instructions in every session. It got tiring.
 
-So I consolidated all my guidance into a single document. But 800 lines is too much—no AI agent can faithfully follow that. Borrowing from [obra/superpowers](https://github.com/obra/superpowers), I factored the guidance into progressively loaded modules.
+### The Minimal Output Principle
+
+So I consolidated all my guidance into a single document. But **800 lines is too much** — no AI agent can faithfully follow that. They drift and ignore bloated instructions.
+
+Borrowing from [obra/superpowers](https://github.com/obra/superpowers), I factored the guidance into **progressively loaded modules**:
+
+- **Core framework** loads at session start (~100-200 lines)
+- **Language modules** load only when that language is used
+- **Skills** invoke on-demand for specific tasks (debugging, TDD, brainstorming)
+- **Project-specific content** should be minimal: paths, commands, policies only
+
+**Target sizes for project-specific sections:**
+
+| Complexity | Lines |
+|------------|-------|
+| Simple | 0-20 |
+| Moderate | 20-50 |
+| Complex | 50-100 |
+
+If your Agents.md exceeds 100 lines of project-specific content, it's too much. Use `--adopt` with aggressive deduplication.
+
+### Why Share This
 
 This repo exists for three reasons:
 

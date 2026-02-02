@@ -19,6 +19,7 @@ SYNC=false
 UPGRADE=false
 APPLY=false
 MIGRATE=false
+ADOPT=false
 
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
@@ -35,6 +36,7 @@ SYNOPSIS
     generate-agents.sh --sync
     generate-agents.sh --language=LANG [--type=TYPE] [--path=PATH] [--compact]
     generate-agents.sh --upgrade [--apply] --path=PATH
+    generate-agents.sh --adopt --language=LANG --path=PATH
 
 DESCRIPTION
     Generates a self-contained Agents.md file by combining modular templates.
@@ -63,6 +65,7 @@ OPTIONS
     --sync              Update local templates from GitHub
     --dry-run           Print what would be generated without writing
     --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
+    --adopt             Adopt existing Agents.md (backs up, appends, creates ADOPT-PROMPT.md)
     --upgrade           Upgrade existing Agents.md (dry-run by default, shows diff)
     --apply             Apply upgrade changes (requires --upgrade, creates backup first)
     -h, --help          Show this help message
@@ -94,6 +97,22 @@ UPGRADE SAFETY
     - Files WITHOUT markers: REFUSES to upgrade (suggests migration)
     - Project-specific sections (outside markers) are ALWAYS preserved
 
+ADOPTION (Existing Agents.md without markers)
+    Use --adopt when you have an existing Agents.md that wasn't created by
+    golden-agents. This mode:
+
+    1. Backs up your original Agents.md to Agents.md.original
+    2. Generates framework content with markers
+    3. Appends your original content under "## Preserved Project Content"
+    4. Creates ADOPT-PROMPT.md with aggressive deduplication instructions
+
+    The goal is MINIMAL OUTPUT. After running the deduplication prompt:
+    - Simple projects: 0-20 lines of project-specific content
+    - Moderate projects: 20-50 lines
+    - Complex projects: 50-100 lines
+
+    If your result exceeds 100 lines, you kept too much generic advice.
+
 EXAMPLES
     # Generate for a Go CLI project
     generate-agents.sh --language=go --type=cli-tools --path=./my-cli
@@ -106,6 +125,9 @@ EXAMPLES
 
     # Migrate existing CLAUDE.md/AGENTS.md into golden-agents framework
     generate-agents.sh --migrate --language=js,go --type=web-apps --path=./my-project
+
+    # Adopt existing Agents.md (backs up, appends, generates dedup prompt)
+    generate-agents.sh --adopt --language=typescript --path=./existing-project
 
     # Preview upgrade (safe, writes nothing)
     generate-agents.sh --upgrade --path=./my-project
@@ -311,6 +333,7 @@ for arg in "$@"; do
         --upgrade) UPGRADE=true ;;
         --apply) APPLY=true ;;
         --migrate) MIGRATE=true ;;
+        --adopt) ADOPT=true ;;
         -h|--help) usage; exit 0 ;;
         -v|--version) version; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
@@ -334,6 +357,12 @@ if [[ "$SYNC" == "true" ]]; then
     exit 0
 fi
 
+# Validate --adopt requires --language
+if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
+    echo "Error: --adopt requires --language" >&2
+    exit 1
+fi
+
 # Validate (skip language check for upgrade mode)
 if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" ]]; then
     echo "[ERROR] --language is required for new file generation" >&2
@@ -355,16 +384,18 @@ if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" ]]; then
     exit 1
 fi
 
-# Check for existing guidance files (unless --migrate or --upgrade or --dry-run is used)
-if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$DRY_RUN" != "true" ]]; then
+# Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dry-run is used)
+if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DRY_RUN" != "true" ]]; then
     existing=$(check_existing_guidance "$OUTPUT_PATH")
     if [[ -n "$existing" ]]; then
         echo "[ERROR] Found existing guidance files: $existing" >&2
         echo "" >&2
         echo "  These files contain project-specific content that would be lost." >&2
         echo "  Use --migrate to safely incorporate this content into the new Agents.md." >&2
+        echo "  Use --adopt to bring an existing Agents.md into the framework." >&2
         echo "" >&2
         echo "  Example: generate-agents.sh --migrate --language=go --path=$OUTPUT_PATH" >&2
+        echo "  Example: generate-agents.sh --adopt --language=go --path=$OUTPUT_PATH" >&2
         exit 1
     fi
 fi
@@ -398,6 +429,62 @@ if [[ "$MIGRATE" == "true" ]]; then
 
     # Continue with normal generation (framework Agents.md)
     # Fall through to normal generation below
+fi
+
+# Handle adopt mode - bring existing Agents.md into framework
+if [[ "$ADOPT" == "true" ]]; then
+    mkdir -p "$OUTPUT_PATH"
+
+    # Check for existing Agents.md without markers
+    if [[ ! -f "$OUTPUT_PATH/Agents.md" ]]; then
+        echo "[ERROR] No Agents.md found at $OUTPUT_PATH" >&2
+        echo "  --adopt requires an existing Agents.md file to adopt." >&2
+        exit 1
+    fi
+
+    if grep -q "$MARKER_START" "$OUTPUT_PATH/Agents.md"; then
+        echo "[ERROR] Agents.md already has framework markers" >&2
+        echo "  Use --upgrade instead to update framework sections." >&2
+        exit 1
+    fi
+
+    echo "[INFO] Adopting existing Agents.md into golden-agents framework..."
+
+    # Backup original
+    cp "$OUTPUT_PATH/Agents.md" "$OUTPUT_PATH/Agents.md.original"
+    echo "[OK] Backed up original: $OUTPUT_PATH/Agents.md.original"
+
+    # Store original content
+    original_content=$(cat "$OUTPUT_PATH/Agents.md.original")
+    original_lines=$(wc -l < "$OUTPUT_PATH/Agents.md.original" | tr -d ' ')
+
+    # Copy ADOPT-PROMPT.md template
+    if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+    else
+        echo "[WARN] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+    fi
+
+    # Add to .gitignore
+    if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+        if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
+            echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+        fi
+        if ! grep -q "Agents.md.original" "$OUTPUT_PATH/.gitignore"; then
+            echo "Agents.md.original" >> "$OUTPUT_PATH/.gitignore"
+        fi
+    else
+        printf "ADOPT-PROMPT.md\nAgents.md.original\n" > "$OUTPUT_PATH/.gitignore"
+    fi
+    echo "[OK] Added ADOPT-PROMPT.md and Agents.md.original to .gitignore"
+
+    # Generate framework content, then append original
+    # We'll set a flag to append after generation
+    ADOPT_ORIGINAL_CONTENT="$original_content"
+    ADOPT_ORIGINAL_LINES="$original_lines"
+
+    # Fall through to normal generation, which will append the original content
 fi
 
 # Set project name from directory if not specified
@@ -852,6 +939,34 @@ else
     mkdir -p "$OUTPUT_PATH"
     output_file="$OUTPUT_PATH/Agents.md"
     $generator > "$output_file"
+
+    # If in adopt mode, append the original content
+    if [[ "$ADOPT" == "true" && -n "${ADOPT_ORIGINAL_CONTENT:-}" ]]; then
+        cat >> "$output_file" << 'ADOPT_SECTION'
+
+---
+
+## Preserved Project Content
+
+> **Note:** The content below was preserved from your original Agents.md.
+> Run the ADOPT-PROMPT.md instructions with your AI assistant to deduplicate.
+> Delete redundant content, keep only project-specific guidance.
+> Target: 0-50 lines for most projects, max 100 lines for complex projects.
+
+ADOPT_SECTION
+        echo "$ADOPT_ORIGINAL_CONTENT" >> "$output_file"
+        echo ""
+        echo "[OK] Adopted existing Agents.md into framework"
+        echo "  Original: ${ADOPT_ORIGINAL_LINES:-?} lines preserved"
+        echo "  Framework: generated with markers"
+        echo ""
+        echo "Next steps:"
+        echo "  1. Open ADOPT-PROMPT.md and paste it into your AI assistant"
+        echo "  2. The AI will deduplicate the preserved content"
+        echo "  3. Target: 0-50 lines of project-specific content"
+        echo "  4. Delete ADOPT-PROMPT.md when done"
+    fi
+
     echo "Generated ($mode_label): $output_file"
     echo "Lines: $(wc -l < "$output_file")"
 
