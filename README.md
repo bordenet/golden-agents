@@ -68,7 +68,8 @@ This project is **complementary to** [GitHub Spec Kit](https://github.com/github
 
 The generator creates all necessary redirect files automatically.
 
-**Tip:** You can safely delete redirect files for AI assistants you don't use (e.g., delete `GEMINI.md` if you only use Claude Code).
+> [!TIP]
+> You can safely delete redirect files for AI assistants you don't use (e.g., delete `GEMINI.md` if you only use Claude Code).
 
 ## Which Mode Do I Use?
 
