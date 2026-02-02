@@ -1,29 +1,47 @@
-# Golden Agents Framework
+# Golden Agents
 
-> **Stop repeating yourself to AI coding assistants. Standardize once, enforce everywhere.**
+Generate `Agents.md` files that enforce consistent AI coding assistant behavior across all your projects.
 
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/bordenet/golden-agents/graph/badge.svg)](https://codecov.io/gh/bordenet/golden-agents)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/bordenet/golden-agents?style=social)](https://github.com/bordenet/golden-agents/stargazers)
 
-## The Problem
+## Quick Start
 
-AI coding assistants drift. They bypass quality gates, skip tests, ignore style guides, and make random choices about tooling. You find yourself repeating the same instructions across every project, every session.
+```bash
+# Clone once
+git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 
-## The Solution
+# Generate for your project (30 seconds)
+~/.golden-agents/generate-agents.sh --language=go --path=./my-project
+```
 
-Golden Agents generates a single `Agents.md` file that all major AI assistants read automatically. One file. Consistent behavior. No more drift.
+Done. Your AI assistant now follows lint→build→test order, avoids slop phrases, and respects your project conventions.
 
-**What you get:**
+**[→ See sample output](docs/SAMPLE.md)**
 
-- **Quality gates** - Lint → Build → Test order enforced before every commit
-- **Anti-slop rules** - Banned phrases, no flattery, evidence-based claims only
-- **Skill integration** - Automatic invocation of brainstorming, TDD, debugging workflows
-- **Language-specific guidance** - Go, Python, JavaScript, Shell, Dart/Flutter
-- **Project-type templates** - CLI tools, web apps, mobile apps
+## What It Does
 
-**[→ See sample output](docs/SAMPLE.md)** to inspect what gets generated.
+| Feature | Description |
+|---------|-------------|
+| Quality gates | Enforces Lint → Build → Test before commits |
+| Anti-slop rules | Bans "revolutionary", "seamless", "Happy to help!" |
+| Language templates | Go, Python, JavaScript, Shell, Dart/Flutter |
+| Project types | CLI tools, web apps, mobile apps |
+| Skill integration | Works with [superpowers](https://github.com/obra/superpowers) |
+
+## vs. Spec Kit
+
+This project is **complementary to** [GitHub Spec Kit](https://github.com/github/spec-kit), not a replacement.
+
+| Aspect | Golden Agents | Spec Kit |
+|--------|---------------|----------|
+| **Focus** | HOW the AI behaves (quality, style) | WHAT to build (specs, workflow) |
+| **Problem** | AI drift, sloppy output, skipped tests | Vague requirements, "vibe coding" |
+| **Output** | `Agents.md` with rules and checklists | Spec→Plan→Tasks→Implementation workflow |
+| **Scope** | Behavior governance | Development methodology |
+
+**Use together:** Run `specify init` (Spec Kit) for project structure, then merge golden-agents templates into your `CLAUDE.md`/`AGENTS.md` for quality enforcement during implementation.
 
 ## Platform Support
 
@@ -80,112 +98,31 @@ The generator creates all necessary redirect files automatically.
 - **Dedupe never modifies:** It only creates a prompt file; YOU apply the changes after review
 - **Originals preserved:** `--migrate` keeps your CLAUDE.md/GEMINI.md files intact
 
-## Quick Start
-
-### Option 1: Generate a new Agents.md
+## Usage Examples
 
 ```bash
-# Clone this repo
-git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
+# Go CLI tool
+./generate-agents.sh --language=go --type=cli-tools --path=./my-cli
 
-# Generate for your project
-~/.golden-agents/generate-agents.sh --language=go --type=cli-tools --path=./my-project
+# Python web app with compact mode (~130 lines)
+./generate-agents.sh --language=python --type=web-apps --compact --path=./my-api
 
-# Or use compact mode (~130 lines instead of ~800)
-~/.golden-agents/generate-agents.sh --language=python --compact --path=./my-project
+# Multi-language project
+./generate-agents.sh --language=go,shell --path=./my-project
+
+# Upgrade existing file (dry-run first, then apply)
+./generate-agents.sh --upgrade --path=./my-project
+./generate-agents.sh --upgrade --apply --path=./my-project
+
+# Adopt existing Agents.md into framework
+./generate-agents.sh --adopt --language=python --path=./my-project
 ```
 
-### Option 2: Use the pre-generated core file
-
-```bash
-# Copy the standalone Agents.md to your project
-cp ~/.golden-agents/Agents.core.md ./Agents.md
-```
-
-### Option 3: Upgrade existing Agents.md (safe)
-
-```bash
-# Preview what would change (dry-run, writes nothing)
-~/.golden-agents/generate-agents.sh --upgrade --path=./my-project
-
-# Apply upgrade (creates .backup first, preserves project-specific content)
-~/.golden-agents/generate-agents.sh --upgrade --apply --path=./my-project
-```
-
-**Upgrade safety:**
-- Dry-run by default (shows diff, writes nothing)
-- Creates backup before any modification
-- REFUSES to modify files without framework markers
-- Preserves all project-specific content outside markers
-
-### Option 4: Sync templates from GitHub
-
-```bash
-# Update your local templates
-~/.golden-agents/generate-agents.sh --sync
-```
-
-### Option 5: Adopt existing Agents.md (aggressive deduplication)
-
-Have an existing Agents.md that wasn't created by golden-agents? Adopt it:
-
-```bash
-# Adopt your existing file (backs up original, generates deduplication prompt)
-~/.golden-agents/generate-agents.sh --adopt --language=python --path=./my-project
-```
-
-**What happens:**
-
-1. Your original `Agents.md` is backed up to `Agents.md.original`
-2. Framework content is generated with markers
-3. Your original content is appended under `## Preserved Project Content`
-4. `ADOPT-PROMPT.md` is created with aggressive deduplication instructions
-
-**The goal is minimal output.** The deduplication prompt guides your AI assistant to:
-
-- DELETE generic advice (testing, commits, style) — the framework covers it
-- KEEP only project-specific content (paths, commands, policies, domain rules)
-- Target: **0-50 lines** of project-specific content for most projects
-
-| Project Complexity | Target Size |
-|--------------------|-------------|
-| Simple (single language, standard tooling) | **0-20 lines** |
-| Moderate (multi-language, some custom workflows) | **20-50 lines** |
-| Complex (many integrations, strict domain rules) | **50-100 lines** |
-
-**Safety:** Original content is always preserved in `Agents.md.original`. Nothing is deleted automatically.
-
-### Option 6: Deduplicate bloated Agents.md (already using golden-agents)
-
-Already using golden-agents but your project-specific section has grown bloated (>100 lines)?
-
-```bash
-# Analyze and generate deduplication prompt
-~/.golden-agents/generate-agents.sh --dedupe --path=./my-project
-```
-
-**What happens:**
-
-1. Verifies your file has framework markers (was created by golden-agents)
-2. Counts lines in your project-specific section (after the end marker)
-3. If ≤100 lines: exits with success (already within target)
-4. If >100 lines: creates `ADOPT-PROMPT.md` with deduplication instructions
-5. Does NOT modify your Agents.md (you apply changes after review)
-
-**Use `--dedupe` when:** Your Agents.md was created by golden-agents but has accumulated too much project-specific content over time.
-
-**Use `--adopt` when:** Your Agents.md was NOT created by golden-agents (no framework markers).
-
-## Features
-
-- **Minimal output** - Progressive loading: 800 lines is too much, modules load on demand
-- **Adoption workflow** - Bring existing Agents.md files into the framework with aggressive deduplication
-- **Safe upgrades** - Update framework sections while preserving project-specific content
-- **Modular templates** - Mix and match languages, project types, and workflows
-- **Compact mode** - 6x smaller files with essential guidance only
-- **Self-contained output** - Generated files have no external dependencies
-- **Sync mechanism** - Keep templates up-to-date from GitHub
-- **Multi-language** - Go, Python, JavaScript, Shell, Dart/Flutter
+**Other options:**
+- `--migrate` - Import existing CLAUDE.md/GEMINI.md content
+- `--dedupe` - Trim bloated project-specific sections (>100 lines)
+- `--sync` - Update local templates from GitHub
+- `--dry-run` - Preview without writing
 
 ## Directory Structure
 
@@ -206,7 +143,8 @@ golden-agents/
 ├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
 ├── docs/
-│   └── TEST-PLAN.md       # Comprehensive test plan
+│   ├── SAMPLE.md          # Example generated output
+│   └── TEST-PLAN.md       # Test plan
 ├── test/
 │   ├── *.bats             # BATS tests (53 tests)
 │   ├── *.Tests.ps1        # Pester tests (14 tests)
@@ -248,31 +186,6 @@ golden-agents/
 | `deployment` | workflows/deployment.md | CI/CD, environment management |
 | `context-management` | workflows/context-management.md | Token efficiency, session resumption |
 | `build-hygiene` | workflows/build-hygiene.md | Lint → Build → Test order |
-
-## Usage Examples
-
-```bash
-# Go CLI tool
-./generate-agents.sh --language=go --type=cli-tools --path=./my-cli
-
-# Python web app
-./generate-agents.sh --language=python --type=web-apps --path=./my-api
-
-# Flutter mobile app
-./generate-agents.sh --language=dart-flutter --type=mobile-apps --path=./my-app
-
-# Multi-language project
-./generate-agents.sh --language=go,shell --type=cli-tools --path=./my-project
-
-# Compact mode (recommended for most projects)
-./generate-agents.sh --language=javascript --compact --path=./my-project
-
-# Dry run (preview without writing)
-./generate-agents.sh --language=python --compact --dry-run
-
-# Adopt existing Agents.md (brings it into framework, generates dedup prompt)
-./generate-agents.sh --adopt --language=typescript --path=./existing-project
-```
 
 ## Integration with Superpowers (Optional)
 
@@ -380,45 +293,12 @@ This framework incorporates official guidance from:
 
 ---
 
-## Why I Built This
+## Why This Exists
 
-Over six months of vibe coding, I created around 20 repositories. I noticed patterns in how even my favorite AI agents drifted off the golden path:
+AI coding assistants drift: they skip linters, ignore test failures, make random tooling choices, and forget project conventions. After 20+ repos, I got tired of repeating the same instructions every session.
 
-- **Bypassing quality gates** - Skipping linters, ignoring test failures, committing anyway
-- **Scope creep excuses** - "That's a preexisting issue, not in scope" (always false)
-- **Random tooling choices** - Different testing frameworks in every project, inconsistent coverage thresholds
-- **Style guide violations** - Adopting coding standards only to watch agents ignore them
+**The problem:** 800 lines of guidance is too much—AIs ignore bloated instructions.
 
-I found myself repeating the same instructions in every session. It got tiring.
+**The solution:** Progressive loading via [superpowers](https://github.com/obra/superpowers). Core framework loads at startup (~150 lines), language/workflow modules load on-demand, project-specific content stays under 50 lines.
 
-### The Minimal Output Principle
-
-So I consolidated all my guidance into a single document. But **800 lines is too much** — no AI agent can faithfully follow that. They drift and ignore bloated instructions.
-
-Borrowing from [obra/superpowers](https://github.com/obra/superpowers), I factored the guidance into **progressively loaded modules**:
-
-- **Core framework** loads at session start (~100-200 lines)
-- **Language modules** load only when that language is used
-- **Skills** invoke on-demand for specific tasks (debugging, TDD, brainstorming)
-- **Project-specific content** should be minimal: paths, commands, policies only
-
-**Target sizes for project-specific sections:**
-
-| Complexity | Lines |
-|------------|-------|
-| Simple | 0-20 |
-| Moderate | 20-50 |
-| Complex | 50-100 |
-
-If your Agents.md exceeds 100 lines of project-specific content, it's too much. Use `--adopt` with aggressive deduplication.
-
-### Why Share This
-
-This repo exists for three reasons:
-
-1. **Community contribution** - Share what works
-2. **Learn from others** - See how you solve these problems
-3. **Continuous improvement** - More eyes, better guidance
-
-If you've experienced similar drift, give it a try. If you have better solutions, open a PR.
-
+If your Agents.md project section exceeds 100 lines, use `--adopt` with deduplication.
