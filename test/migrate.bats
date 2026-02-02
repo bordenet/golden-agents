@@ -66,8 +66,83 @@ EOF
 Substantial content that would normally block generation.
 More content to exceed 100 bytes threshold.
 EOF
-    
+
     run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR" --dry-run
     [ "$status" -eq 0 ]
+}
+
+# Test 6: --migrate creates MIGRATION-PROMPT.md
+@test "--migrate creates MIGRATION-PROMPT.md" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF'
+# Project Guide
+
+Substantial content here that needs migration into the new framework.
+
+## Custom Rules
+- Rule 1: Always use feature branches
+- Rule 2: Require 2 approvals for PRs
+EOF
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/MIGRATION-PROMPT.md" ]
+    [ -f "$TEST_DIR/Agents.md" ]
+}
+
+# Test 7: MIGRATION-PROMPT.md contains existing content
+@test "MIGRATION-PROMPT.md contains existing content" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF'
+# My Unique Project Guide
+
+This is project-specific content with a unique marker ABC123XYZ that we can search for.
+Additional lines to ensure we exceed the 100 byte threshold for detection.
+EOF
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -q "ABC123XYZ" "$TEST_DIR/MIGRATION-PROMPT.md"
+}
+
+# Test 8: MIGRATION-PROMPT.md has deletion note
+@test "MIGRATION-PROMPT.md has deletion note" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF'
+# Project Guide
+
+Substantial content here for testing purposes that exceeds the 100 byte threshold.
+More content to make absolutely sure we exceed that threshold.
+EOF
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -qi "delete" "$TEST_DIR/MIGRATION-PROMPT.md"
+}
+
+# Test 9: .gitignore updated with MIGRATION-PROMPT.md
+@test ".gitignore includes MIGRATION-PROMPT.md" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF'
+# Project Guide
+
+Substantial content here for testing purposes that exceeds the 100 byte threshold.
+More content to make absolutely sure we exceed that threshold.
+EOF
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -q "MIGRATION-PROMPT.md" "$TEST_DIR/.gitignore"
+}
+
+# Test 10: --migrate with no existing content skips prompt generation
+@test "--migrate with no existing content skips prompt generation" {
+    mkdir -p "$TEST_DIR"
+    # No CLAUDE.md or Agents.md
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/Agents.md" ]
+    [ ! -f "$TEST_DIR/MIGRATION-PROMPT.md" ]
 }
 

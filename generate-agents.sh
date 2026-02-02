@@ -186,6 +186,94 @@ check_existing_guidance() {
     echo "$found_files"
 }
 
+# Generate the LLM migration prompt
+generate_migration_prompt() {
+    local path="$1"
+    local existing_content=""
+    local source_file=""
+
+    # Collect existing content from CLAUDE.md
+    if [[ -f "$path/CLAUDE.md" ]]; then
+        local size
+        size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
+        if [[ "$size" -gt "$MIN_CONTENT_BYTES" ]]; then
+            source_file="CLAUDE.md"
+            existing_content=$(cat "$path/CLAUDE.md")
+        fi
+    fi
+
+    # Collect from Agents.md without markers
+    if [[ -f "$path/Agents.md" ]] && ! grep -q "$MARKER_START" "$path/Agents.md"; then
+        local size
+        size=$(wc -c < "$path/Agents.md" | tr -d ' ')
+        source_file="${source_file:+$source_file + }Agents.md"
+        if [[ -n "$existing_content" ]]; then
+            existing_content="$existing_content
+
+---
+
+$(cat "$path/Agents.md")"
+        else
+            existing_content=$(cat "$path/Agents.md")
+        fi
+    fi
+
+    # Collect from AGENTS.md without markers
+    if [[ -f "$path/AGENTS.md" ]] && ! grep -q "$MARKER_START" "$path/AGENTS.md"; then
+        local size
+        size=$(wc -c < "$path/AGENTS.md" | tr -d ' ')
+        source_file="${source_file:+$source_file + }AGENTS.md"
+        if [[ -n "$existing_content" ]]; then
+            existing_content="$existing_content
+
+---
+
+$(cat "$path/AGENTS.md")"
+        else
+            existing_content=$(cat "$path/AGENTS.md")
+        fi
+    fi
+
+    cat << 'PROMPT_EOF'
+# Golden Agents Migration Prompt
+
+> **DELETE THIS FILE** after completing the migration.
+
+You are helping migrate project-specific AI guidance into the golden-agents framework.
+
+## Instructions
+
+1. Read the **Existing Content** below (from the old guidance files)
+2. Read the **New Framework** in `Agents.md` (already generated)
+3. Identify all **project-specific** guidance in the existing content:
+   - Project-specific rules, workflows, conventions
+   - File paths, commands, scripts unique to this project
+   - Team policies, deployment procedures
+   - Technology-specific guidance not covered by the framework
+4. Add the project-specific content to `Agents.md` in the section after `<!-- GOLDEN:framework:end -->`
+5. **DO NOT** duplicate content already in the framework (superpowers, anti-slop, etc.)
+6. **DO NOT** lose any project-specific information
+7. Delete this file when done
+
+## Source Files
+PROMPT_EOF
+    echo ""
+    echo "Migrated from: $source_file"
+    echo ""
+    echo "## Existing Content"
+    echo ""
+    echo '```markdown'
+    echo "$existing_content"
+    echo '```'
+    echo ""
+    echo "## Next Steps"
+    echo ""
+    echo "1. Open \`Agents.md\` and find the \`<!-- GOLDEN:framework:end -->\` marker"
+    echo "2. Add your project-specific content after that marker"
+    echo "3. Delete this \`MIGRATION-PROMPT.md\` file"
+    echo "4. Commit the changes"
+}
+
 # Parse arguments
 for arg in "$@"; do
     case $arg in
@@ -255,6 +343,37 @@ if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$DRY_RUN" != "true" ]]; t
         echo "  Example: generate-agents.sh --migrate --language=go --path=$OUTPUT_PATH" >&2
         exit 1
     fi
+fi
+
+# Handle migrate mode - generate migration prompt if needed
+if [[ "$MIGRATE" == "true" ]]; then
+    mkdir -p "$OUTPUT_PATH"
+
+    # Check if there's content to migrate
+    existing=$(check_existing_guidance "$OUTPUT_PATH")
+    if [[ -n "$existing" ]]; then
+        echo "[INFO] Found existing guidance: $existing"
+        echo "[INFO] Generating migration prompt..."
+
+        # Generate the migration prompt
+        generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
+        echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+
+        # Add to .gitignore
+        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+            if ! grep -q "MIGRATION-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
+                echo "MIGRATION-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+            fi
+        else
+            echo "MIGRATION-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+        fi
+        echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
+    else
+        echo "[INFO] No existing guidance files found. Running normal generation."
+    fi
+
+    # Continue with normal generation (framework Agents.md)
+    # Fall through to normal generation below
 fi
 
 # Set project name from directory if not specified
