@@ -18,6 +18,7 @@ DRY_RUN=false
 SYNC=false
 UPGRADE=false
 APPLY=false
+MIGRATE=false
 
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
@@ -147,6 +148,44 @@ resolve_languages() {
     echo "$resolved"
 }
 
+# Minimum bytes to consider a file as having substantial content (not just a redirect)
+MIN_CONTENT_BYTES=100
+
+# Check for existing guidance files that would be overwritten
+check_existing_guidance() {
+    local path="$1"
+    local found_files=""
+
+    # Check CLAUDE.md (if >100 bytes, it's not just a redirect)
+    if [[ -f "$path/CLAUDE.md" ]]; then
+        local size
+        size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
+        if [[ "$size" -gt "$MIN_CONTENT_BYTES" ]]; then
+            found_files="CLAUDE.md ($size bytes)"
+        fi
+    fi
+
+    # Check Agents.md without markers
+    if [[ -f "$path/Agents.md" ]]; then
+        if ! grep -q "$MARKER_START" "$path/Agents.md"; then
+            local size
+            size=$(wc -c < "$path/Agents.md" | tr -d ' ')
+            found_files="${found_files:+$found_files, }Agents.md ($size bytes, no markers)"
+        fi
+    fi
+
+    # Check AGENTS.md (case variation)
+    if [[ -f "$path/AGENTS.md" ]]; then
+        if ! grep -q "$MARKER_START" "$path/AGENTS.md"; then
+            local size
+            size=$(wc -c < "$path/AGENTS.md" | tr -d ' ')
+            found_files="${found_files:+$found_files, }AGENTS.md ($size bytes, no markers)"
+        fi
+    fi
+
+    echo "$found_files"
+}
+
 # Parse arguments
 for arg in "$@"; do
     case $arg in
@@ -159,6 +198,7 @@ for arg in "$@"; do
         --dry-run) DRY_RUN=true ;;
         --upgrade) UPGRADE=true ;;
         --apply) APPLY=true ;;
+        --migrate) MIGRATE=true ;;
         -h|--help) usage; exit 0 ;;
         -v|--version) version; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
@@ -201,6 +241,20 @@ if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" ]]; then
     echo "" >&2
     echo "Example: generate-agents.sh --language=go,js --type=web-apps --path=./my-project" >&2
     exit 1
+fi
+
+# Check for existing guidance files (unless --migrate or --upgrade or --dry-run is used)
+if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$DRY_RUN" != "true" ]]; then
+    existing=$(check_existing_guidance "$OUTPUT_PATH")
+    if [[ -n "$existing" ]]; then
+        echo "[ERROR] Found existing guidance files: $existing" >&2
+        echo "" >&2
+        echo "  These files contain project-specific content that would be lost." >&2
+        echo "  Use --migrate to safely incorporate this content into the new Agents.md." >&2
+        echo "" >&2
+        echo "  Example: generate-agents.sh --migrate --language=go --path=$OUTPUT_PATH" >&2
+        exit 1
+    fi
 fi
 
 # Set project name from directory if not specified
