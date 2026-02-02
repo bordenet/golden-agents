@@ -20,7 +20,7 @@ After deduplication, the `## Project-Specific Guidelines` section should be:
 ## The Principle
 
 The framework already provides:
-- Superpowers integration and skill invocation
+- Workflow checklists (with optional superpowers enhancement)
 - Language-specific conventions (Go, Python, JS, Shell, Dart)
 - Testing standards and coverage requirements
 - Git workflow and commit conventions
@@ -44,7 +44,7 @@ The framework already provides:
 | **Testing guidance** | "Write tests", "Maintain coverage", "Test before commit" |
 | **Git conventions** | "Use feature branches", "Write clear commit messages", "Conventional commits" |
 | **Code style** | "Use descriptive names", "Keep functions small", "Follow language conventions" |
-| **AI instructions** | "Bootstrap superpowers", "Use skills", "Verify before completing" |
+| **AI instructions** | "Use skills", "Verify before completing" (covered by inline checklists) |
 | **Quality gates** | "Run linter", "Fix warnings", "Build must pass" |
 | **Generic best practices** | "Document your code", "Handle errors", "Log appropriately" |
 

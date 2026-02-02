@@ -287,10 +287,10 @@ Tests run automatically on push/PR via `.github/workflows/test.yml`:
 
 ## 6. Success Criteria
 
-- [x] All 53 BATS tests pass
-- [ ] All 14 Pester tests pass
-- [ ] No test takes longer than 5 seconds
-- [ ] Upgrade safety tests cover all documented safety guarantees
+- [x] All 94 BATS tests pass
+- [x] All 14 Pester tests pass
+- [x] No test takes longer than 5 seconds
+- [x] Upgrade safety tests cover all documented safety guarantees
 - [x] CI runs on every push and PR
-- [ ] Test coverage documented in README badge
+- [x] Test coverage documented in README badge
 

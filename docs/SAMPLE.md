@@ -42,22 +42,37 @@ Self-contained. Minimal high-signal tokens.
 
 ---
 
-## Superpowers Integration
+## Workflow Checklists
 
-At the START of every conversation, run:
+### Optional: Enhanced Workflows
 
+If you have [superpowers](https://github.com/obra/superpowers) installed, run at session start:
+
+```bash
 node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+```
 
-### Key Skills
+Superpowers provides interactive skill-based workflows. If not installed, use the checklists below.
 
-| Skill | When to Invoke |
-|-------|---------------|
-| `superpowers:brainstorming` | Before creative/feature work |
-| `superpowers:systematic-debugging` | Before fixing bugs |
-| `superpowers:test-driven-development` | Before writing implementation |
-| `superpowers:verification-before-completion` | Before committing, creating PRs, or claiming done |
+### Before Creative/Feature Work
 
-**The Rule**: IF A SKILL APPLIES (even 1% chance), YOU MUST INVOKE IT.
+- [ ] Clarify the problem being solved
+- [ ] Identify acceptance criteria and success metrics
+- [ ] Consider edge cases and error scenarios
+- [ ] Explore 2-3 approaches with trade-offs
+
+### Before Implementation (TDD Cycle)
+
+- [ ] Write failing test describing desired behavior
+- [ ] Implement minimal code to pass test
+- [ ] Refactor for clarity and consistency
+- [ ] Verify all existing tests still pass
+
+### Before Claiming Done
+
+- [ ] All tests pass locally
+- [ ] No linting errors or warnings
+- [ ] Documentation updated if behavior changed
 
 ---
 

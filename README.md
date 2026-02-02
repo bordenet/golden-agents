@@ -274,14 +274,18 @@ golden-agents/
 ./generate-agents.sh --adopt --language=typescript --path=./existing-project
 ```
 
-## Integration with Superpowers
+## Integration with Superpowers (Optional)
 
-This framework integrates with [obra/superpowers](https://github.com/obra/superpowers) for AI skill management. Generated files include bootstrap instructions for:
+This framework optionally integrates with [obra/superpowers](https://github.com/obra/superpowers) for enhanced AI skill management. Superpowers is **not required** — all generated Agents.md files include self-contained workflow checklists that work with any AI assistant.
+
+If superpowers is installed, users get interactive skill-based workflows:
 
 - `superpowers:brainstorming` - Before creative work
 - `superpowers:systematic-debugging` - Before fixing bugs
 - `superpowers:test-driven-development` - Before implementation
 - `superpowers:verification-before-completion` - Before claiming done
+
+If not installed, the inline checklists provide equivalent guidance.
 
 ## Windows Installation
 

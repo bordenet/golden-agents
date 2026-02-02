@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-02-02
+
+### Changed
+
+- **Superpowers now optional** - Framework no longer requires obra/superpowers to be installed
+  - All generated Agents.md files now include inline workflow checklists as fallback
+  - Superpowers remains available as an optional enhancement for Claude users
+  - Works with any AI assistant (Gemini, Copilot, Cursor, etc.) out of the box
+
+### Fixed
+
+- Framework was delivering "a dud" for users without superpowers (99% of users)
+
+---
+
 ## [1.4.0] - 2026-02-01
 
 ### Added

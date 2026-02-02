@@ -1,6 +1,6 @@
 # Migration Feature Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Status:** ✅ COMPLETED - Feature fully implemented and tested (94 BATS tests pass)
 
 **Goal:** Add `--migrate` flag and language aliases to golden-agents, enabling safe migration of existing project guidance into the framework.
 
@@ -483,7 +483,7 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
    - Team policies, deployment procedures
    - Technology-specific guidance not covered by the framework
 4. Add the project-specific content to `Agents.md` in the section after `<!-- GOLDEN:framework:end -->`
-5. **DO NOT** duplicate content already in the framework (superpowers, anti-slop, etc.)
+5. **DO NOT** duplicate content already in the framework (workflow checklists, anti-slop, etc.)
 6. **DO NOT** lose any project-specific information
 7. Delete this file when done
 
