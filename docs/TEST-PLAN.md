@@ -17,13 +17,18 @@
 ```
 golden-agents/
 ├── test/
-│   ├── setup_suite.bash      # Suite-level setup (install BATS helpers)
 │   ├── test_helper.bash      # Shared helper functions
 │   ├── args.bats             # Argument parsing tests
 │   ├── generate.bats         # New file generation tests
 │   ├── upgrade.bats          # Upgrade safety tests (CRITICAL)
 │   ├── autodetect.bats       # Auto-detection tests
-│   └── templates.bats        # Template file tests
+│   ├── templates.bats        # Template file tests
+│   ├── migrate.bats          # Migration workflow tests
+│   ├── adopt.bats            # Adoption workflow tests
+│   ├── dedupe.bats           # Deduplication workflow tests
+│   ├── sync.bats             # Template sync tests
+│   ├── edge-cases.bats       # Boundary condition tests
+│   └── generate-agents.Tests.ps1  # PowerShell wrapper tests
 └── docs/
     └── TEST-PLAN.md          # This file
 ```
@@ -123,16 +128,17 @@ jobs:
 
 | # | Test Case | Setup | Expected |
 |---|-----------|-------|----------|
-| 1 | Compact mode generates ~130 lines | `--language=go --compact` | Lines between 100-150, contains markers |
-| 2 | Full mode generates ~800 lines | `--language=go` | Lines between 700-900, contains markers |
-| 3 | Output contains start marker | Any generation | File contains `<!-- GOLDEN:framework:start -->` |
-| 4 | Output contains end marker | Any generation | File contains `<!-- GOLDEN:framework:end -->` |
-| 5 | Output contains language header | `--language=python` | Header contains `> **Languages**: python` |
-| 6 | Output contains type header | `--type=cli-tools` | Header contains `> **Type**: cli-tools` |
-| 7 | Creates output directory if missing | `--path=/tmp/new-dir` | Directory created, file exists |
-| 8 | Project name from directory | `--path=/tmp/my-project` | Header contains `# AI Agent Guidelines - my-project` |
-| 9 | Custom project name | `--name=CustomName` | Header contains `# AI Agent Guidelines - CustomName` |
+| 1 | Default (progressive) generates ~60 lines | `--language=go` | Lines between 50-80, contains markers |
+| 2 | Compact mode generates ~130 lines | `--language=go --compact` | Lines between 100-150, contains markers |
+| 3 | Full mode (deprecated) shows warning | `--language=go --full` | stderr contains "DEPRECATED" |
+| 4 | Output contains start marker | Any generation | File contains `<!-- GOLDEN:framework:start -->` |
+| 5 | Output contains end marker | Any generation | File contains `<!-- GOLDEN:framework:end -->` |
+| 6 | Output contains language header | `--language=python` | Header contains `> **Languages**: python` |
+| 7 | Output contains type header | `--type=cli-tools` | Header contains `> **Type**: cli-tools` |
+| 8 | Creates output directory if missing | `--path=/tmp/new-dir` | Directory created, file exists |
+| 9 | Project name from directory | `--path=/tmp/my-project` | Header contains `# AI Agent Guidelines - my-project` |
 | 10 | Multiple languages in header | `--language=go,python` | Header contains `> **Languages**: go,python` |
+| 11 | Progressive mode includes load instructions | Default mode | Contains `$HOME/.golden-agents/templates/` |
 
 ### 2.3 Upgrade Safety Tests (`upgrade.bats`) — CRITICAL
 
@@ -156,10 +162,11 @@ jobs:
 | 1 | Language auto-detected from existing | File with `> **Languages**: python` | Uses python without `--language` flag |
 | 2 | Type auto-detected from existing | File with `> **Type**: web-apps` | Uses web-apps without `--type` flag |
 | 3 | Compact mode auto-detected | File header contains `(compact)` | Upgrade uses compact mode |
-| 4 | Full mode auto-detected | File header lacks `(compact)` | Upgrade uses full mode |
-| 5 | Flag overrides auto-detect language | `--language=go` on python file | Uses go, not python |
-| 6 | Flag overrides auto-detect type | `--type=cli-tools` on web-apps file | Uses cli-tools |
-| 7 | Missing language in file + no flag fails | File without language header | status=1, "Cannot determine languages" |
+| 4 | Progressive mode auto-detected | File header contains `(progressive)` | Upgrade uses progressive mode |
+| 5 | Legacy full mode auto-converts | File header lacks mode indicator | Upgrade converts to progressive |
+| 6 | Flag overrides auto-detect language | `--language=go` on python file | Uses go, not python |
+| 7 | Flag overrides auto-detect type | `--type=cli-tools` on web-apps file | Uses cli-tools |
+| 8 | Missing language in file + no flag fails | File without language header | status=1, "Cannot determine languages" |
 
 ### 2.5 Template Tests (`templates.bats`)
 
@@ -174,14 +181,53 @@ jobs:
 | 7 | Full mode includes type template | `--type=cli-tools` full mode | Contains CLI-specific content |
 | 8 | Missing template produces warning | `--type=nonexistent` | stderr contains "Warning: No template" |
 
-### 2.6 Sync Tests (`sync.bats`)
+### 2.6 Migration Tests (`migrate.bats`)
+
+| # | Test Case | Setup | Expected |
+|---|-----------|-------|----------|
+| 1 | --migrate bypasses existing content block | Existing CLAUDE.md | status=0, generates Agents.md |
+| 2 | --migrate creates MIGRATION-PROMPT.md | Existing CLAUDE.md | File created with instructions |
+| 3 | MIGRATION-PROMPT.md contains existing content | Existing CLAUDE.md | Prompt includes original content |
+| 4 | MIGRATION-PROMPT.md has deletion note | Any migration | Contains "DELETE THIS FILE" |
+| 5 | .gitignore includes MIGRATION-PROMPT.md | After migration | Entry added to .gitignore |
+| 6 | --migrate with no existing content skips prompt | Empty directory | No MIGRATION-PROMPT.md created |
+| 7 | MIGRATION-PROMPT.md shows source line count | Existing CLAUDE.md | Contains "Original size: X lines" |
+| 8 | MIGRATION-PROMPT.md includes 10-word test | Any migration | Contains "10-word test" |
+| 9 | MIGRATION-PROMPT.md includes target sizes | Any migration | Contains target size table |
+| 10 | STDOUT shows source file metrics | Existing CLAUDE.md | Shows "Source file: X (Y lines)" |
+
+### 2.7 Adoption Tests (`adopt.bats`)
+
+| # | Test Case | Setup | Expected |
+|---|-----------|-------|----------|
+| 1 | --adopt requires existing Agents.md | No file | status=1, "No Agents.md found" |
+| 2 | --adopt requires --language | Existing file | status=1, "--adopt requires --language" |
+| 3 | --adopt refuses file WITH markers | File with markers | status=1, "already has framework markers" |
+| 4 | --adopt creates backup | Existing file | Agents.md.original created |
+| 5 | --adopt creates ADOPT-PROMPT.md | Existing file | Prompt file created |
+| 6 | --adopt appends original content | Existing file | "Preserved Project Content" section |
+| 7 | --adopt adds files to .gitignore | Existing file | ADOPT-PROMPT.md and .original in .gitignore |
+| 8 | ADOPT-PROMPT.md has deduplication rules | Any adoption | Contains "10-word test" |
+
+### 2.8 Deduplication Tests (`dedupe.bats`)
+
+| # | Test Case | Setup | Expected |
+|---|-----------|-------|----------|
+| 1 | --dedupe requires existing Agents.md | No file | status=1, "No Agents.md found" |
+| 2 | --dedupe requires markers | File without markers | status=1, "does not have framework markers" |
+| 3 | --dedupe skips if <100 lines | Small project section | status=0, "already within target" |
+| 4 | --dedupe creates ADOPT-PROMPT.md | Bloated file | Prompt file created |
+| 5 | --dedupe shows line counts | Bloated file | Shows total, framework, project lines |
+| 6 | --dedupe does NOT modify Agents.md | Any file | Original unchanged |
+
+### 2.9 Sync Tests (`sync.bats`)
 
 | # | Test Case | Setup | Expected |
 |---|-----------|-------|----------|
 | 1 | Sync in git repo succeeds | In git directory | status=0, "Templates updated" |
 | 2 | Sync in non-git directory fails | Remove .git | status=1, "Not a git repo" |
 
-### 2.7 Edge Case Tests (`edge-cases.bats`)
+### 2.10 Edge Case Tests (`edge-cases.bats`)
 
 | # | Test Case | Setup | Expected |
 |---|-----------|-------|----------|
@@ -192,7 +238,7 @@ jobs:
 | 5 | Long project name | 50+ char name | status=0, name in output |
 | 6 | Read-only directory fails | `chmod a-w` | status≠0, clear error |
 
-### 2.8 PowerShell Wrapper Tests (`generate-agents.Tests.ps1`)
+### 2.11 PowerShell Wrapper Tests (`generate-agents.Tests.ps1`)
 
 | # | Test Case | Command | Expected |
 |---|-----------|---------|----------|
@@ -218,29 +264,35 @@ jobs:
 | Priority | Category | Rationale |
 |----------|----------|-----------|
 | **P0 - Critical** | Upgrade Safety (2.3) | Data loss prevention is paramount |
+| **P0 - Critical** | Migration Tests (2.6) | Prevents data loss during adoption |
+| **P0 - Critical** | Adoption Tests (2.7) | Prevents data loss during adoption |
 | **P1 - High** | Argument Parsing (2.1) | User-facing errors, first line of defense |
 | **P1 - High** | Auto-Detection (2.4) | Upgrade depends on correct detection |
-| **P1 - High** | PowerShell Wrapper (2.8) | Windows users depend on this |
+| **P1 - High** | PowerShell Wrapper (2.11) | Windows users depend on this |
 | **P2 - Medium** | New File Generation (2.2) | Core functionality, well-tested manually |
-| **P2 - Medium** | Edge Cases (2.7) | Robustness for diverse inputs |
+| **P2 - Medium** | Deduplication Tests (2.8) | Quality of life feature |
+| **P2 - Medium** | Edge Cases (2.10) | Robustness for diverse inputs |
 | **P3 - Low** | Template Tests (2.5) | Structural validation, less likely to regress |
-| **P3 - Low** | Sync Tests (2.6) | Simple functionality, minimal code paths |
+| **P3 - Low** | Sync Tests (2.9) | Simple functionality, minimal code paths |
 
 ---
 
 ## 4. Implementation Order
 
-1. **Setup infrastructure** — `test_helper.bash`, `setup_suite.bash`
+1. **Setup infrastructure** — `test_helper.bash`
 2. **P0: upgrade.bats** — Upgrade safety tests (10 tests)
-3. **P1: args.bats** — Argument parsing tests (10 tests)
-4. **P1: autodetect.bats** — Auto-detection tests (7 tests)
-5. **P1: generate-agents.Tests.ps1** — PowerShell wrapper tests (14 tests)
-6. **P2: generate.bats** — Generation tests (10 tests)
-7. **P2: edge-cases.bats** — Edge case tests (6 tests)
-8. **P3: templates.bats** — Template tests (8 tests)
-9. **P3: sync.bats** — Sync tests (2 tests)
+3. **P0: migrate.bats** — Migration workflow tests (10 tests)
+4. **P0: adopt.bats** — Adoption workflow tests (8 tests)
+5. **P1: args.bats** — Argument parsing tests (10 tests)
+6. **P1: autodetect.bats** — Auto-detection tests (8 tests)
+7. **P1: generate-agents.Tests.ps1** — PowerShell wrapper tests (14 tests)
+8. **P2: generate.bats** — Generation tests (11 tests)
+9. **P2: dedupe.bats** — Deduplication tests (6 tests)
+10. **P2: edge-cases.bats** — Edge case tests (6 tests)
+11. **P3: templates.bats** — Template tests (8 tests)
+12. **P3: sync.bats** — Sync tests (2 tests)
 
-**Total: 67 test cases (53 BATS + 14 Pester)**
+**Total: 108 test cases (94 BATS + 14 Pester)**
 
 ---
 

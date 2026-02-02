@@ -156,4 +156,4 @@ go test -race -coverprofile=coverage.out ./...
 
 ---
 
-*For detailed guidance, see: superpowers-plus/guidance/*
+*For detailed guidance, load templates on-demand from: `$HOME/.golden-agents/templates/`*

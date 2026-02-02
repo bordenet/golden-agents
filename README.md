@@ -152,7 +152,7 @@ golden-agents/
 │   ├── SAMPLE.md          # Example generated output
 │   └── TEST-PLAN.md       # Test plan
 ├── test/
-│   ├── *.bats             # BATS tests (53 tests)
+│   ├── *.bats             # BATS tests (94 tests)
 │   ├── *.Tests.ps1        # Pester tests (14 tests)
 │   └── test_helper.bash   # Shared test utilities
 └── templates/
@@ -248,11 +248,11 @@ Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), th
 
 ## Testing
 
-**67 automated tests** run on every push/PR via GitHub Actions:
+**108 automated tests** run on every push/PR via GitHub Actions:
 
 | Test Suite | Framework | Tests | Platforms |
 |------------|-----------|-------|-----------|
-| Core script | BATS | 53 | Linux, macOS, Windows (Git Bash) |
+| Core script | BATS | 94 | Linux, macOS, Windows (Git Bash) |
 | PowerShell wrapper | Pester | 14 | Linux, macOS, Windows |
 | Linting | ShellCheck | - | Linux |
 
@@ -306,3 +306,31 @@ AI coding assistants drift: they skip linters, ignore test failures, make random
 **The solution:** Progressive loading. Core framework loads at startup (~60 lines), language/workflow modules load on-demand from `~/.golden-agents/templates/`, project-specific content stays under 50 lines.
 
 If your Agents.md project section exceeds 100 lines, use `--adopt` with deduplication.
+
+### Complex Projects: The `.ai-guidance/` Pattern
+
+Some projects genuinely have extensive project-specific documentation (mobile builds, capture architectures, security protocols). For these:
+
+1. **Create `.ai-guidance/` in your repo** with topic-specific modules
+2. **Add a loading table to Agents.md** referencing when to load each module
+3. **Keep Agents.md under 150 lines** with quick reference + loading instructions
+
+Example structure:
+```
+your-repo/
+├── Agents.md                           # ~100-150 lines (quick ref + loading table)
+└── .ai-guidance/
+    ├── mobile-builds.md                # iOS/Android build details
+    ├── architecture.md                 # System architecture
+    └── security-protocols.md           # Security requirements
+```
+
+Example loading table in Agents.md:
+```markdown
+| When... | Load |
+|---------|------|
+| Building iOS/Android | [.ai-guidance/mobile-builds.md](.ai-guidance/mobile-builds.md) |
+| System design | [.ai-guidance/architecture.md](.ai-guidance/architecture.md) |
+```
+
+This mirrors how the framework uses `~/.golden-agents/templates/` for generic content, but with project-specific modules in the repo itself.

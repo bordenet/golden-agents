@@ -331,6 +331,12 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 | Moderate (multi-language, some custom workflows) | **20-50 lines** |
 | Complex (many integrations, strict domain rules) | **50-100 lines** |
 
+**If your project exceeds 100 lines** of genuinely project-specific content:
+1. Create a \`.ai-guidance/\` directory in your repo
+2. Split content into topic-specific modules (e.g., \`mobile-builds.md\`, \`security.md\`)
+3. Add a loading table to Agents.md referencing when to load each module
+4. Keep Agents.md under 150 lines with quick reference + loading instructions
+
 ## Source Files
 PROMPT_EOF
     echo ""

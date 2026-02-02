@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-02-02
+
+### Added
+
+- **Metrics reporting in prompts** - MIGRATION-PROMPT.md now includes:
+  - Original file line count
+  - 10-word test for evaluating content
+  - Target size table (Simple: 0-20, Moderate: 20-50, Complex: 50-100 lines)
+  - Metrics summary template for AI to report reduction percentage
+- **STDOUT metrics** - `--migrate` now shows source file line count and target range
+
+---
+
+## [1.4.2] - 2026-02-02
+
+### Changed
+
+- **BREAKING: Progressive mode is now the default** - Generates ~60 lines with on-demand template loading
+  - Progressive mode uses `$HOME/.golden-agents/templates/` for just-in-time guidance loading
+  - Compact mode (~130 lines) still available via `--compact`
+  - Full mode (~800 lines) deprecated - AI assistants cannot follow instructions that long
+- **`--full` flag deprecated** - Prints warning about generating unusable output
+- **Upgrade auto-converts legacy files** - Files without mode indicator convert to progressive
+
+### Fixed
+
+- Fundamentally broken default mode - 800+ line files defeat the entire purpose of AI guidance
+  - AI assistants ignore or misprocess bloated instruction files
+  - Progressive loading is the only viable approach at scale
+
+---
+
 ## [1.4.1] - 2026-02-02
 
 ### Changed
@@ -74,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Improved sync test to handle uncommitted changes gracefully
-- Updated TEST-PLAN.md with comprehensive coverage (67 tests total)
+- Updated TEST-PLAN.md with comprehensive coverage
 
 ### Documentation
 
@@ -146,11 +178,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-- **6:1 compaction ratio** - Compact mode (~130 lines) vs full mode (~800 lines)
 - **Self-contained output** - Generated files have no external dependencies
 - **Multi-language support** - Combine multiple language templates
 - **Superpowers integration** - Bootstrap instructions for obra/superpowers
 - **Context engineering** - Based on Anthropic's best practices
+
+> **Note:** v1.0.0 shipped with full mode (~800 lines) as default. This was deprecated in v1.4.2
+> because AI assistants cannot follow instructions that long. Use progressive mode (default since v1.4.2)
+> or compact mode (~130 lines) instead.
 
 ### Templates Included
 

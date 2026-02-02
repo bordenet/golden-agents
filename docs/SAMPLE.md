@@ -2,9 +2,23 @@
 
 This shows what Golden Agents generates for a Python web application project.
 
+## Progressive Mode (~60 lines) — Default
+
+Progressive mode is the default and recommended approach. It generates a minimal core with
+on-demand template loading from `$HOME/.golden-agents/templates/`.
+
+```bash
+./generate-agents.sh --language=python --type=web-apps --path=./my-api
+```
+
+Progressive mode generates ~60 lines of high-signal guidance that AI assistants can actually follow,
+with instructions to load detailed templates only when needed for specific tasks.
+
+---
+
 ## Compact Mode (~130 lines)
 
-Compact mode provides essential guidance without overwhelming the AI's context window.
+Compact mode provides self-contained guidance without external dependencies.
 
 ```bash
 ./generate-agents.sh --language=python --type=web-apps --compact --path=./my-api
@@ -144,25 +158,20 @@ pytest --cov=. --cov-report=term-missing
 
 ---
 
-## Full Mode (~800 lines)
+## Full Mode (~800 lines) — DEPRECATED
 
-Full mode includes detailed guidance for complex projects.
+> ⚠️ **DEPRECATED in v1.4.2** — Full mode generates 800+ line files that AI assistants cannot follow.
+> Use progressive mode (default) or compact mode instead.
+
+Full mode is available via `--full` but prints a deprecation warning:
 
 ```bash
-./generate-agents.sh --language=python --type=web-apps --path=./my-api
+./generate-agents.sh --language=python --type=web-apps --full --path=./my-api
+# [WARN] DEPRECATED: --full generates 800+ line files that AI assistants cannot follow.
 ```
 
-Full mode adds:
-
-- Detailed Perplexity research triggers
-- Complete communication templates
-- Anti-slop writing rules with examples
-- Context management strategies
-- Session resumption protocols
-- Security workflows
-- Deployment checklists
-
-See the [templates/](../templates/) directory for all available modules.
+If you need detailed guidance for specific tasks, use progressive mode and load templates on-demand
+from `$HOME/.golden-agents/templates/`.
 
 ---
 
