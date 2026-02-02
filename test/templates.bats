@@ -79,7 +79,7 @@ teardown() {
 
 # Test 8: Unknown type handled gracefully
 @test "unknown project type handled gracefully" {
-    run "$GENERATE_SCRIPT" --language=go --type=nonexistent-type --compact --path="$TEST_DIR"
+    run "$GENERATE_SCRIPT" --language=go --type=nonexistent-type --path="$TEST_DIR"
     
     # Should either succeed (ignoring unknown type) or fail gracefully
     # The file should still be created if it succeeds

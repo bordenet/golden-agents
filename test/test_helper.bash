@@ -20,9 +20,6 @@ fi
 # HARD LIMIT: Progressive mode must be under this
 MAX_PROGRESSIVE_LINES=100
 
-# HARD LIMIT: Compact mode must be under this
-MAX_COMPACT_LINES=200
-
 # Assert output is within size limits for progressive mode
 assert_progressive_size() {
     local file="$1"
@@ -30,19 +27,7 @@ assert_progressive_size() {
     line_count=$(wc -l < "$file" | tr -d ' ')
     if [[ "$line_count" -gt "$MAX_PROGRESSIVE_LINES" ]]; then
         echo "FAIL: Progressive mode generated $line_count lines (max: $MAX_PROGRESSIVE_LINES)" >&2
-        echo "This is RUBBISH. AI assistants cannot follow files this large." >&2
-        return 1
-    fi
-}
-
-# Assert output is within size limits for compact mode
-assert_compact_size() {
-    local file="$1"
-    local line_count
-    line_count=$(wc -l < "$file" | tr -d ' ')
-    if [[ "$line_count" -gt "$MAX_COMPACT_LINES" ]]; then
-        echo "FAIL: Compact mode generated $line_count lines (max: $MAX_COMPACT_LINES)" >&2
-        echo "This is RUBBISH. Files over 200 lines are not 'compact'." >&2
+        echo "ERROR: Files this large defeat the purpose of AI guidance." >&2
         return 1
     fi
 }
@@ -75,7 +60,7 @@ create_agents_with_markers() {
     local path="$1"
     local lang="${2:-go}"
     local type="${3:-cli-tools}"
-    local mode="${4:-compact}"
+    local mode="${4:-progressive}"
 
     mkdir -p "$path"
     cat > "$path/Agents.md" << EOF
@@ -132,7 +117,7 @@ This file has no markers and was created before v1.2.0.
 EOF
 }
 
-# Create Agents.md with full mode header (no "(compact)" in header)
+# Create Agents.md with full mode header (legacy, no mode label)
 create_agents_full_mode() {
     local path="$1"
     local lang="${2:-go}"

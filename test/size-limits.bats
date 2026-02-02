@@ -57,42 +57,12 @@ teardown() {
 }
 
 # =============================================================================
-# Compact mode size limits (max 200 lines)
-# =============================================================================
-
-@test "SIZE LIMIT: Compact mode NEVER exceeds 200 lines" {
-    run "$GENERATE_SCRIPT" --language=go --compact --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-    
-    assert_compact_size "$TEST_DIR/Agents.md"
-}
-
-@test "SIZE LIMIT: Compact mode with ALL languages stays under limit" {
-    run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter --compact --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-    
-    assert_compact_size "$TEST_DIR/Agents.md"
-}
-
-@test "SIZE LIMIT: Compact mode with all project types under limit" {
-    for ptype in cli-tools web-apps mobile-apps genesis-tools; do
-        rm -rf "$TEST_DIR"
-        mkdir -p "$TEST_DIR"
-        
-        run "$GENERATE_SCRIPT" --language=go --type="$ptype" --compact --path="$TEST_DIR"
-        [ "$status" -eq 0 ]
-        
-        assert_compact_size "$TEST_DIR/Agents.md"
-    done
-}
-
-# =============================================================================
 # Full mode deprecation
 # =============================================================================
 
 @test "SIZE LIMIT: Full mode shows DEPRECATION warning" {
     run "$GENERATE_SCRIPT" --language=go --full --dry-run --path="$TEST_DIR"
-    
+
     # Should show deprecation warning (case insensitive)
     [[ "$output" == *"DEPRECATED"* ]] || [[ "$output" == *"deprecated"* ]] || \
     [[ "$output" == *"Deprecated"* ]]
@@ -104,12 +74,12 @@ teardown() {
 
 @test "SIZE LIMIT: Upgrade of file with markers produces reasonable size" {
     create_agents_with_markers "$TEST_DIR"
-    
+
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    
-    # Result should still be compact
-    assert_compact_size "$TEST_DIR/Agents.md"
+
+    # Result should still be progressive (under 100 lines)
+    assert_progressive_size "$TEST_DIR/Agents.md"
 }
 
 @test "SIZE LIMIT: Generated file is dramatically smaller than bloated input" {

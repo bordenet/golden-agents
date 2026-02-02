@@ -63,9 +63,6 @@ golden-agents/
 # HARD LIMIT: Progressive mode must be under this
 MAX_PROGRESSIVE_LINES=100
 
-# HARD LIMIT: Compact mode must be under this
-MAX_COMPACT_LINES=200
-
 # Assert output is within size limits for progressive mode
 assert_progressive_size() {
     local file="$1"
@@ -73,19 +70,7 @@ assert_progressive_size() {
     line_count=$(wc -l < "$file" | tr -d ' ')
     if [[ "$line_count" -gt "$MAX_PROGRESSIVE_LINES" ]]; then
         echo "FAIL: Progressive mode generated $line_count lines (max: $MAX_PROGRESSIVE_LINES)" >&2
-        echo "This is RUBBISH. AI assistants cannot follow files this large." >&2
-        return 1
-    fi
-}
-
-# Assert output is within size limits for compact mode
-assert_compact_size() {
-    local file="$1"
-    local line_count
-    line_count=$(wc -l < "$file" | tr -d ' ')
-    if [[ "$line_count" -gt "$MAX_COMPACT_LINES" ]]; then
-        echo "FAIL: Compact mode generated $line_count lines (max: $MAX_COMPACT_LINES)" >&2
-        echo "This is RUBBISH. Files over 200 lines are not 'compact'." >&2
+        echo "ERROR: Files this large defeat the purpose of AI guidance." >&2
         return 1
     fi
 }
@@ -462,20 +447,6 @@ EOF
     [ "$status" -eq 0 ]
 
     assert_progressive_size "$TEST_DIR/Agents.md"
-}
-
-@test "SIZE LIMIT: Compact mode NEVER exceeds 200 lines" {
-    run "$GENERATE_SCRIPT" --language=go --compact --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    assert_compact_size "$TEST_DIR/Agents.md"
-}
-
-@test "SIZE LIMIT: Compact mode with ALL languages stays under limit" {
-    run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter --compact --path="$TEST_DIR"
-    [ "$status" -eq 0 ]
-
-    assert_compact_size "$TEST_DIR/Agents.md"
 }
 
 @test "SIZE LIMIT: Upgrade of bloated file produces usable output" {

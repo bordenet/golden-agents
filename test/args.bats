@@ -70,11 +70,11 @@ teardown() {
     [[ "$output" == *"go"* ]] || [[ "$output" == *"python"* ]]
 }
 
-# Test 9: --compact flag accepted
-@test "--compact flag accepted" {
-    run "$GENERATE_SCRIPT" --language=go --compact --dry-run
+# Test 9: --progressive flag accepted (explicit default)
+@test "--progressive flag accepted" {
+    run "$GENERATE_SCRIPT" --language=go --progressive --dry-run
     [ "$status" -eq 0 ]
-    [[ "$output" == *"compact"* ]]
+    [[ "$output" == *"progressive"* ]]
 }
 
 # Test 10: --dry-run shows output without writing

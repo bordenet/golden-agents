@@ -14,16 +14,6 @@ on-demand template loading from `$HOME/.golden-agents/templates/`.
 Progressive mode generates ~60 lines of high-signal guidance that AI assistants can actually follow,
 with instructions to load detailed templates only when needed for specific tasks.
 
----
-
-## Compact Mode (~130 lines)
-
-Compact mode provides self-contained guidance without external dependencies.
-
-```bash
-./generate-agents.sh --language=python --type=web-apps --compact --path=./my-api
-```
-
 ### Generated Files
 
 | File | Purpose |
@@ -161,7 +151,7 @@ pytest --cov=. --cov-report=term-missing
 ## Full Mode (~800 lines) — DEPRECATED
 
 > ⚠️ **DEPRECATED in v1.4.2** — Full mode generates 800+ line files that AI assistants cannot follow.
-> Use progressive mode (default) or compact mode instead.
+> Use progressive mode (default) instead.
 
 Full mode is available via `--full` but prints a deprecation warning:
 

@@ -4,7 +4,7 @@
 
 A 50-line `CLAUDE.md` works fine. A 500-line one wastes context tokens and buries critical rules. A 1000-line one means the AI misses half of what you wrote.
 
-Golden Agents solves this with **progressive loading**: a compact core file (~60 lines) that loads detailed guidance on-demand based on what the AI is actually doing.
+Golden Agents solves this with **progressive loading**: a minimal core file (~60 lines) that loads detailed guidance on-demand based on what the AI is actually doing.
 
 [![GitHub Stars](https://img.shields.io/github/stars/bordenet/golden-agents?style=social)](https://github.com/bordenet/golden-agents)
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
@@ -15,9 +15,38 @@ Golden Agents solves this with **progressive loading**: a compact core file (~60
 
 > **⚠️ What This Is (And Isn't)**
 >
-> This project generates **plain text Markdown files** that AI coding assistants read as instructions. The shell script is a simple text generator—it does NOT execute code, install software, or run autonomously.
+> This project generates **plain text Markdown files** that AI coding assistants read as instructions. The shell script is a text generator—it does NOT execute code, install software, or run autonomously.
 >
 > **[→ Full explanation: How It Works](docs/HOW-IT-WORKS.md)**
+
+---
+
+## How It Works: Shell Script + LLM Prompts
+
+This is a **hybrid shell+LLM tooling pattern**. The shell script generates structured Markdown that contains embedded prompts for AI assistants:
+
+```
+┌────────────────────┐     ┌─────────────────────┐     ┌────────────────────┐
+│  generate-agents.sh │ ──▶ │     Agents.md       │ ──▶ │   AI Assistant     │
+│  (bash script)      │     │  (generated text)   │     │   (reads & follows)│
+└────────────────────┘     └─────────────────────┘     └────────────────────┘
+         │                           │                           │
+    Text generator            Contains prompts:          Loads modules when
+    (runs once per           "When debugging,           triggers match
+     project setup)          load debugging.md"         current task
+```
+
+**What the shell script does:**
+- Assembles templates based on your language/project type
+- Outputs a Markdown file with embedded instructions for the AI
+- Never runs again after initial generation (unless you `--upgrade`)
+
+**What the AI does with the output:**
+- Reads `Agents.md` at session start (~60 lines)
+- Follows embedded instructions to load specific modules on-demand
+- Applies rules from loaded modules to current task
+
+**The key insight:** The shell script doesn't contain AI prompts that execute. It *generates* AI prompts as text files. The AI reads those files later, during development sessions.
 
 ---
 
@@ -47,7 +76,7 @@ your-project/
     └── architecture.md          # Loaded for design work
 ```
 
-The AI reads the compact core at session start, then loads specific modules when relevant:
+The AI reads the minimal core at session start, then loads specific modules when relevant:
 
 - Writing tests? → Load `testing.md`
 - Debugging? → Load `debugging.md`
@@ -149,11 +178,11 @@ The generator creates all necessary redirect files automatically.
 ## Usage Examples
 
 ```bash
-# Default: ~60 lines core + on-demand loading
+# Generate progressive mode (~60 lines core + on-demand loading)
 ./generate-agents.sh --language=go --type=cli-tools --path=./my-cli
 
-# Compact mode - ~130 lines, inlined but condensed
-./generate-agents.sh --compact --language=python --type=web-apps --path=./my-api
+# Generate for a Python web app
+./generate-agents.sh --language=python --type=web-apps --path=./my-api
 
 # Upgrade existing file (dry-run first, then apply)
 ./generate-agents.sh --upgrade --path=./my-project
@@ -169,12 +198,11 @@ The generator creates all necessary redirect files automatically.
 - `--sync` - Update local templates from GitHub
 - `--dry-run` - Preview without writing
 
-### Output Mode Comparison
+### Output Mode
 
-| Mode | Lines | Use Case |
-|------|-------|----------|
-| (default) | ~60 | Minimal core, templates loaded on-demand from `~/.golden-agents/templates/` |
-| `--compact` | ~130 | Self-contained but condensed. Good for repos without template access |
+Progressive mode (default) generates ~60 lines with templates loaded on-demand from `~/.golden-agents/templates/`.
+
+The deprecated `--full` mode generates 800+ line files that AI assistants struggle to follow.
 
 ## Directory Structure
 
@@ -192,15 +220,14 @@ golden-agents/
 ├── README.md              # This file
 ├── generate-agents.sh     # Generator script (Linux/macOS/WSL/Git Bash)
 ├── generate-agents.ps1    # PowerShell wrapper (Windows)
-├── Agents.core.md         # Pre-generated compact version (standalone)
 ├── CHANGELOG.md           # Version history
 ├── docs/
 │   ├── HOW-IT-WORKS.md    # Security & transparency explanation
 │   ├── SAMPLE.md          # Example generated output
 │   └── TEST-PLAN.md       # Test plan
 ├── test/
-│   ├── *.bats             # BATS tests (115 tests)
-│   ├── *.Tests.ps1        # Pester tests (14 tests)
+│   ├── *.bats             # BATS tests (bash script)
+│   ├── *.Tests.ps1        # Pester tests (PowerShell wrapper)
 │   ├── fixtures/          # Real-world test fixtures (.gitignored)
 │   └── test_helper.bash   # Shared test utilities
 └── templates/
@@ -327,25 +354,15 @@ Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), th
 
 ## Testing
 
-**129 automated tests** run on every push/PR via GitHub Actions:
-
-| Test Suite | Framework | Tests | Platforms |
-|------------|-----------|-------|-----------|
-| Core script | BATS | 115 | Linux, macOS, Windows (Git Bash) |
-| PowerShell wrapper | Pester | 14 | Linux, macOS, Windows |
-| Linting | ShellCheck | - | Linux |
+Tests run on every push/PR via GitHub Actions across Linux, macOS, and Windows.
 
 ```bash
-# Run BATS tests locally
-brew install bats-core  # macOS
-bats test/*.bats
-
-# Run Pester tests locally
-Install-Module -Name Pester -Force -MinimumVersion 5.0
-Invoke-Pester test/*.Tests.ps1 -Output Detailed
+# Run locally
+bats test/*.bats                              # BATS (bash script tests)
+Invoke-Pester test/*.Tests.ps1 -Output Detailed  # Pester (PowerShell wrapper)
 ```
 
-See [docs/TEST-PLAN.md](docs/TEST-PLAN.md) for the full test plan.
+See **[docs/TEST-PLAN.md](docs/TEST-PLAN.md)** for test strategy and coverage.
 
 ## Contributing
 

@@ -24,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING: Progressive mode is now the default** - Generates ~60 lines with on-demand template loading
   - Progressive mode uses `$HOME/.golden-agents/templates/` for just-in-time guidance loading
-  - Compact mode (~130 lines) still available via `--compact`
   - Full mode (~800 lines) deprecated - AI assistants cannot follow instructions that long
 - **`--full` flag deprecated** - Prints warning about generating unusable output
 - **Upgrade auto-converts legacy files** - Files without mode indicator convert to progressive
@@ -171,10 +170,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **seed.sh generator** with options:
   - `--language` - Select language templates (comma-separated)
   - `--type` - Select project type template
-  - `--compact` - Generate minimal ~130 line version
   - `--sync` - Update templates from GitHub
   - `--dry-run` - Preview without writing
-- **Agents.core.md** - Pre-generated standalone compact version
 
 ### Features
 
@@ -184,8 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Context engineering** - Based on Anthropic's best practices
 
 > **Note:** v1.0.0 shipped with full mode (~800 lines) as default. This was deprecated in v1.4.2
-> because AI assistants cannot follow instructions that long. Use progressive mode (default since v1.4.2)
-> or compact mode (~130 lines) instead.
+> because AI assistants cannot follow instructions that long. Use progressive mode (default since v1.4.2).
 
 ### Templates Included
 

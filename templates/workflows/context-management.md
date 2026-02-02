@@ -66,7 +66,7 @@ For complex multi-step tasks, maintain notes:
 
 When resuming after context switch or new session:
 
-1. Load Agents.md (compact if available)
+1. Load Agents.md
 2. Review recent git commits: `git log --oneline -10`
 3. Check modified files: `git status`
 4. Load session notes if maintained

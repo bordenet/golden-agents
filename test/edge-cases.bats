@@ -37,8 +37,8 @@ teardown() {
 @test "unicode characters in project name handled" {
     local project_dir="$TEST_DIR/проект-日本語"
     mkdir -p "$project_dir"
-    
-    run "$GENERATE_SCRIPT" --language=go --compact --path="$project_dir"
+
+    run "$GENERATE_SCRIPT" --language=go --path="$project_dir"
     [ "$status" -eq 0 ]
     assert_file_exists "$project_dir/Agents.md"
 }
@@ -47,8 +47,8 @@ teardown() {
 @test "spaces in path handled correctly" {
     local project_dir="$TEST_DIR/my project with spaces"
     mkdir -p "$project_dir"
-    
-    run "$GENERATE_SCRIPT" --language=python --compact --path="$project_dir"
+
+    run "$GENERATE_SCRIPT" --language=python --path="$project_dir"
     [ "$status" -eq 0 ]
     assert_file_exists "$project_dir/Agents.md"
 }
@@ -57,8 +57,8 @@ teardown() {
 @test "special characters in project name handled" {
     local project_dir="$TEST_DIR/my-project_v2.0"
     mkdir -p "$project_dir"
-    
-    run "$GENERATE_SCRIPT" --language=go --compact --path="$project_dir"
+
+    run "$GENERATE_SCRIPT" --language=go --path="$project_dir"
     [ "$status" -eq 0 ]
     assert_file_contains "$project_dir/Agents.md" "my-project_v2.0"
 }
@@ -67,8 +67,8 @@ teardown() {
 @test "empty --name uses directory name" {
     local project_dir="$TEST_DIR/fallback-name"
     mkdir -p "$project_dir"
-    
-    run "$GENERATE_SCRIPT" --language=go --compact --name="" --path="$project_dir"
+
+    run "$GENERATE_SCRIPT" --language=go --name="" --path="$project_dir"
     [ "$status" -eq 0 ]
     # Should contain directory name, not empty
     assert_file_contains "$project_dir/Agents.md" "fallback-name"
@@ -77,8 +77,8 @@ teardown() {
 # Test 5: Very long project name (edge of filesystem limits)
 @test "long project name handled" {
     local long_name="this-is-a-very-long-project-name-that-might-cause-issues"
-    
-    run "$GENERATE_SCRIPT" --language=go --compact --name="$long_name" --path="$TEST_DIR" --dry-run
+
+    run "$GENERATE_SCRIPT" --language=go --name="$long_name" --path="$TEST_DIR" --dry-run
     [ "$status" -eq 0 ]
     [[ "$output" == *"$long_name"* ]]
 }
@@ -92,7 +92,7 @@ teardown() {
     mkdir -p "$readonly_dir"
     chmod a-w "$readonly_dir"
 
-    run "$GENERATE_SCRIPT" --language=go --compact --path="$readonly_dir"
+    run "$GENERATE_SCRIPT" --language=go --path="$readonly_dir"
     [ "$status" -ne 0 ]
 
     # Restore for cleanup

@@ -106,18 +106,17 @@ EOF
 }
 
 # =============================================================================
-# SCENARIO 5: Compact mode stays under size limit with all languages
+# SCENARIO 5: Progressive mode stays under size limit with all languages
 # =============================================================================
-@test "SCENARIO: Compact mode with all languages stays under 200 lines" {
+@test "SCENARIO: Progressive mode with all languages stays under 100 lines" {
     run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter \
-        --compact --path="$TEST_DIR"
+        --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    
-    assert_compact_size "$TEST_DIR/Agents.md"
-    
+
+    assert_progressive_size "$TEST_DIR/Agents.md"
+
     # Verify all languages mentioned
     assert_file_contains "$TEST_DIR/Agents.md" "go"
     assert_file_contains "$TEST_DIR/Agents.md" "python"
     assert_file_contains "$TEST_DIR/Agents.md" "javascript"
 }
-
