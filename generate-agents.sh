@@ -890,15 +890,9 @@ upgrade_agents_md() {
     fi
 
     # Extract config from existing file header
-    local existing_langs existing_type existing_mode
+    local existing_langs existing_type
     existing_langs=$(grep "Languages" "$existing_file" | head -1 | sed 's/.*: //' || echo "")
     existing_type=$(grep "Type" "$existing_file" | head -1 | sed 's/.*: //' || echo "general")
-    # Detect mode from header (progressive or legacy full)
-    if grep -q "(progressive)" "$existing_file"; then
-        existing_mode="progressive"
-    else
-        existing_mode="full"
-    fi
 
     # Use existing config if not overridden by flags
     if [[ -z "$LANGUAGES" ]]; then

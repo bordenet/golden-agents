@@ -45,33 +45,33 @@ Describe "generate-agents.ps1 PowerShell Wrapper" {
 
     Context "Dry Run Mode" {
         It "--dry-run shows output without creating files" {
-            $result = & $script:ScriptPath --language=go --compact --dry-run 2>&1 | Out-String
+            $result = & $script:ScriptPath --language=go --dry-run 2>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
             $result | Should -Match "DRY RUN"
         }
 
-        It "--dry-run with --compact shows compact output" {
-            $result = & $script:ScriptPath --language=python --compact --dry-run 2>&1 | Out-String
+        It "--dry-run with --progressive shows progressive output" {
+            $result = & $script:ScriptPath --language=python --progressive --dry-run 2>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
-            $result | Should -Match "compact"
+            $result | Should -Match "progressive"
         }
     }
 
     Context "Argument Passthrough" {
         It "Passes --language argument correctly" {
-            $result = & $script:ScriptPath --language=javascript --compact --dry-run 2>&1 | Out-String
+            $result = & $script:ScriptPath --language=javascript --dry-run 2>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
             $result | Should -Match "javascript"
         }
 
         It "Passes multiple languages correctly" {
-            $result = & $script:ScriptPath --language=go,python,shell --compact --dry-run 2>&1 | Out-String
+            $result = & $script:ScriptPath --language=go,python,shell --dry-run 2>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
             $result | Should -Match "go"
         }
 
         It "Passes --type argument correctly" {
-            $result = & $script:ScriptPath --language=go --type=cli-tools --compact --dry-run 2>&1 | Out-String
+            $result = & $script:ScriptPath --language=go --type=cli-tools --dry-run 2>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
             $result | Should -Match "cli-tools"
         }
