@@ -125,3 +125,17 @@ teardown() {
     [[ "$output" == *"shell"* ]]
 }
 
+# Test 17: Missing language shows available options
+@test "missing language shows available options" {
+    run "$GENERATE_SCRIPT" --path="$TEST_DIR" 2>&1
+    [ "$status" -ne 0 ]
+    # Should list available languages
+    [[ "$output" == *"javascript"* ]]
+    [[ "$output" == *"go"* ]]
+    [[ "$output" == *"python"* ]]
+    # Should show aliases
+    [[ "$output" == *"js"* ]] || [[ "$output" == *"node"* ]]
+    # Should show project types
+    [[ "$output" == *"cli-tools"* ]] || [[ "$output" == *"web-apps"* ]]
+}
+

@@ -184,8 +184,22 @@ fi
 
 # Validate (skip language check for upgrade mode)
 if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" ]]; then
-    echo "Error: --language is required (or use --sync/--upgrade)" >&2
-    usage
+    echo "[ERROR] --language is required for new file generation" >&2
+    echo "" >&2
+    echo "Available languages:" >&2
+    echo "  go          - Go projects" >&2
+    echo "  javascript  - JavaScript/TypeScript/Node.js (aliases: js, node, ts)" >&2
+    echo "  python      - Python projects (aliases: py)" >&2
+    echo "  shell       - Shell scripts (aliases: bash, sh)" >&2
+    echo "  dart-flutter - Dart/Flutter projects (aliases: flutter, dart)" >&2
+    echo "" >&2
+    echo "Available project types:" >&2
+    echo "  cli-tools     - Command-line tools" >&2
+    echo "  web-apps      - Web applications" >&2
+    echo "  mobile-apps   - Mobile applications" >&2
+    echo "  genesis-tools - Genesis framework tools" >&2
+    echo "" >&2
+    echo "Example: generate-agents.sh --language=go,js --type=web-apps --path=./my-project" >&2
     exit 1
 fi
 
