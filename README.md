@@ -5,6 +5,7 @@
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/bordenet/golden-agents/graph/badge.svg)](https://codecov.io/gh/bordenet/golden-agents)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/bordenet/golden-agents?style=social)](https://github.com/bordenet/golden-agents/stargazers)
 
 ## The Problem
 
@@ -49,6 +50,35 @@ Golden Agents generates a single `Agents.md` file that all major AI assistants r
 The generator creates all necessary redirect files automatically.
 
 **Tip:** You can safely delete redirect files for AI assistants you don't use (e.g., delete `GEMINI.md` if you only use Claude Code).
+
+## Which Mode Do I Use?
+
+| Your Situation | Command | What Happens |
+|----------------|---------|--------------|
+| **No Agents.md file** (or <10 lines) | `--language=X --path=Y` | Generates new file with framework |
+| **Existing CLAUDE.md, GEMINI.md, CODEX.md** | `--migrate --path=Y` | Creates migration prompt, preserves originals |
+| **Existing Agents.md WITHOUT markers** | `--adopt --language=X --path=Y` | Backs up original, generates framework, appends content |
+| **Existing Agents.md WITH markers (outdated)** | `--upgrade --path=Y` | Preview changes (dry-run), then `--apply` to update |
+| **Existing Agents.md WITH markers (bloated)** | `--dedupe --path=Y` | Creates deduplication prompt if >100 lines |
+
+**How to tell if your file has markers:** Look for `<!-- GOLDEN:framework:start -->` near the top.
+
+### Safety Mechanisms
+
+| Mode | Backup Created | Dry-Run Default | Files Modified |
+|------|----------------|-----------------|----------------|
+| Generate (`--language`) | ❌ (new file) | Use `--dry-run` | Creates new files |
+| Migrate (`--migrate`) | ✅ Preserves originals | ❌ | Creates MIGRATION-PROMPT.md only |
+| Adopt (`--adopt`) | ✅ `Agents.md.original` | ❌ | Rewrites Agents.md |
+| Upgrade (`--upgrade`) | ✅ `.backup` on apply | ✅ Preview first | Only with `--apply` |
+| Dedupe (`--dedupe`) | ❌ (doesn't modify) | ✅ Always | Creates ADOPT-PROMPT.md only |
+
+**⚠️ Data Loss Prevention:**
+
+- **Always preview first:** Use `--dry-run` for new files, `--upgrade` (without `--apply`) for upgrades
+- **Backups are automatic:** `--adopt` creates `.original`, `--upgrade --apply` creates `.backup`
+- **Dedupe never modifies:** It only creates a prompt file; YOU apply the changes after review
+- **Originals preserved:** `--migrate` keeps your CLAUDE.md/GEMINI.md files intact
 
 ## Quick Start
 
@@ -124,6 +154,27 @@ Have an existing Agents.md that wasn't created by golden-agents? Adopt it:
 | Complex (many integrations, strict domain rules) | **50-100 lines** |
 
 **Safety:** Original content is always preserved in `Agents.md.original`. Nothing is deleted automatically.
+
+### Option 6: Deduplicate bloated Agents.md (already using golden-agents)
+
+Already using golden-agents but your project-specific section has grown bloated (>100 lines)?
+
+```bash
+# Analyze and generate deduplication prompt
+~/.golden-agents/generate-agents.sh --dedupe --path=./my-project
+```
+
+**What happens:**
+
+1. Verifies your file has framework markers (was created by golden-agents)
+2. Counts lines in your project-specific section (after the end marker)
+3. If ≤100 lines: exits with success (already within target)
+4. If >100 lines: creates `ADOPT-PROMPT.md` with deduplication instructions
+5. Does NOT modify your Agents.md (you apply changes after review)
+
+**Use `--dedupe` when:** Your Agents.md was created by golden-agents but has accumulated too much project-specific content over time.
+
+**Use `--adopt` when:** Your Agents.md was NOT created by golden-agents (no framework markers).
 
 ## Features
 
