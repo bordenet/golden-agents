@@ -137,9 +137,15 @@ golden-agents/
 │   ├── project-types/     # CLI, web, mobile, genesis
 │   └── workflows/         # Testing, security, context management
 ├── docs/
-│   ├── HOW-IT-WORKS.md    # Security & transparency explanation
-│   ├── SAMPLE.md          # Example generated output
-│   └── TEST-PLAN.md       # Test plan
+│   ├── HOW-IT-WORKS.md        # Security & transparency explanation
+│   ├── PROGRESSIVE-LOADING.md # How on-demand module loading works
+│   ├── REFERENCES.md          # Template reference with examples
+│   ├── SAMPLE.md              # Example generated output
+│   ├── SUPERPOWERS.md         # Optional superpowers integration
+│   ├── TEST-PLAN.md           # Test plan (127 tests)
+│   ├── TRIGGER-DESIGN.md      # How triggers are designed
+│   ├── USAGE.md               # This file
+│   └── WINDOWS.md             # Windows-specific instructions
 └── test/
     ├── *.bats             # BATS tests (bash script)
     └── *.Tests.ps1        # Pester tests (PowerShell wrapper)

@@ -35,7 +35,7 @@ This framework incorporates official guidance from:
 | Recommendation | Our Implementation |
 |----------------|-------------------|
 | **Provide context in comments** | Templates include structured headers with project name, languages, type |
-| **Break down complex tasks** | Progressive loading splits guidance into focused modules (~20-30 lines each) |
+| **Break down complex tasks** | Progressive loading splits guidance into focused modules (30-150 lines each) |
 | **Validate AI suggestions** | Workflow checklists include verification gates before commit/PR |
 
 **Example from generated output:**
@@ -97,11 +97,11 @@ Before:                          After:
 ├── CLAUDE.md (200 lines)        ├── Agents.md (60 lines)
 ├── GEMINI.md (150 lines)        ├── CLAUDE.md → "See Agents.md"
 ├── AGENTS.md (180 lines)        ├── GEMINI.md → "See Agents.md"
-└── .cursorrules (100 lines)     └── .ai/
-                                     ├── go.md
-    630 lines, 4 files               └── security.md
+└── .cursorrules (100 lines)     └── (modules in ~/.golden-agents/templates/)
+                                        ├── languages/go.md
+    630 lines, 4 files                  └── workflows/security.md
     (duplicated, drifting)
-                                     ~100 lines total, no duplication
+                                     ~60 lines in project, modules shared
 ```
 
 ---

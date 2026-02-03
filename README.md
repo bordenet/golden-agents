@@ -120,6 +120,7 @@ All redirect files point to `Agents.md`. Created automatically.
 | **[REFERENCES.md](docs/REFERENCES.md)** | How we implement Anthropic, GitHub, OpenAI guidance |
 | **[TEST-PLAN.md](docs/TEST-PLAN.md)** | 127 tests, what we verify |
 | **[SUPERPOWERS.md](docs/SUPERPOWERS.md)** | Optional: obra/superpowers integration |
+| **[WINDOWS.md](docs/WINDOWS.md)** | Windows installation (WSL, Git Bash, PowerShell) |
 
 ---
 
