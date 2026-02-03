@@ -119,7 +119,10 @@ if ($wslAvailable) {
 # Run with Git Bash (fallback)
 if ($gitBashPath) {
     Write-Host "[INFO] Running via Git Bash..." -ForegroundColor Cyan
-    & $gitBashPath -c "cd '$ScriptDir' && ./generate-agents.sh $($Arguments -join ' ')"
+    # Quote each argument to preserve commas and special characters
+    $quotedArgs = $Arguments | ForEach-Object { "'$($_ -replace "'", "'\''")'" }
+    $argString = $quotedArgs -join ' '
+    & $gitBashPath -c "cd '$ScriptDir' && ./generate-agents.sh $argString"
     exit $LASTEXITCODE
 }
 
