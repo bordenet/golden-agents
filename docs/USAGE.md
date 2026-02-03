@@ -4,28 +4,34 @@
 
 **You have an AI coding assistant. Use it.**
 
-This framework is designed for AI-assisted workflows. You don't need to learn the commands—your AI reads the [Agents.md](../Agents.md) in this repo and figures it out.
+### One-Time Setup
+
+Clone golden-agents somewhere permanent:
+
+```bash
+git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
+```
 
 ### Option 1: "What If?" (Preview Mode)
 
-Ask your AI to show you what would happen without making changes:
+Open your target project in your AI-enabled editor, then ask:
 
-> "I want to add golden-agents to my project at `./my-api`. Show me what you would do, but don't make any changes yet. Use --dry-run."
+> "Read the instructions in `~/.golden-agents` and show me what you would do to set up AI guidance for this project. Use --dry-run so I can preview first."
 
 Your AI will:
-1. Clone the repo (if needed)
+1. Read the golden-agents instructions
 2. Analyze your project's current state
 3. Show you exactly what files would be created/modified
 4. Wait for your approval before proceeding
 
 ### Option 2: "Just Do It!" (Full Auto)
 
-Trust your AI to handle everything:
+Open your target project, then ask:
 
-> "Set up golden-agents for my project at `./my-api`. It's a Python web app. Auto-detect everything, run the appropriate commands, and verify the result."
+> "Read `~/.golden-agents` and set up AI guidance for this project. It's a Python web app. Auto-detect everything, run the appropriate commands, and verify the result."
 
 Your AI will:
-1. Clone `~/.golden-agents` if not present
+1. Read the golden-agents instructions
 2. Detect existing guidance files (CLAUDE.md, Agents.md, etc.)
 3. Choose the right mode (generate, migrate, adopt, upgrade)
 4. Run with `--dry-run` first, then apply

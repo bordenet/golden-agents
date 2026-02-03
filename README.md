@@ -118,7 +118,7 @@ All redirect files point to `Agents.md`. Created automatically.
 | **[TRIGGER-DESIGN.md](docs/TRIGGER-DESIGN.md)** | How to write triggers the AI won't miss |
 | **[HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)** | What the script does vs. what the AI does |
 | **[REFERENCES.md](docs/REFERENCES.md)** | How we implement Anthropic, GitHub, OpenAI guidance |
-| **[TEST-PLAN.md](docs/TEST-PLAN.md)** | 112 tests, what we verify |
+| **[TEST-PLAN.md](docs/TEST-PLAN.md)** | 127 tests, what we verify |
 | **[SUPERPOWERS.md](docs/SUPERPOWERS.md)** | Optional: obra/superpowers integration |
 
 ---

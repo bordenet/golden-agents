@@ -18,16 +18,16 @@ This framework incorporates official guidance from:
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **CLAUDE.md hierarchy** | `--redirect` flag creates `CLAUDE.md` that points to `Agents.md`. See [`templates/redirects/`](../templates/redirects/) |
-| **Subagents for complex tasks** | Progressive loading triggers: `🔴 BEFORE writing ANY .go file → cat .ai/go.md`. Each module is a focused "subagent" |
+| **CLAUDE.md hierarchy** | Redirect files (CLAUDE.md, GEMINI.md, etc.) are auto-created and point to `Agents.md` |
+| **Subagents for complex tasks** | Progressive loading triggers: `🔴 BEFORE writing ANY .go file → cat ~/.golden-agents/templates/languages/go.md`. Each module is a focused "subagent" |
 | **Explore-plan-code-commit** | Workflow checklists in generated output. Optional: superpowers skills for enforcement |
 
 **Example from generated output:**
 
 ```markdown
 ## Progressive Module Loading
-🔴 BEFORE writing ANY `.go` file → `cat .ai/go.md`
-🔴 WHEN tests fail OR after 2+ failed fix attempts → `cat .ai/debugging.md`
+🔴 BEFORE writing ANY `.go` file → `cat ~/.golden-agents/templates/languages/go.md`
+🔴 WHEN tests fail OR after 2+ failed fix attempts → `cat ~/.golden-agents/templates/workflows/testing.md`
 ```
 
 ### GitHub Copilot Best Practices
@@ -50,7 +50,7 @@ Before ANY PR: all of the above + manual review of changes
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **AGENTS.md specification** | `--redirect` flag creates `AGENTS.md` pointing to `Agents.md`. See [`templates/redirects/`](../templates/redirects/) |
+| **AGENTS.md specification** | CODEX.md redirect auto-created (AGENTS.md skipped to avoid case-sensitivity conflicts with Agents.md) |
 | **Tool-use directives** | Templates include explicit tool preferences (e.g., "use `go test`, not `go run`") |
 | **Anti-slop guidance** | Banned phrases list in [`templates/core/anti-slop.md`](../templates/core/anti-slop.md) |
 
@@ -66,19 +66,20 @@ Never use: "seamless", "robust", "cutting-edge", "leverage"
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **GEMINI.md context files** | `--redirect` flag creates `GEMINI.md` pointing to `Agents.md` |
+| **GEMINI.md context files** | GEMINI.md redirect auto-created, points to `Agents.md` |
 | **MCP integration** | Optional superpowers skill for Perplexity research via MCP |
-| **Multi-scope context** | Progressive loading: global rules in `Agents.md`, language-specific in `.ai/*.md` |
+| **Multi-scope context** | Progressive loading: global rules in `Agents.md`, detailed modules in `~/.golden-agents/templates/` |
 
-**Example directory structure:**
+**How progressive loading works:**
 
 ```
 my-project/
-├── Agents.md           # Global rules (~60 lines)
-└── .ai/
-    ├── go.md           # Go-specific guidance
-    ├── python.md       # Python-specific guidance
-    └── security.md     # Security checklist
+├── Agents.md           # Global rules (~60 lines) with loading triggers
+
+~/.golden-agents/templates/    # Shared across all projects
+├── languages/go.md            # Go-specific guidance
+├── languages/python.md        # Python-specific guidance
+└── workflows/security.md      # Security checklist
 ```
 
 ### Spotify Golden Path
@@ -112,9 +113,6 @@ To verify these implementations yourself:
 ```bash
 # Generate a sample and inspect the output
 ./generate-agents.sh --language=go,python --dry-run --path=/tmp/test
-
-# Check redirect files
-./generate-agents.sh --language=go --redirect --dry-run --path=/tmp/test
 
 # Inspect templates directly
 ls templates/core/

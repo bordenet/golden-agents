@@ -134,7 +134,7 @@ The script itself is safe and auditable:
 | Network access | ❌ None — entirely offline |
 | Persistence | ❌ None — runs once, exits |
 | Side effects | ✅ Creates text files only |
-| Auditable | ✅ ~600 lines of readable Bash |
+| Auditable | ✅ ~1000 lines of readable Bash |
 
 ### Your AI Assistant (Separate Concern)
 

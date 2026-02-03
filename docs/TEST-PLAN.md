@@ -9,17 +9,21 @@ Golden Agents is tested on every commit. Here's what we verify.
 | Category | Tests | What We Verify |
 |----------|-------|----------------|
 | **Data Safety** | 6 | Your existing content is never lost during migrations or upgrades |
-| **Output Quality** | 6 | Generated files stay under 100 lines (usable by AI assistants) |
+| **Size Limits** | 7 | Generated files stay under 100 lines (usable by AI assistants) |
 | **End-to-End Scenarios** | 5 | Complete workflows work from start to finish |
-| **Argument Parsing** | 10 | CLI flags work correctly, errors are clear |
-| **Mode Detection** | 8 | Correct mode chosen based on existing files |
+| **Argument Parsing** | 17 | CLI flags work correctly, errors are clear |
+| **Mode Detection** | 7 | Correct mode chosen based on existing files |
 | **Migrations** | 10 | CLAUDE.md/GEMINI.md content preserved |
 | **Adoptions** | 12 | Existing Agents.md content preserved |
 | **Upgrades** | 10 | Framework updates don't lose project rules |
+| **Deduplication** | 12 | Bloated project sections handled correctly |
+| **Generation** | 10 | Core output generation works correctly |
+| **Templates** | 8 | Template files are valid and accessible |
+| **Sync** | 2 | Template updates from GitHub work |
 | **Edge Cases** | 6 | Unicode, spaces in paths, special characters |
-| **Windows** | 14 | PowerShell wrapper works correctly |
+| **Windows** | 15 | PowerShell wrapper works correctly |
 
-**Total: 112 tests** (98 BATS + 14 Pester)
+**Total: 127 tests** (112 BATS + 15 Pester)
 
 ---
 
