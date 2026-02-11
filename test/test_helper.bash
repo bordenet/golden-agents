@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
-# Test helper functions for generate-agents.sh BATS tests
-# Updated 2026-02-02 for scenario-based testing with size and data loss verification
+#
+# test_helper.bash - BATS Test Helper Functions
+#
+# Provides assertion functions, fixture creators, and utilities for testing
+# the generate-agents.sh script. Loaded by all BATS test files.
+#
+# Updated: 2026-02-02
+# Purpose: Scenario-based testing with size and data loss verification
+#
 
 # Get the directory containing the script under test
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Exported for use by BATS test files that source this helper
+# shellcheck disable=SC2034
 GENERATE_SCRIPT="$SCRIPT_DIR/generate-agents.sh"
+# shellcheck disable=SC2034
 FIXTURES_DIR="$SCRIPT_DIR/test/fixtures"
 
 # Load bats helper libraries if available
@@ -15,12 +26,18 @@ if [[ -d "$SCRIPT_DIR/test/test_helper/bats-assert" ]]; then
     load 'test_helper/bats-assert/load'
 fi
 
-# ========== SIZE ENFORCEMENT (CRITICAL) ==========
+# =============================================================================
+# SIZE ENFORCEMENT (CRITICAL)
+# =============================================================================
 
 # HARD LIMIT: Progressive mode must be under this
 MAX_PROGRESSIVE_LINES=100
 
-# Assert output is within size limits for progressive mode
+# assert_progressive_size <file>
+# Verifies that a generated file is within the progressive mode size limit.
+# Arguments:
+#   $1 - Path to the file to check
+# Returns: 0 if within limit, 1 if exceeds limit
 assert_progressive_size() {
     local file="$1"
     local line_count
@@ -32,15 +49,27 @@ assert_progressive_size() {
     fi
 }
 
-# ========== DATA LOSS VERIFICATION (CRITICAL) ==========
+# =============================================================================
+# DATA LOSS VERIFICATION (CRITICAL)
+# =============================================================================
 
-# Count unique non-empty, non-whitespace lines (for content comparison)
+# count_unique_content_lines <file>
+# Counts unique non-empty, non-whitespace lines for content comparison.
+# Arguments:
+#   $1 - Path to the file to analyze
+# Returns: Count via stdout
 count_unique_content_lines() {
     local file="$1"
     grep -v '^[[:space:]]*$' "$file" | sort -u | wc -l | tr -d ' '
 }
 
-# Assert specific content marker is preserved
+# assert_content_preserved <file> <marker> [context]
+# Verifies that a specific content marker exists in the file.
+# Arguments:
+#   $1 - Path to the file to check
+#   $2 - String marker that must be present
+#   $3 - (optional) Context description for error messages
+# Returns: 0 if found, 1 if missing
 assert_content_preserved() {
     local file="$1"
     local marker="$2"
@@ -53,9 +82,20 @@ assert_content_preserved() {
     fi
 }
 
-# ========== FIXTURE HELPERS ==========
+# =============================================================================
+# FIXTURE HELPERS
+# =============================================================================
 
-# Create a minimal valid Agents.md WITH markers (v1.2.0+ style)
+# create_agents_with_markers <path> [language] [type] [mode]
+# Creates a minimal valid Agents.md WITH framework markers (v1.2.0+ style).
+# Includes project-specific content after the end marker for upgrade testing.
+# Arguments:
+#   $1 - Directory path where Agents.md will be created
+#   $2 - (optional) Language, default: "go"
+#   $3 - (optional) Project type, default: "cli-tools"
+#   $4 - (optional) Mode, default: "progressive"
+# Returns: 0 on success
+# Side effects: Creates directory and Agents.md file
 create_agents_with_markers() {
     local path="$1"
     local lang="${2:-go}"
@@ -101,7 +141,12 @@ Always use feature branches for new work.
 EOF
 }
 
-# Create Agents.md WITHOUT markers (pre-v1.2.0 style)
+# create_agents_without_markers <path>
+# Creates an Agents.md WITHOUT framework markers (pre-v1.2.0 style).
+# Used to test --adopt workflow.
+# Arguments:
+#   $1 - Directory path where Agents.md will be created
+# Returns: 0 on success
 create_agents_without_markers() {
     local path="$1"
     mkdir -p "$path"
@@ -117,7 +162,13 @@ This file has no markers and was created before v1.2.0.
 EOF
 }
 
-# Create Agents.md with full mode header (legacy, no mode label)
+# create_agents_full_mode <path> [language]
+# Creates an Agents.md with full mode header (legacy, deprecated).
+# Used to test upgrade from full mode to progressive mode.
+# Arguments:
+#   $1 - Directory path where Agents.md will be created
+#   $2 - (optional) Language, default: "go"
+# Returns: 0 on success
 create_agents_full_mode() {
     local path="$1"
     local lang="${2:-go}"
@@ -140,7 +191,13 @@ Custom content here.
 EOF
 }
 
-# Create bloated fixture (simulates old full-mode file)
+# create_bloated_fixture <path> <line_count>
+# Creates a bloated Agents.md to test size reduction.
+# Simulates old full-mode files that need deduplication.
+# Arguments:
+#   $1 - Directory path where Agents.md will be created
+#   $2 - Number of lines to generate
+# Returns: 0 on success
 create_bloated_fixture() {
     local path="$1"
     local lines="${2:-600}"
@@ -173,7 +230,13 @@ create_bloated_fixture() {
     } > "$path/Agents.md"
 }
 
-# Create realistic CLAUDE.md for migration testing
+# create_realistic_claude_md <path>
+# Creates a realistic CLAUDE.md file for migration testing.
+# Contains typical project guidance that would need to be migrated.
+# Includes UNIQUE_MARKER_* strings for data loss verification.
+# Arguments:
+#   $1 - Directory path where CLAUDE.md will be created
+# Returns: 0 on success
 create_realistic_claude_md() {
     local path="$1"
 
@@ -244,9 +307,16 @@ UNIQUE_MARKER_DOMAIN_KNOWLEDGE
 EOF
 }
 
-# ========== BASIC ASSERTIONS ==========
+# =============================================================================
+# BASIC ASSERTIONS
+# =============================================================================
 
-# Assert file contains pattern
+# assert_file_contains <file> <pattern>
+# Asserts that a file contains the specified pattern.
+# Arguments:
+#   $1 - Path to the file to check
+#   $2 - Pattern to search for (grep-compatible)
+# Returns: 0 if found, 1 if not found (with diagnostic output)
 assert_file_contains() {
     local file="$1"
     local pattern="$2"
@@ -258,7 +328,12 @@ assert_file_contains() {
     fi
 }
 
-# Assert file does NOT contain pattern
+# assert_file_not_contains <file> <pattern>
+# Asserts that a file does NOT contain the specified pattern.
+# Arguments:
+#   $1 - Path to the file to check
+#   $2 - Pattern that should NOT be present
+# Returns: 0 if not found, 1 if found
 assert_file_not_contains() {
     local file="$1"
     local pattern="$2"
@@ -268,7 +343,11 @@ assert_file_not_contains() {
     fi
 }
 
-# Assert file exists
+# assert_file_exists <file>
+# Asserts that a file exists.
+# Arguments:
+#   $1 - Path to the file to check
+# Returns: 0 if exists, 1 if not
 assert_file_exists() {
     local file="$1"
     if [[ ! -f "$file" ]]; then
@@ -277,7 +356,11 @@ assert_file_exists() {
     fi
 }
 
-# Assert directory exists
+# assert_dir_exists <directory>
+# Asserts that a directory exists.
+# Arguments:
+#   $1 - Path to the directory to check
+# Returns: 0 if exists, 1 if not
 assert_dir_exists() {
     local dir="$1"
     if [[ ! -d "$dir" ]]; then
@@ -286,13 +369,23 @@ assert_dir_exists() {
     fi
 }
 
-# Get line count of file
+# get_line_count <file>
+# Returns the line count of a file.
+# Arguments:
+#   $1 - Path to the file
+# Returns: Line count via stdout
 get_line_count() {
     local file="$1"
     wc -l < "$file" | tr -d ' '
 }
 
-# Assert line count is within range
+# assert_line_count_between <file> <min> <max>
+# Asserts that a file's line count is within the specified range.
+# Arguments:
+#   $1 - Path to the file to check
+#   $2 - Minimum line count (inclusive)
+#   $3 - Maximum line count (inclusive)
+# Returns: 0 if within range, 1 if outside range
 assert_line_count_between() {
     local file="$1"
     local min="$2"

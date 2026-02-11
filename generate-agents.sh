@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
-# Golden Agents - Generate project-specific Agents.md from modular templates
+#
+# generate-agents.sh - Golden Agents Framework Generator
+#
+# Generates project-specific Agents.md files from modular templates.
+# Supports progressive loading (~60 lines) for efficient AI context usage.
+#
 # Repository: https://github.com/bordenet/golden-agents
+# Author:     Matt J Bordenet (@bordenet)
+# License:    MIT
+#
+# Usage:
+#   ./generate-agents.sh --language=go --path=./my-project
+#   ./generate-agents.sh --upgrade --apply --path=./my-project
+#   ./generate-agents.sh --help
+#
+# See --help for full documentation.
+#
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES_DIR="$SCRIPT_DIR/templates"
@@ -28,6 +42,11 @@ MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
 FRAMEWORK_VERSION="1.4.0"
 
+# usage()
+# Prints comprehensive help documentation to stdout.
+# Follows man page conventions (NAME, SYNOPSIS, DESCRIPTION, OPTIONS, EXAMPLES).
+# Arguments: none
+# Returns: 0
 usage() {
     cat << 'EOF'
 NAME
@@ -164,11 +183,19 @@ EXAMPLES
 EOF
 }
 
+# version()
+# Prints the script version to stdout.
+# Arguments: none
+# Returns: 0
 version() {
     echo "golden-agents generate-agents.sh v${FRAMEWORK_VERSION}"
 }
 
-# Sync templates from GitHub
+# sync_templates()
+# Updates local templates by pulling from the GitHub repository.
+# Requires the script directory to be a git repository.
+# Arguments: none
+# Returns: 0 on success, 1 if not a git repo
 sync_templates() {
     echo "[INFO] Syncing templates from GitHub..."
 
@@ -182,7 +209,11 @@ sync_templates() {
     fi
 }
 
-# Resolve language aliases to canonical names
+# resolve_language_alias <alias>
+# Converts language aliases to their canonical names.
+# Arguments:
+#   $1 - Language name or alias (e.g., "js", "py", "golang")
+# Returns: Canonical language name via stdout (e.g., "javascript", "python", "go")
 resolve_language_alias() {
     local lang="$1"
     case "$lang" in
@@ -195,7 +226,12 @@ resolve_language_alias() {
     esac
 }
 
-# Resolve all languages in comma-separated list
+# resolve_languages <comma-separated-list>
+# Resolves a comma-separated list of language aliases to canonical names.
+# Deduplicates the result (e.g., "js,typescript" becomes "javascript").
+# Arguments:
+#   $1 - Comma-separated list of language names/aliases
+# Returns: Comma-separated list of canonical names via stdout
 resolve_languages() {
     local input="$1"
     local resolved=""
@@ -218,7 +254,12 @@ resolve_languages() {
 # Minimum bytes to consider a file as having substantial content (not just a redirect)
 MIN_CONTENT_BYTES=100
 
-# Check for existing guidance files that would be overwritten
+# check_existing_guidance <path>
+# Checks for existing guidance files that would be overwritten.
+# Detects CLAUDE.md, Agents.md, and AGENTS.md with substantial content.
+# Arguments:
+#   $1 - Directory path to check
+# Returns: Space-separated list of found files with sizes via stdout, or empty string
 check_existing_guidance() {
     local path="$1"
     local found_files=""
@@ -253,7 +294,13 @@ check_existing_guidance() {
     echo "$found_files"
 }
 
-# Generate the LLM migration prompt
+# generate_migration_prompt <path>
+# Generates a markdown prompt file for LLM-assisted migration.
+# Collects content from existing CLAUDE.md, Agents.md, and AGENTS.md files.
+# Outputs a structured prompt with instructions for deduplication.
+# Arguments:
+#   $1 - Directory path containing existing guidance files
+# Returns: Migration prompt markdown via stdout
 generate_migration_prompt() {
     local path="$1"
     local existing_content=""
@@ -638,7 +685,16 @@ if [[ -z "$PROJECT_NAME" ]]; then
     PROJECT_NAME=$(basename "$(cd "$OUTPUT_PATH" 2>/dev/null && pwd)" 2>/dev/null || echo "Project")
 fi
 
-# Get language-specific commands
+# get_lang_commands <language>
+# Returns language-specific lint, build, test commands and coverage target.
+# Output format: newline-separated KEY:VALUE pairs
+#   LINT:<command>   - Linting command
+#   BUILD:<command>  - Build/compile command
+#   TEST:<command>   - Test command
+#   COV:<percent>    - Coverage target percentage (or "N/A")
+# Arguments:
+#   $1 - Canonical language name (go, python, javascript, dart-flutter, shell)
+# Returns: Key:value pairs via stdout, one per line
 get_lang_commands() {
     local lang="$1"
     case "$lang" in
@@ -651,14 +707,19 @@ get_lang_commands() {
     esac
 }
 
-# Generate progressive-loading Agents.md (~80 lines core + on-demand loading)
+# generate_progressive()
+# Generates a progressive-loading Agents.md (~60-80 lines).
+# Uses on-demand module loading from $HOME/.golden-agents/templates/.
+# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
+# Arguments: none (uses globals)
+# Returns: Complete Agents.md content via stdout
 generate_progressive() {
     local today
     today=$(date +%Y-%m-%d)
     local golden_agents_path="\$HOME/.golden-agents"
 
-    IFS=',' read -ra LANG_ARRAY <<< "$LANGUAGES"
-    local first_lang="${LANG_ARRAY[0]}"
+    IFS=',' read -ra lang_array <<< "$LANGUAGES"
+    local first_lang="${lang_array[0]}"
     local lint_cmd build_cmd test_cmd coverage
 
     while IFS= read -r line; do
@@ -715,7 +776,7 @@ Before ANY commit:
 HEADER
 
     # Generate language loading instructions with specific triggers
-    for lang in "${LANG_ARRAY[@]}"; do
+    for lang in "${lang_array[@]}"; do
         case "$lang" in
             go) echo "- 🔴 **BEFORE writing ANY \`.go\` file**: Read \`$golden_agents_path/templates/languages/go.md\`" ;;
             python) echo "- 🔴 **BEFORE writing ANY \`.py\` file**: Read \`$golden_agents_path/templates/languages/python.md\`" ;;
@@ -763,7 +824,13 @@ $MARKER_END
 FOOTER
 }
 
-# Generate full Agents.md (~800 lines)
+# generate_full()
+# Generates a full self-contained Agents.md (~800 lines).
+# DEPRECATED: This mode generates files too large for AI assistants to follow.
+# Includes all templates inline rather than using on-demand loading.
+# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
+# Arguments: none (uses globals)
+# Returns: Complete Agents.md content via stdout
 generate_full() {
     local today
     today=$(date +%Y-%m-%d)
@@ -828,8 +895,8 @@ HEADER
     echo "## Language-Specific Guidelines"
     echo ""
 
-    IFS=',' read -ra LANG_ARRAY <<< "$LANGUAGES"
-    for lang in "${LANG_ARRAY[@]}"; do
+    IFS=',' read -ra lang_array <<< "$LANGUAGES"
+    for lang in "${lang_array[@]}"; do
         lang_file="$TEMPLATES_DIR/languages/${lang}.md"
         if [[ -f "$lang_file" ]]; then
             cat "$lang_file"
@@ -867,7 +934,14 @@ $MARKER_END
 FOOTER
 }
 
-# Upgrade existing Agents.md safely
+# upgrade_agents_md()
+# Safely upgrades an existing Agents.md file with framework markers.
+# Preserves all content outside the framework markers (project-specific sections).
+# Creates a backup before applying changes when --apply is used.
+# Reads from global: OUTPUT_PATH, LANGUAGES, PROJECT_TYPE, FULL, APPLY
+# Arguments: none (uses globals)
+# Returns: 0 on success, 1 on error
+# Side effects: May modify Agents.md and create .backup file
 upgrade_agents_md() {
     local existing_file="$OUTPUT_PATH/Agents.md"
 
@@ -981,7 +1055,14 @@ if [[ "$UPGRADE" == "true" ]]; then
     exit 0
 fi
 
-# Create redirect file helper
+# create_redirect <filepath> <title>
+# Creates a redirect file that points to Agents.md.
+# Used for AI assistant-specific files (CLAUDE.md, CODEX.md, etc.).
+# Arguments:
+#   $1 - Full path to the redirect file to create
+#   $2 - Title for the markdown header
+# Returns: 0 on success
+# Side effects: Creates/overwrites the specified file
 create_redirect() {
     local path="$1"
     local title="$2"
