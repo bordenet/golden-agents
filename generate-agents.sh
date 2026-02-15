@@ -1028,8 +1028,16 @@ upgrade_agents_md() {
     before_marker=$(sed -n "1,/$MARKER_START/p" "$existing_file" | sed '$ d')
     after_marker=$(sed -n "/$MARKER_END/,\$p" "$existing_file" | sed '1 d')
 
-    # Inject self-manage block if missing
+    # Handle self-manage block: inject if missing, or replace if outdated
     if ! grep -q "$SELF_MANAGE_START" "$existing_file"; then
+        # No self-manage block - inject it
+        before_marker="${before_marker}
+$(generate_self_manage_block)"
+    else
+        # Self-manage block exists - replace it with the latest version
+        # Remove the old self-manage block from before_marker
+        before_marker=$(echo "$before_marker" | sed "/$SELF_MANAGE_START/,/$SELF_MANAGE_END/d")
+        # Add the new self-manage block
         before_marker="${before_marker}
 $(generate_self_manage_block)"
     fi
