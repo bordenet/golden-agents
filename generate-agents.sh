@@ -41,6 +41,8 @@ DEDUPE=false
 MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
 FRAMEWORK_VERSION="1.4.0"
+SELF_MANAGE_START="<!-- GOLDEN:self-manage:start -->"
+SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
 
 # usage()
 # Prints comprehensive help documentation to stdout.
