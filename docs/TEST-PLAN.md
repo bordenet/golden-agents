@@ -21,9 +21,10 @@ Golden Agents is tested on every commit. Here's what we verify.
 | **Templates** | 8 | Template files are valid and accessible |
 | **Sync** | 2 | Template updates from GitHub work |
 | **Edge Cases** | 6 | Unicode, spaces in paths, special characters |
+| **Self-Management** | 12 | Bootstrap block, bloat detection, modular migration |
 | **Windows** | 15 | PowerShell wrapper works correctly |
 
-**Total: 127 tests** (112 BATS + 15 Pester)
+**Total: 124 tests** (109 BATS + 15 Pester)
 
 ---
 

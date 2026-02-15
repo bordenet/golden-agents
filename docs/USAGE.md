@@ -142,7 +142,7 @@ golden-agents/
 │   ├── REFERENCES.md          # Template reference with examples
 │   ├── SAMPLE.md              # Example generated output
 │   ├── SUPERPOWERS.md         # Optional superpowers integration
-│   ├── TEST-PLAN.md           # Test plan (127 tests)
+│   ├── TEST-PLAN.md           # Test plan (124 tests)
 │   ├── TRIGGER-DESIGN.md      # How triggers are designed
 │   ├── USAGE.md               # This file
 │   └── WINDOWS.md             # Windows-specific instructions

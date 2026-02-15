@@ -52,6 +52,34 @@ The AI loads modules on-demand instead of reading 500+ lines at session start.
 
 ---
 
+## Self-Managing Files
+
+When `Agents.md` exceeds 150 lines, the AI gets instructions to refactor it automatically:
+
+1. **Bootstrap block** injected into every file tells the AI to check line count after edits
+2. **Bloat detection** during `--upgrade` creates a migration prompt for oversized files
+3. **Modular structure** splits content into `.ai-guidance/*.md` topic files (≤50 lines each)
+
+```
+my-project/
+├── Agents.md                    # ≤150 lines (core + loading table)
+└── .ai-guidance/
+    ├── invariants.md            # Always loaded (critical rules)
+    ├── testing.md               # On-demand (test tasks)
+    └── deployment.md            # On-demand (CI/CD tasks)
+```
+
+When you run `--upgrade` on a bloated file, the tool:
+- Adds the self-manage bootstrap block if missing
+- Creates `MODULAR-MIGRATION-PROMPT.md` with refactoring instructions
+- Creates `.ai-guidance/invariants.md` with the self-management protocol
+
+The AI then follows the prompt to split bloated content into focused topic files.
+
+**[→ Design Details](docs/plans/2026-02-15-self-managing-agents-design.md)**
+
+---
+
 ## Why This Exists
 
 A 50-line `CLAUDE.md` works fine. A 500-line one wastes context tokens. A 1000-line one means the AI misses half of what you wrote.
@@ -118,7 +146,7 @@ All redirect files point to `Agents.md`. Created automatically.
 | **[TRIGGER-DESIGN.md](docs/TRIGGER-DESIGN.md)** | How to write triggers the AI won't miss |
 | **[HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)** | What the script does vs. what the AI does |
 | **[REFERENCES.md](docs/REFERENCES.md)** | How we implement Anthropic, GitHub, OpenAI guidance |
-| **[TEST-PLAN.md](docs/TEST-PLAN.md)** | 127 tests, what we verify |
+| **[TEST-PLAN.md](docs/TEST-PLAN.md)** | 124 tests, what we verify |
 | **[SUPERPOWERS.md](docs/SUPERPOWERS.md)** | Optional: obra/superpowers integration |
 | **[WINDOWS.md](docs/WINDOWS.md)** | Windows installation (WSL, Git Bash, PowerShell) |
 
