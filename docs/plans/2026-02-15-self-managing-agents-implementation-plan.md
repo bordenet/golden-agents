@@ -214,7 +214,7 @@ Before completing any refactor:
 1. Snapshot original: `cat Agents.md > /tmp/original.md`
 2. Create directory: `mkdir -p .ai-guidance`
 3. Classify content by topic
-4. Extract to sub-files (≤50 lines each)
+4. Extract to sub-files (≤250 lines each)
 5. Update loading table in Agents.md
 6. Verify: all original content exists in new structure
 7. Confirm: `wc -l Agents.md` ≤150
@@ -227,7 +227,7 @@ If verification fails: `cp /tmp/original.md Agents.md`
 **Step 2: Run shellcheck on templates (validation)**
 
 Run: `wc -l templates/core/invariants.md`
-Expected: ≤50 lines
+Expected: ≤250 lines
 
 **Step 3: Commit**
 
@@ -249,7 +249,7 @@ git commit -m "feat: add invariants.md template for self-management"
 
 Key sections to include:
 - Mission statement (refactor bloated Agents.md to modular structure)
-- Success criteria (Agents.md ≤150 lines, sub-files ≤50 lines each)
+- Success criteria (Agents.md ≤150 lines, sub-files ≤250 lines each)
 - Classification rules (what goes where)
 - Zero data loss checklist
 - Step-by-step process

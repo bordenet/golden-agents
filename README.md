@@ -58,7 +58,7 @@ When `Agents.md` exceeds 150 lines, the AI gets instructions to refactor it auto
 
 1. **Bootstrap block** injected into every file tells the AI to check line count after edits
 2. **Bloat detection** during `--upgrade` creates a migration prompt for oversized files
-3. **Modular structure** splits content into `.ai-guidance/*.md` topic files (≤50 lines each)
+3. **Modular structure** splits content into `.ai-guidance/*.md` topic files (≤250 lines each)
 
 ```
 my-project/

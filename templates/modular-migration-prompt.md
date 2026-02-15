@@ -10,7 +10,7 @@
 | Component | Limit |
 |-----------|-------|
 | `Agents.md` (root file) | ≤150 lines |
-| Each `.ai-guidance/*.md` sub-file | ≤50 lines |
+| Each `.ai-guidance/*.md` sub-file | ≤250 lines |
 | Total content | ZERO data loss |
 
 **If Agents.md still exceeds 150 lines after migration, continue extracting content.**
@@ -109,7 +109,7 @@ Add after the framework end marker:
 
 ```bash
 wc -l Agents.md                    # Must be ≤150
-wc -l .ai-guidance/*.md            # Each must be ≤50
+wc -l .ai-guidance/*.md            # Each must be ≤250
 ```
 
 ### Step 6: Clean Up

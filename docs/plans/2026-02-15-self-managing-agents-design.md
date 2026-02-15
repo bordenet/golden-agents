@@ -121,7 +121,7 @@ Custom topic files are allowed (e.g., `mobile-builds.md`) for project-specific n
 | File | Limit | Rationale |
 |------|-------|-----------|
 | `Agents.md` | ≤150 lines | Triggers refactor if exceeded |
-| Each `.ai-guidance/*.md` | ≤50 lines | Keeps individual reads cheap |
+| Each `.ai-guidance/*.md` | ≤250 lines | Keeps individual reads cheap |
 
 ---
 
@@ -221,7 +221,7 @@ If agents rely solely on a keyword table to load guidance, incomplete or stale m
 ### Efficiency Safeguards
 
 - **Session caching:** Files loaded once per conversation
-- **Size limits:** Each sub-file ≤50 lines
+- **Size limits:** Each sub-file ≤250 lines
 - **Lazy Layer 3:** Only triggers if Layer 2 yields zero matches
 
 ---
@@ -394,7 +394,7 @@ The `generate-agents.sh` script automatically:
 | Detection | Line count > 150 | Simple, universal, matches existing limits |
 | Threshold config | Hardcoded | Convention over configuration |
 | File structure | By topic | Intuitive, grep-friendly |
-| Sub-file limit | 50 lines each | Keeps reads cheap |
+| Sub-file limit | 250 lines each | Keeps reads cheap |
 | Loading strategy | 4-layer defense-in-depth | Prevents missed guidance |
 | Always-load file | `invariants.md` | Clear convention, single file |
 | High-risk operations | 4 categories | Version control, PR, deploy, agent edits |
