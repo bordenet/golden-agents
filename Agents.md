@@ -51,7 +51,61 @@ After applying changes, verify:
 
 1. **All original content preserved** - Nothing from the original file was lost
 2. **Size within limits** - Progressive mode ≤100 lines, Compact ≤200 lines
-3. **Markers present** - `<!-- GOLDEN:framework:start -->` and `<!-- GOLDEN:framework:end -->`
+<!-- GOLDEN:self-manage:start -->
+## ⚠️ Before ANY Task
+1. Load `.ai-guidance/invariants.md` — contains critical rules
+2. After editing THIS file, run: `wc -l Agents.md` — if >150, refactor before continuing
+<!-- GOLDEN:self-manage:end -->
+<!-- GOLDEN:framework:start -->
+
+---
+
+## Quality Gates (MANDATORY)
+
+Before ANY commit:
+1. **Lint**: `shellcheck *.sh`
+2. **Build**: `bash -n *.sh`
+3. **Test**: `bats test/`
+4. **Coverage**: Minimum N/A%
+
+**Order matters.** Lint → Build → Test. Never skip steps.
+
+---
+
+## Communication Rules
+
+- **No flattery** - Skip "Great question!" or "Excellent point!"
+- **No hype** - Avoid "revolutionary", "game-changing", "seamless"
+- **Evidence-based** - Cite sources or qualify as opinion
+- **Direct** - State facts without embellishment
+
+**Banned phrases**: production-grade, world-class, leverage, utilize, incredibly, extremely, Happy to help!
+
+---
+
+## 🚨 Progressive Module Loading
+
+**STOP and load the relevant module BEFORE these actions:**
+
+### Language Modules (🔴 Required)
+- 🔴 **BEFORE writing ANY `.sh` file or bash code block**: Read `$HOME/.golden-agents/templates/languages/shell.md`
+
+### Workflow Modules (🔴 Required)
+- 🔴 **BEFORE any commit, PR, push, or merge**: Read `$HOME/.golden-agents/templates/workflows/security.md`
+- 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read `$HOME/.golden-agents/templates/workflows/testing.md`
+- 🔴 **WHEN build fails OR lint errors appear**: Read `$HOME/.golden-agents/templates/workflows/build-hygiene.md`
+- 🟡 **BEFORE deploying to any environment**: Read `$HOME/.golden-agents/templates/workflows/deployment.md`
+- 🟡 **WHEN conversation exceeds 50 exchanges**: Read `$HOME/.golden-agents/templates/workflows/context-management.md`
+
+### Optional: Superpowers integration
+
+If [superpowers](https://github.com/obra/superpowers) is installed, run at session start:
+
+```bash
+node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+```
+
+<!-- GOLDEN:framework:end -->
 
 ---
 
@@ -171,4 +225,3 @@ When editing `templates/`:
 ---
 
 *This framework teaches AI assistants to teach other AI assistants.*
-

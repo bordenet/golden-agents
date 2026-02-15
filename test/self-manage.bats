@@ -17,7 +17,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/Agents.md" "if >150, refactor"
+    assert_file_contains "$TEST_DIR/Agents.md" ">150 lines"
 }
 
 # Test 2: Self-manage block appears before framework markers
@@ -64,7 +64,7 @@ teardown() {
 
     # Verify self-manage block was added
     assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/Agents.md" "if >150, refactor"
+    assert_file_contains "$TEST_DIR/Agents.md" ">150 lines"
 }
 
 # Test 6: Upgrade preserves existing self-manage block
@@ -157,4 +157,46 @@ teardown() {
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     [ ! -d "$TEST_DIR/.ai-guidance" ]
+}
+
+# Test 13: Self-manage block references all guidance files (recursive)
+@test "self-manage block references all guidance files" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    # Should reference checking .ai-guidance/*.md files
+    assert_file_contains "$TEST_DIR/Agents.md" ".ai-guidance/\*.md"
+}
+
+# Test 14: Self-manage block includes 50-line threshold for sub-files
+@test "self-manage block includes 50-line threshold for sub-files" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    # Should mention 50-line threshold for sub-files
+    assert_file_contains "$TEST_DIR/Agents.md" ">50 lines"
+}
+
+# Test 15: invariants.md includes recursive self-management protocol
+@test "invariants.md includes recursive self-management protocol" {
+    create_bloated_agents_with_markers "$TEST_DIR" 200
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/.ai-guidance/invariants.md" ]
+
+    # Should include recursive thresholds
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "Recursive"
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "50 lines"
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "150 lines"
+}
+
+# Test 16: invariants.md includes sub-directory splitting guidance
+@test "invariants.md includes sub-directory splitting guidance" {
+    create_bloated_agents_with_markers "$TEST_DIR" 200
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/.ai-guidance/invariants.md" ]
+
+    # Should include guidance for splitting sub-files into sub-directories
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "sub-directory"
 }
