@@ -936,6 +936,22 @@ $MARKER_END
 FOOTER
 }
 
+# generate_self_manage_block()
+# Generates the 5-line self-management bootstrap block.
+# This block is injected BEFORE the framework start marker.
+# Arguments: none
+# Returns: Bootstrap block content via stdout
+generate_self_manage_block() {
+    cat << 'SELF_MANAGE'
+<!-- GOLDEN:self-manage:start -->
+## ⚠️ Before ANY Task
+1. Load `.ai-guidance/invariants.md` — contains critical rules
+2. After editing THIS file, run: `wc -l Agents.md` — if >150, refactor before continuing
+<!-- GOLDEN:self-manage:end -->
+
+SELF_MANAGE
+}
+
 # upgrade_agents_md()
 # Safely upgrades an existing Agents.md file with framework markers.
 # Preserves all content outside the framework markers (project-specific sections).
