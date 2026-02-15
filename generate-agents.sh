@@ -1083,6 +1083,7 @@ ${after_marker}"
 
 # create_modular_migration_prompt()
 # Creates the modular migration prompt file for bloated Agents.md files.
+# Also creates .ai-guidance/ directory with invariants.md template.
 # Copies the template and optionally adds to .gitignore.
 # Arguments:
 #   $1 - Directory path where the prompt file should be created
@@ -1099,6 +1100,13 @@ create_modular_migration_prompt() {
                 echo "MODULAR-MIGRATION-PROMPT.md" >> "$dir/.gitignore"
             fi
         fi
+    fi
+
+    # Create .ai-guidance directory with invariants.md
+    mkdir -p "$dir/.ai-guidance"
+    if [[ -f "$TEMPLATES_DIR/core/invariants.md" ]]; then
+        cp "$TEMPLATES_DIR/core/invariants.md" "$dir/.ai-guidance/invariants.md"
+        echo "[OK] Created: $dir/.ai-guidance/invariants.md"
     fi
 }
 

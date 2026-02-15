@@ -128,3 +128,33 @@ teardown() {
     # Should NOT create migration prompt
     [ ! -f "$TEST_DIR/MODULAR-MIGRATION-PROMPT.md" ]
 }
+
+# Test 10: Upgrade creates .ai-guidance directory for bloated files
+@test "upgrade creates .ai-guidance directory for bloated files" {
+    create_bloated_agents_with_markers "$TEST_DIR" 200
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -d "$TEST_DIR/.ai-guidance" ]
+}
+
+# Test 11: Upgrade creates invariants.md for bloated files
+@test "upgrade creates invariants.md for bloated files" {
+    create_bloated_agents_with_markers "$TEST_DIR" 200
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/.ai-guidance/invariants.md" ]
+    # Verify it contains expected content
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "Critical Invariants"
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "Self-Management Protocol"
+}
+
+# Test 12: Non-bloated file does not create .ai-guidance
+@test "non-bloated file does not create .ai-guidance" {
+    create_agents_with_markers "$TEST_DIR"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ ! -d "$TEST_DIR/.ai-guidance" ]
+}
