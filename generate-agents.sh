@@ -1068,6 +1068,37 @@ ${after_marker}"
         echo ""
         echo "  Project-specific content preserved."
         echo "  Backup: $backup_file"
+
+        # Check for bloat and trigger modular migration if needed
+        local line_count
+        line_count=$(wc -l < "$existing_file" | tr -d ' ')
+        if [[ "$line_count" -gt 150 ]]; then
+            echo ""
+            echo "[WARN] Agents.md exceeds 150 lines ($line_count lines)"
+            echo "  Creating modular migration prompt..."
+            create_modular_migration_prompt "$OUTPUT_PATH"
+        fi
+    fi
+}
+
+# create_modular_migration_prompt()
+# Creates the modular migration prompt file for bloated Agents.md files.
+# Copies the template and optionally adds to .gitignore.
+# Arguments:
+#   $1 - Directory path where the prompt file should be created
+# Returns: 0 on success
+create_modular_migration_prompt() {
+    local dir="$1"
+    if [[ -f "$TEMPLATES_DIR/modular-migration-prompt.md" ]]; then
+        cp "$TEMPLATES_DIR/modular-migration-prompt.md" "$dir/MODULAR-MIGRATION-PROMPT.md"
+        echo "[OK] Created: $dir/MODULAR-MIGRATION-PROMPT.md"
+
+        # Add to .gitignore if it exists
+        if [[ -f "$dir/.gitignore" ]]; then
+            if ! grep -q "MODULAR-MIGRATION-PROMPT.md" "$dir/.gitignore"; then
+                echo "MODULAR-MIGRATION-PROMPT.md" >> "$dir/.gitignore"
+            fi
+        fi
     fi
 }
 

@@ -107,3 +107,24 @@ teardown() {
     # Self-manage should come before framework
     [ "$self_manage_line" -lt "$framework_line" ]
 }
+
+# Test 8: Upgrade detects bloated file and creates migration prompt
+@test "upgrade detects bloated file and creates migration prompt" {
+    create_bloated_agents_with_markers "$TEST_DIR" 200
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/MODULAR-MIGRATION-PROMPT.md" ]
+    [[ "$output" == *"exceeds 150 lines"* ]] || [[ "$output" == *"bloat"* ]]
+}
+
+# Test 9: Non-bloated file does not trigger migration prompt
+@test "non-bloated file does not trigger migration prompt" {
+    # Create a normal-sized file with markers
+    create_agents_with_markers "$TEST_DIR"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    # Should NOT create migration prompt
+    [ ! -f "$TEST_DIR/MODULAR-MIGRATION-PROMPT.md" ]
+}
