@@ -1,0 +1,50 @@
+#!/usr/bin/env bats
+# Self-Management Tests - Bootstrap block and bloat detection
+
+load 'test_helper'
+
+setup() {
+    TEST_DIR="$(mktemp -d)"
+    export TEST_DIR
+}
+
+teardown() {
+    [[ -d "$TEST_DIR" ]] && rm -rf "$TEST_DIR"
+}
+
+# Test 1: New file contains self-manage block
+@test "new file contains self-manage block" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/Agents.md" "if >150, refactor"
+}
+
+# Test 2: Self-manage block appears before framework markers
+@test "self-manage block appears before framework markers" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    
+    # Get line numbers
+    local self_manage_line framework_line
+    self_manage_line=$(grep -n "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
+    framework_line=$(grep -n "GOLDEN:framework:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
+    
+    # Self-manage should come before framework
+    [ "$self_manage_line" -lt "$framework_line" ]
+}
+
+# Test 3: Self-manage block contains bootstrap instructions
+@test "self-manage block contains bootstrap instructions" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/Agents.md" "Before ANY Task"
+    assert_file_contains "$TEST_DIR/Agents.md" "Load.*invariants.md"
+}
+
+# Test 4: Self-manage block is properly closed
+@test "self-manage block is properly closed" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:end"
+}

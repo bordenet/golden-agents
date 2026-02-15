@@ -743,6 +743,13 @@ generate_progressive() {
 
 Minimal core with on-demand module loading. Templates at: \`$golden_agents_path/templates/\`
 
+HEADER
+
+    # Output self-manage bootstrap block
+    generate_self_manage_block
+
+    cat << FRAMEWORK_START
+
 $MARKER_START
 
 ---
@@ -775,7 +782,7 @@ Before ANY commit:
 **STOP and load the relevant module BEFORE these actions:**
 
 ### Language Modules (🔴 Required)
-HEADER
+FRAMEWORK_START
 
     # Generate language loading instructions with specific triggers
     for lang in "${lang_array[@]}"; do
