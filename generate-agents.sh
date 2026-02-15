@@ -42,6 +42,7 @@ MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
 FRAMEWORK_VERSION="1.4.0"
 SELF_MANAGE_START="<!-- GOLDEN:self-manage:start -->"
+# shellcheck disable=SC2034 # SELF_MANAGE_END defined for symmetry; will be used in Phase 3 bloat detection
 SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
 
 # usage()
@@ -1024,6 +1025,12 @@ upgrade_agents_md() {
     local before_marker after_marker
     before_marker=$(sed -n "1,/$MARKER_START/p" "$existing_file" | sed '$ d')
     after_marker=$(sed -n "/$MARKER_END/,\$p" "$existing_file" | sed '1 d')
+
+    # Inject self-manage block if missing
+    if ! grep -q "$SELF_MANAGE_START" "$existing_file"; then
+        before_marker="${before_marker}
+$(generate_self_manage_block)"
+    fi
 
     # Generate new framework content
     local new_framework

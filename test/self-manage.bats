@@ -48,3 +48,62 @@ teardown() {
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:end"
 }
+
+# Test 5: Upgrade adds self-manage block to existing file
+@test "upgrade adds self-manage block to existing file" {
+    # Create an existing file WITH framework markers but WITHOUT self-manage block
+    create_agents_with_markers "$TEST_DIR"
+
+    # Verify no self-manage block initially
+    run grep "GOLDEN:self-manage" "$TEST_DIR/Agents.md"
+    [ "$status" -ne 0 ]
+
+    # Run upgrade
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    # Verify self-manage block was added
+    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/Agents.md" "if >150, refactor"
+}
+
+# Test 6: Upgrade preserves existing self-manage block
+@test "upgrade preserves existing self-manage block" {
+    # Generate a fresh file (which has self-manage block)
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    # Verify self-manage block exists
+    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
+
+    # Count self-manage markers before upgrade
+    local before_count
+    before_count=$(grep -c "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md")
+
+    # Run upgrade
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    # Verify exactly one self-manage block (not duplicated)
+    local after_count
+    after_count=$(grep -c "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md")
+    [ "$after_count" -eq 1 ]
+}
+
+# Test 7: Self-manage block appears before framework markers after upgrade
+@test "self-manage block appears before framework markers after upgrade" {
+    # Create existing file without self-manage block
+    create_agents_with_markers "$TEST_DIR"
+
+    # Run upgrade
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    # Get line numbers
+    local self_manage_line framework_line
+    self_manage_line=$(grep -n "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
+    framework_line=$(grep -n "GOLDEN:framework:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
+
+    # Self-manage should come before framework
+    [ "$self_manage_line" -lt "$framework_line" ]
+}
