@@ -167,25 +167,25 @@ teardown() {
     assert_file_contains "$TEST_DIR/Agents.md" ".ai-guidance/\*.md"
 }
 
-# Test 14: Self-manage block includes 50-line threshold for sub-files
-@test "self-manage block includes 50-line threshold for sub-files" {
+# Test 14: Self-manage block includes 250-line threshold for sub-files
+@test "self-manage block includes 250-line threshold for sub-files" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    # Should mention 50-line threshold for sub-files
-    assert_file_contains "$TEST_DIR/Agents.md" ">50 lines"
+    # Should mention 250-line threshold for sub-files
+    assert_file_contains "$TEST_DIR/Agents.md" ">250 lines"
 }
 
-# Test 15: invariants.md includes recursive self-management protocol
-@test "invariants.md includes recursive self-management protocol" {
+# Test 15: invariants.md includes self-management protocol
+@test "invariants.md includes self-management protocol" {
     create_bloated_agents_with_markers "$TEST_DIR" 200
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     [ -f "$TEST_DIR/.ai-guidance/invariants.md" ]
 
-    # Should include recursive thresholds
-    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "Recursive"
-    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "50 lines"
+    # Should include self-management thresholds
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "Self-Management"
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "250 lines"
     assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "150 lines"
 }
 
