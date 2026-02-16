@@ -183,10 +183,9 @@ teardown() {
     [ "$status" -eq 0 ]
     [ -f "$TEST_DIR/.ai-guidance/invariants.md" ]
 
-    # Should include self-management thresholds
+    # Should include self-management thresholds (all are 250 lines now)
     assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "Self-Management"
     assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "250 lines"
-    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "150 lines"
 }
 
 # Test 16: invariants.md includes sub-directory splitting guidance
