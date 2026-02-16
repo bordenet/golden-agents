@@ -21,7 +21,7 @@ This leads to `Agents.md` files growing to 200-300+ lines (as seen across all ge
 
 A self-managing architecture where:
 - Agents check `Agents.md` line count after any edit to that file
-- If over 150 lines, agents pause their primary task and refactor
+- If over 250 lines, agents pause their primary task and refactor
 - Refactoring splits content into `.ai-guidance/*.md` topic files
 - A defense-in-depth loading strategy ensures critical guidance is never missed
 - Zero data loss is enforced through verification steps
@@ -58,11 +58,10 @@ Detection uses a simple line count check:
 wc -l < Agents.md
 ```
 
-**Threshold:** 150 lines (hardcoded in framework)
+**Threshold:** 250 lines (hardcoded in framework)
 
 This threshold was chosen because:
-- Golden-agents already uses 100-line (progressive) and 200-line (compact) limits
-- 150 lines provides growth room before triggering
+- 250 lines is small enough for AI agents to handle effectively
 - Line count is trivial to check and verify
 - Works identically across all platforms and operating systems
 
@@ -76,7 +75,7 @@ This threshold was chosen because:
 
 ### Threshold Configuration
 
-The 150-line threshold is hardcoded in the golden-agents framework. No per-repo configuration files are needed. This follows the "convention over configuration" principle.
+The 250-line threshold is hardcoded in the golden-agents framework. No per-repo configuration files are needed. This follows the "convention over configuration" principle.
 
 ---
 
@@ -84,11 +83,11 @@ The 150-line threshold is hardcoded in the golden-agents framework. No per-repo 
 
 ### Directory Structure
 
-When `Agents.md` exceeds 150 lines, content is split into a `.ai-guidance/` directory:
+When `Agents.md` exceeds 250 lines, content is split into a `.ai-guidance/` directory:
 
 ```
 repo/
-├── Agents.md                    # ≤150 lines (core + loading table)
+├── Agents.md                    # ≤250 lines (core + loading table)
 ├── .ai-guidance/
 │   ├── invariants.md           # Always loaded (critical rules)
 │   ├── testing.md              # On-demand (test-related tasks)
@@ -120,7 +119,7 @@ Custom topic files are allowed (e.g., `mobile-builds.md`) for project-specific n
 
 | File | Limit | Rationale |
 |------|-------|-----------|
-| `Agents.md` | ≤150 lines | Triggers refactor if exceeded |
+| `Agents.md` | ≤250 lines | Triggers refactor if exceeded |
 | Each `.ai-guidance/*.md` | ≤250 lines | Keeps individual reads cheap |
 
 ---
@@ -133,8 +132,8 @@ The golden-agents framework must handle three states of existing repos:
 
 | State | Example | Current Lines | Migration Needed |
 |-------|---------|---------------|------------------|
-| **A. Already modular** | (Future repos) | ≤150 | None — already compliant |
-| **B. Bloated, has markers** | All genesis-tools repos | 177-295 | Add self-manage block + split |
+| **A. Already modular** | (Future repos) | ≤250 | None — already compliant |
+| **B. Bloated, has markers** | All genesis-tools repos | 295+ | Add self-manage block + split |
 | **C. Bloated, no markers** | External adopters | Varies | Run `--adopt` first, then migrate |
 
 ### Upgrade Behavior Enhancement
@@ -146,7 +145,7 @@ The existing `--upgrade` command gains automatic migration detection:
 ```
 
 **New behavior:**
-1. Detect if `Agents.md` > 150 lines
+1. Detect if `Agents.md` > 250 lines
 2. Detect if `.ai-guidance/` directory exists
 3. If bloated AND no `.ai-guidance/`: trigger modular migration flow
 
@@ -157,7 +156,7 @@ The existing `--upgrade` command gains automatic migration detection:
 3. Inject 5-line self-manage bootstrap into `Agents.md`
 4. Generate `MODULAR-MIGRATION-PROMPT.md` with split instructions
 5. AI executes prompt, splits content by topic
-6. Verify total lines ≤150 in `Agents.md`
+6. Verify total lines ≤250 in `Agents.md`
 
 ### No New Flag Required
 
@@ -236,7 +235,7 @@ After any agent edit to `Agents.md`, the agent runs:
 wc -l < Agents.md
 ```
 
-If result > 150, the agent MUST pause its primary task and refactor before continuing.
+If result > 250, the agent MUST pause its primary task and refactor before continuing.
 
 ### Refactoring Steps
 
@@ -252,7 +251,7 @@ If result > 150, the agent MUST pause its primary task and refactor before conti
 5. **EXTRACT TO SUB-FILES** — Move classified content to appropriate files
 6. **UPDATE LOADING TABLE** — Add/update keyword mappings in Agents.md
 7. **VERIFY ZERO DATA LOSS** — Compare original snapshot to new structure
-8. **VERIFY LINE COUNT** — Confirm Agents.md ≤150 lines
+8. **VERIFY LINE COUNT** — Confirm Agents.md ≤250 lines
 9. **RESUME PRIMARY TASK** — Continue original work with refactored structure
 
 ### What Can Be Removed During Refactoring
@@ -342,7 +341,7 @@ The self-management capability is split between a minimal in-file block and deta
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
-2. After editing THIS file, run: `wc -l Agents.md` — if >150, refactor before continuing
+2. After editing THIS file, run: `wc -l Agents.md` — if >250, refactor before continuing
 <!-- GOLDEN:self-manage:end -->
 ```
 
@@ -359,7 +358,7 @@ The self-management capability is split between a minimal in-file block and deta
 ## Self-Management Protocol
 After editing `Agents.md` or any `.ai-guidance/*.md` file:
 1. Check: `wc -l Agents.md`
-2. If >150 lines: STOP current task, refactor before continuing
+2. If >250 lines: STOP current task, refactor before continuing
 3. Refactoring must be ZERO DATA LOSS
 4. Verify total content preserved before resuming
 
@@ -391,7 +390,7 @@ The `generate-agents.sh` script automatically:
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Trigger | Post-edit check | Agents cause bloat; just-in-time checking |
-| Detection | Line count > 150 | Simple, universal, matches existing limits |
+| Detection | Line count > 250 | Simple, universal, small enough for AI to handle |
 | Threshold config | Hardcoded | Convention over configuration |
 | File structure | By topic | Intuitive, grep-friendly |
 | Sub-file limit | 250 lines each | Keeps reads cheap |

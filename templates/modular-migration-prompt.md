@@ -1,19 +1,19 @@
 # Modular Migration Prompt
 
-> **MISSION:** Refactor a bloated Agents.md (>150 lines) into a modular structure using `.ai-guidance/` sub-files.
+> **MISSION:** Refactor a bloated Agents.md (>250 lines) into a modular structure using `.ai-guidance/` sub-files.
 >
-> This file was created because your Agents.md exceeds the 150-line limit.
+> This file was created because your Agents.md exceeds the 250-line limit.
 > AI agents struggle with long instruction files — they drift and miss important rules.
 
 ## Success Criteria
 
 | Component | Limit |
 |-----------|-------|
-| `Agents.md` (root file) | ≤150 lines |
+| `Agents.md` (root file) | ≤250 lines |
 | Each `.ai-guidance/*.md` sub-file | ≤250 lines |
 | Total content | ZERO data loss |
 
-**If Agents.md still exceeds 150 lines after migration, continue extracting content.**
+**If Agents.md still exceeds 250 lines after migration, continue extracting content.**
 
 ## Directory Structure
 
@@ -21,7 +21,7 @@ After migration, you should have:
 
 ```
 project/
-├── Agents.md              # ≤150 lines, references sub-files
+├── Agents.md              # ≤250 lines, references sub-files
 ├── .ai-guidance/
 │   ├── invariants.md      # Critical rules (provided)
 │   ├── domain-rules.md    # Project-specific domain logic
@@ -108,7 +108,7 @@ Add after the framework end marker:
 ### Step 5: Verify
 
 ```bash
-wc -l Agents.md                    # Must be ≤150
+wc -l Agents.md                    # Must be ≤250
 wc -l .ai-guidance/*.md            # Each must be ≤250
 ```
 

@@ -40,7 +40,7 @@ Every generated `Agents.md` includes a **self-management protocol**:
 ## 🔄 Self-Management Protocol
 
 After ANY edit to this file or .ai-guidance/*.md, verify:
-1. `wc -l Agents.md` — if >150 lines → extract content to .ai-guidance/
+1. `wc -l Agents.md` — if >250 lines → extract content to .ai-guidance/
 2. `wc -l .ai-guidance/*.md` — if any file >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 ```
@@ -60,7 +60,7 @@ When thresholds are exceeded, the AI:
 
 | File Type | Limit | Action When Exceeded |
 |-----------|-------|----------------------|
-| `Agents.md` | 150 lines | Extract to `.ai-guidance/*.md` |
+| `Agents.md` | 250 lines | Extract to `.ai-guidance/*.md` |
 | `.ai-guidance/*.md` | 250 lines | Split into sub-directory |
 
 These limits keep files within effective context windows for all major AI assistants.
@@ -71,7 +71,7 @@ These limits keep files within effective context windows for all major AI assist
 
 ```
 my-project/
-├── Agents.md                    # ≤150 lines, self-managing
+├── Agents.md                    # ≤250 lines, self-managing
 ├── CLAUDE.md                    # Redirect → Agents.md
 ├── GEMINI.md                    # Redirect → Agents.md
 ├── COPILOT.md                   # Redirect → Agents.md
@@ -98,7 +98,7 @@ For projects with bloated guidance files:
 ~/.golden-agents/generate-agents.sh --upgrade ~/my-project
 ```
 
-This injects the self-management protocol. If `Agents.md` exceeds 150 lines, it also creates `MODULAR-MIGRATION-PROMPT.md` with step-by-step refactoring instructions for the AI.
+This injects the self-management protocol. If `Agents.md` exceeds 250 lines, it also creates `MODULAR-MIGRATION-PROMPT.md` with step-by-step refactoring instructions for the AI.
 
 **[→ Design Details](docs/plans/2026-02-15-self-managing-agents-design.md)**
 
@@ -108,7 +108,7 @@ This injects the self-management protocol. If `Agents.md` exceeds 150 lines, it 
 
 | Without Self-Maintenance | With Self-Maintenance |
 |--------------------------|----------------------|
-| 500+ line files accumulate | Auto-splits at 150/250 lines |
+| 500+ line files accumulate | Auto-splits at 250 lines |
 | AI ignores rules buried deep | All rules stay accessible |
 | Manual cleanup required | Zero human intervention |
 | Context window overflow | Stays within limits |

@@ -35,7 +35,7 @@ This framework incorporates official guidance from:
 | Recommendation | Our Implementation |
 |----------------|-------------------|
 | **Provide context in comments** | Templates include structured headers with project name, languages, type |
-| **Break down complex tasks** | Progressive loading splits guidance into focused modules (30-150 lines each) |
+| **Break down complex tasks** | Progressive loading splits guidance into focused modules (≤250 lines each) |
 | **Validate AI suggestions** | Workflow checklists include verification gates before commit/PR |
 
 **Example from generated output:**

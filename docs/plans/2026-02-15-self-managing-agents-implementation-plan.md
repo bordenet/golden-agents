@@ -4,7 +4,7 @@
 
 **Goal:** Enable AI agents to automatically detect and refactor bloated Agents.md files using the self-managing architecture.
 
-**Architecture:** Inject a 5-line bootstrap block into Agents.md that instructs agents to: (1) load `.ai-guidance/invariants.md` at conversation start, (2) check `wc -l Agents.md` after edits, (3) refactor if >150 lines. The `--upgrade` command auto-detects bloated files (>150 lines) and generates a modular migration prompt.
+**Architecture:** Inject a 5-line bootstrap block into Agents.md that instructs agents to: (1) load `.ai-guidance/invariants.md` at conversation start, (2) check `wc -l Agents.md` after edits, (3) refactor if >250 lines. The `--upgrade` command auto-detects bloated files (>250 lines) and generates a modular migration prompt.
 
 **Tech Stack:** Bash (generate-agents.sh), BATS (testing), Markdown (templates)
 
@@ -59,7 +59,7 @@ generate_self_manage_block() {
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
-2. After editing THIS file, run: `wc -l Agents.md` — if >150, refactor before continuing
+2. After editing THIS file, run: `wc -l Agents.md` — if >250, refactor before continuing
 <!-- GOLDEN:self-manage:end -->
 
 SELF_MANAGE
@@ -108,7 +108,7 @@ Create test in `test/self-manage.bats`:
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/Agents.md" "if >150, refactor"
+    assert_file_contains "$TEST_DIR/Agents.md" "if >250, refactor"
 }
 ```
 
@@ -196,7 +196,7 @@ git commit -m "feat: inject self-manage block during upgrade"
 After editing `Agents.md` or any `.ai-guidance/*.md` file:
 
 1. **Check line count:** `wc -l Agents.md`
-2. **If >150 lines:** STOP current task, refactor before continuing
+2. **If >250 lines:** STOP current task, refactor before continuing
 3. **Refactoring must be ZERO DATA LOSS**
 4. **Verify total content preserved** before resuming original task
 
@@ -217,7 +217,7 @@ Before completing any refactor:
 4. Extract to sub-files (≤250 lines each)
 5. Update loading table in Agents.md
 6. Verify: all original content exists in new structure
-7. Confirm: `wc -l Agents.md` ≤150
+7. Confirm: `wc -l Agents.md` ≤250
 
 ## Recovery
 
@@ -249,7 +249,7 @@ git commit -m "feat: add invariants.md template for self-management"
 
 Key sections to include:
 - Mission statement (refactor bloated Agents.md to modular structure)
-- Success criteria (Agents.md ≤150 lines, sub-files ≤250 lines each)
+- Success criteria (Agents.md ≤250 lines, sub-files ≤250 lines each)
 - Classification rules (what goes where)
 - Zero data loss checklist
 - Step-by-step process
@@ -279,7 +279,7 @@ Add to `test/self-manage.bats`:
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     [ -f "$TEST_DIR/MODULAR-MIGRATION-PROMPT.md" ]
-    [[ "$output" == *"exceeds 150 lines"* ]] || [[ "$output" == *"bloat"* ]]
+    [[ "$output" == *"exceeds 250 lines"* ]] || [[ "$output" == *"bloat"* ]]
 }
 ```
 
@@ -320,8 +320,8 @@ After applying upgrade, check line count:
 ```bash
 local line_count
 line_count=$(wc -l < "$existing_file" | tr -d ' ')
-if [[ "$line_count" -gt 150 ]]; then
-    echo "[WARN] Agents.md exceeds 150 lines ($line_count lines)"
+if [[ "$line_count" -gt 250 ]]; then
+    echo "[WARN] Agents.md exceeds 250 lines ($line_count lines)"
     echo "  Creating modular migration prompt..."
     create_modular_migration_prompt "$OUTPUT_PATH"
 fi
@@ -460,7 +460,7 @@ git commit -m "test: comprehensive self-manage test suite"
 ```bash
 cd ../genesis-tools/docforge-ai
 ../../golden-agents/generate-agents.sh --upgrade --path=.
-# Should show: "exceeds 150 lines (295 lines)"
+# Should show: "exceeds 250 lines (295 lines)"
 ```
 
 **Step 2: Test upgrade on pr-faq-assistant (239 lines)**
@@ -468,7 +468,7 @@ cd ../genesis-tools/docforge-ai
 ```bash
 cd ../genesis-tools/pr-faq-assistant
 ../../golden-agents/generate-agents.sh --upgrade --path=.
-# Should show: "exceeds 150 lines (239 lines)"
+# Should be under 250 lines - no migration prompt needed
 ```
 
 **Step 3: Verify MODULAR-MIGRATION-PROMPT.md created**
