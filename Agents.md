@@ -28,7 +28,7 @@ The script will auto-detect the situation and tell you what to do.
 | **Existing CLAUDE.md/CODEX.md** | Suggests `--migrate` | Run migrate, then execute the generated prompt |
 | **Existing Agents.md (no markers)** | Suggests `--adopt` | Run adopt, then execute the generated prompt |
 | **Existing Agents.md (with markers)** | Suggests `--upgrade` | Run upgrade preview, then `--apply` if good |
-| **Bloated Agents.md (>100 lines)** | Suggests `--dedupe` | Run dedupe, then execute the generated prompt |
+| **Bloated Agents.md (>250 lines)** | Suggests `--dedupe` | Run dedupe, then execute the generated prompt |
 
 ### Step 3: Execute Generated Prompts
 
@@ -50,12 +50,12 @@ cat /path/to/target/repo/MIGRATION-PROMPT.md  # or ADOPT-PROMPT.md
 After applying changes, verify:
 
 1. **All original content preserved** - Nothing from the original file was lost
-2. **Size within limits** - Progressive mode ≤100 lines, Compact ≤200 lines
+2. **Size within limits** - Progressive mode ≤250 lines, Compact ≤200 lines
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
 2. After editing ANY guidance file, check: `wc -l Agents.md .ai-guidance/*.md 2>/dev/null`
-   - `Agents.md` >150 lines → refactor into `.ai-guidance/`
+   - `Agents.md` >250 lines → refactor into `.ai-guidance/`
    - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 <!-- GOLDEN:framework:start -->
@@ -174,15 +174,15 @@ cat ../recipe-app/MIGRATION-PROMPT.md
 # - Verify zero data loss
 
 # 4. Verify result
-wc -l ../recipe-app/Agents.md  # Should be ≤100 lines for progressive
+wc -l ../recipe-app/Agents.md  # Should be ≤250 lines for progressive
 grep "GOLDEN:framework" ../recipe-app/Agents.md  # Should find markers
 ```
 
 ---
 
-## For Complex Projects (>100 Lines of Project-Specific Content)
+## For Complex Projects (>250 Lines of Project-Specific Content)
 
-If a project has extensive project-specific guidance that can't fit in 100 lines:
+If a project has extensive project-specific guidance that can't fit in 250 lines:
 
 1. Create `.ai-guidance/` directory in target repo
 2. Split content into focused modules (e.g., `mobile-builds.md`, `api-patterns.md`)
