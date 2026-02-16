@@ -13,3 +13,6 @@ coverage/
 *.tmp
 
 MODULAR-MIGRATION-PROMPT.md
+
+# macOS
+.DS_Store
