@@ -7,7 +7,7 @@
 
 ## 🚨 CRITICAL: How to Use This Framework
 
-**You are an AI assistant reading this file.** This repo contains tools that generate `Agents.md` files for OTHER projects. When a user asks you to "apply golden-agents" or "set up AI guidance" for a repo, follow these instructions.
+**You are an AI assistant reading this file.** This repo contains tools that generate `AGENTS.md` files for OTHER projects. When a user asks you to "apply golden-agents" or "set up AI guidance" for a repo, follow these instructions.
 
 ### Step 1: Determine the Target Repo's State
 
@@ -24,11 +24,11 @@ The script will auto-detect the situation and tell you what to do.
 
 | Situation | Script Output | Your Action |
 |-----------|---------------|-------------|
-| **No Agents.md** | Prompts for `--language` | Run with language flag, review output |
+| **No AGENTS.md** | Prompts for `--language` | Run with language flag, review output |
 | **Existing CLAUDE.md/CODEX.md** | Suggests `--migrate` | Run migrate, then execute the generated prompt |
-| **Existing Agents.md (no markers)** | Suggests `--adopt` | Run adopt, then execute the generated prompt |
-| **Existing Agents.md (with markers)** | Suggests `--upgrade` | Run upgrade preview, then `--apply` if good |
-| **Bloated Agents.md (>250 lines)** | Suggests `--dedupe` | Run dedupe, then execute the generated prompt |
+| **Existing AGENTS.md (no markers)** | Suggests `--adopt` | Run adopt, then execute the generated prompt |
+| **Existing AGENTS.md (with markers)** | Suggests `--upgrade` | Run upgrade preview, then `--apply` if good |
+| **Bloated AGENTS.md (>250 lines)** | Suggests `--dedupe` | Run dedupe, then execute the generated prompt |
 
 ### Step 3: Execute Generated Prompts
 
@@ -54,8 +54,8 @@ After applying changes, verify:
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
-2. After editing ANY guidance file, check: `wc -l Agents.md .ai-guidance/*.md 2>/dev/null`
-   - `Agents.md` >250 lines → refactor into `.ai-guidance/`
+2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
+   - `AGENTS.md` >250 lines → refactor into `.ai-guidance/`
    - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 <!-- GOLDEN:framework:start -->
@@ -113,7 +113,7 @@ node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
 
 ## Command Reference
 
-### For New Projects (No Agents.md)
+### For New Projects (No AGENTS.md)
 
 ```bash
 ./generate-agents.sh --language=go --path=/path/to/repo
@@ -127,14 +127,14 @@ node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
 # Then read and execute: /path/to/repo/MIGRATION-PROMPT.md
 ```
 
-### For Existing Agents.md Without Markers (Adoption)
+### For Existing AGENTS.md Without Markers (Adoption)
 
 ```bash
 ./generate-agents.sh --adopt --language=go --path=/path/to/repo
 # Then read and execute: /path/to/repo/ADOPT-PROMPT.md
 ```
 
-### For Existing Agents.md With Markers (Upgrade)
+### For Existing AGENTS.md With Markers (Upgrade)
 
 ```bash
 ./generate-agents.sh --upgrade --path=/path/to/repo          # Preview
@@ -170,12 +170,12 @@ cat ../recipe-app/MIGRATION-PROMPT.md
 # Follow the instructions in the prompt to:
 # - Review the original content
 # - Identify project-specific vs framework content
-# - Create the new Agents.md with proper structure
+# - Create the new AGENTS.md with proper structure
 # - Verify zero data loss
 
 # 4. Verify result
-wc -l ../recipe-app/Agents.md  # Should be ≤250 lines for progressive
-grep "GOLDEN:framework" ../recipe-app/Agents.md  # Should find markers
+wc -l ../recipe-app/AGENTS.md  # Should be ≤250 lines for progressive
+grep "GOLDEN:framework" ../recipe-app/AGENTS.md  # Should find markers
 ```
 
 ---
@@ -186,7 +186,7 @@ If a project has extensive project-specific guidance that can't fit in 250 lines
 
 1. Create `.ai-guidance/` directory in target repo
 2. Split content into focused modules (e.g., `mobile-builds.md`, `api-patterns.md`)
-3. Reference modules from main Agents.md with on-demand loading table
+3. Reference modules from main AGENTS.md with on-demand loading table
 
 See `templates/core/superpowers.md` for the module loading pattern.
 

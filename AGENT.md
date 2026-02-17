@@ -1,4 +1,4 @@
 # Amp by Sourcegraph Instructions
 
-See **[Agents.md](./Agents.md)** for all AI guidance.
+See **[AGENTS.md](./AGENTS.md)** for all AI guidance.
 

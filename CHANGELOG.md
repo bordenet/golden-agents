@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Superpowers now optional** - Framework no longer requires obra/superpowers to be installed
-  - All generated Agents.md files now include inline workflow checklists as fallback
+  - All generated AGENTS.md files now include inline workflow checklists as fallback
   - Superpowers remains available as an optional enhancement for Claude users
   - Works with any AI assistant (Gemini, Copilot, Cursor, etc.) out of the box
 
@@ -75,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- AGENTS.md no longer created as redirect (conflicts with Agents.md on case-insensitive filesystems)
+- AGENTS.md no longer created as redirect (conflicts with AGENTS.md on case-insensitive filesystems)
 
 ### Documentation
 
@@ -153,7 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **AI guidance files** - Agents.md, CLAUDE.md, CODEX.md, GEMINI.md, COPILOT.md for this repo
+- **AI guidance files** - AGENTS.md, CLAUDE.md, CODEX.md, GEMINI.md, COPILOT.md for this repo
 - **5 AI assistants** - Support for Claude Code, Augment Code, OpenAI Codex CLI, Gemini, GitHub Copilot
 
 ---
