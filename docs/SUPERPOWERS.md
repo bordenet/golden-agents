@@ -1,6 +1,6 @@
 # Superpowers Integration
 
-Golden Agents optionally integrates with skill-based AI workflow tools. **Superpowers is NOT required** — all generated Agents.md files include self-contained workflow checklists that work with any AI assistant.
+Golden Agents optionally integrates with skill-based AI workflow tools. **Superpowers is NOT required** — all generated AGENTS.md files include self-contained workflow checklists that work with any AI assistant.
 
 ## Available Skill Frameworks
 
@@ -40,5 +40,5 @@ cp -r /tmp/sp-plus/skills/* ~/.codex/skills/
 | `detecting-ai-slop` | Analyze text for AI slop density |
 | `security-upgrade` | Scan and fix dependency vulnerabilities |
 
-If not installed, the inline checklists in generated Agents.md provide equivalent guidance.
+If not installed, the inline checklists in generated AGENTS.md provide equivalent guidance.
 

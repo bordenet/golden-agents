@@ -1,6 +1,6 @@
 # Progressive Loading
 
-**The Problem:** Large Agents.md files (500+ lines) waste context tokens and cause AI assistants to miss critical rules buried in walls of text.
+**The Problem:** Large AGENTS.md files (500+ lines) waste context tokens and cause AI assistants to miss critical rules buried in walls of text.
 
 **The Solution:** Load guidance on-demand based on what the AI is actually doing.
 
@@ -13,7 +13,7 @@
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  1. AI READS Agents.md (~60-100 lines)                              │
+│  1. AI READS AGENTS.md (~60-100 lines)                              │
 │     • Workflow checklists (always active)                            │
 │     • Anti-slop rules (always active)                                │
 │     • Quality gates (quick reference)                                │
@@ -67,7 +67,7 @@ For projects with extensive project-specific documentation:
 
 ```
 your-repo/
-├── Agents.md                           # ~60-100 lines (quick ref + loading table)
+├── AGENTS.md                           # ~60-100 lines (quick ref + loading table)
 └── .ai-guidance/
     ├── mobile-builds.md                # iOS/Android build details
     ├── architecture.md                 # System architecture
@@ -82,7 +82,7 @@ This pattern is inspired by on-demand skill loading (e.g., [obra/superpowers](ht
 
 | Aspect | Skill Frameworks | golden-agents |
 |--------|------------------|---------------|
-| **Bootstrap** | Load available skills | Reads Agents.md |
+| **Bootstrap** | Load available skills | Reads AGENTS.md |
 | **Detail** | `use-skill debugging` | `view .ai-guidance/debugging.md` |
 | **Trigger** | Skill description says when | Loading table says when |
 | **Loading** | On-demand per task | On-demand per task |

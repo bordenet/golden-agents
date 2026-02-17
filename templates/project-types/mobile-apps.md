@@ -1,7 +1,7 @@
 # Mobile Application Conventions
 
 > **Priority**: HIGH - Apply to iOS/Android mobile apps  
-> **Source**: RecipeArchive/Agents.md
+> **Source**: RecipeArchive/AGENTS.md
 
 ## ⚠️ Critical Build Rules
 

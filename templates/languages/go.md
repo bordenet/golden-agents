@@ -1,7 +1,7 @@
 # Go Coding Conventions
 
 > **Priority**: HIGH - Apply to all Go projects  
-> **Source**: pr-faq-validator, genesis Agents.md
+> **Source**: pr-faq-validator, genesis AGENTS.md
 
 ## Code Quality Requirements
 

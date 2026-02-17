@@ -1,7 +1,7 @@
 # Superpowers Integration
 
 > **Priority**: CRITICAL - Configure at session start
-> **Source**: obra/superpowers, bordenet/superpowers-plus, RecipeArchive Agents.md
+> **Source**: obra/superpowers, bordenet/superpowers-plus, RecipeArchive AGENTS.md
 
 ## Superpowers Bootstrap
 

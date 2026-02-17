@@ -2,18 +2,18 @@
 
 ## The Core Idea
 
-Your AI assistant reads a ~60 line `Agents.md` at session start. When it encounters specific situations, it loads detailed guidance on-demand.
+Your AI assistant reads a ~60 line `AGENTS.md` at session start. When it encounters specific situations, it loads detailed guidance on-demand.
 
 **Instead of this (800 lines the AI ignores):**
 
 ```
-Agents.md: [800 lines of everything]
+AGENTS.md: [800 lines of everything]
 ```
 
 **You get this (60 lines + on-demand loading):**
 
 ```
-Agents.md: [60 lines with triggers]
+AGENTS.md: [60 lines with triggers]
     ↓
 "I need to write a shell script"
     ↓
@@ -30,7 +30,7 @@ AI loads: templates/languages/shell.md [100 lines, just-in-time]
 
 | File | Purpose |
 |------|---------|
-| `Agents.md` | Primary guidance (~60 lines) |
+| `AGENTS.md` | Primary guidance (~60 lines) |
 | `CLAUDE.md`, `CODEX.md`, etc. | Redirects for different AI assistants |
 
 ---
@@ -152,7 +152,7 @@ Each AI assistant has its own config file name. Golden Agents creates redirects:
 ````markdown
 # Claude Code Instructions
 
-See **[Agents.md](./Agents.md)** for all AI guidance.
+See **[AGENTS.md](./AGENTS.md)** for all AI guidance.
 ````
 
 Delete redirects for AI assistants you don't use.

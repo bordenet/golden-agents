@@ -1,4 +1,4 @@
-# Self-Managing Agents.md Architecture Design
+# Self-Managing AGENTS.md Architecture Design
 
 > **Date:** 2026-02-15
 > **Status:** Implemented (v1.4.0)
@@ -10,17 +10,17 @@
 
 ### Problem Statement
 
-AI coding agents working in repositories with `Agents.md` files have no mechanism to:
+AI coding agents working in repositories with `AGENTS.md` files have no mechanism to:
 1. Detect when instruction files exceed a manageable size
 2. Automatically trigger refactoring before continuing their primary task
 3. Split bloated files into modular, progressively-loaded sub-files
 
-This leads to `Agents.md` files growing to 200-300+ lines (as seen across all genesis-tools repos), reducing agent effectiveness and increasing context window consumption.
+This leads to `AGENTS.md` files growing to 200-300+ lines (as seen across all genesis-tools repos), reducing agent effectiveness and increasing context window consumption.
 
 ### Solution Overview
 
 A self-managing architecture where:
-- Agents check `Agents.md` line count after any edit to that file
+- Agents check `AGENTS.md` line count after any edit to that file
 - If over 250 lines, agents pause their primary task and refactor
 - Refactoring splits content into `.ai-guidance/*.md` topic files
 - A defense-in-depth loading strategy ensures critical guidance is never missed
@@ -39,7 +39,7 @@ A self-managing architecture where:
 
 ### Trigger: Post-Edit Check
 
-The self-management check triggers specifically after an agent edits `Agents.md` (or any `.ai-guidance/*.md` file). This timing was chosen because:
+The self-management check triggers specifically after an agent edits `AGENTS.md` (or any `.ai-guidance/*.md` file). This timing was chosen because:
 
 - Agents are the primary cause of instruction file bloat
 - "Just in time" checking avoids constant overhead
@@ -55,7 +55,7 @@ The check does NOT run:
 Detection uses a simple line count check:
 
 ```bash
-wc -l < Agents.md
+wc -l < AGENTS.md
 ```
 
 **Threshold:** 250 lines (hardcoded in framework)
@@ -83,11 +83,11 @@ The 250-line threshold is hardcoded in the golden-agents framework. No per-repo 
 
 ### Directory Structure
 
-When `Agents.md` exceeds 250 lines, content is split into a `.ai-guidance/` directory:
+When `AGENTS.md` exceeds 250 lines, content is split into a `.ai-guidance/` directory:
 
 ```
 repo/
-├── Agents.md                    # ≤250 lines (core + loading table)
+├── AGENTS.md                    # ≤250 lines (core + loading table)
 ├── .ai-guidance/
 │   ├── invariants.md           # Always loaded (critical rules)
 │   ├── testing.md              # On-demand (test-related tasks)
@@ -119,7 +119,7 @@ Custom topic files are allowed (e.g., `mobile-builds.md`) for project-specific n
 
 | File | Limit | Rationale |
 |------|-------|-----------|
-| `Agents.md` | ≤250 lines | Triggers refactor if exceeded |
+| `AGENTS.md` | ≤250 lines | Triggers refactor if exceeded |
 | Each `.ai-guidance/*.md` | ≤250 lines | Keeps individual reads cheap |
 
 ---
@@ -145,7 +145,7 @@ The existing `--upgrade` command gains automatic migration detection:
 ```
 
 **New behavior:**
-1. Detect if `Agents.md` > 250 lines
+1. Detect if `AGENTS.md` > 250 lines
 2. Detect if `.ai-guidance/` directory exists
 3. If bloated AND no `.ai-guidance/`: trigger modular migration flow
 
@@ -153,10 +153,10 @@ The existing `--upgrade` command gains automatic migration detection:
 
 1. Create `.ai-guidance/` directory
 2. Generate `invariants.md` with default self-management protocol
-3. Inject 5-line self-manage bootstrap into `Agents.md`
+3. Inject 5-line self-manage bootstrap into `AGENTS.md`
 4. Generate `MODULAR-MIGRATION-PROMPT.md` with split instructions
 5. AI executes prompt, splits content by topic
-6. Verify total lines ≤250 in `Agents.md`
+6. Verify total lines ≤250 in `AGENTS.md`
 
 ### No New Flag Required
 
@@ -202,7 +202,7 @@ If agents rely solely on a keyword table to load guidance, incomplete or stale m
 | Version control mutations | `git commit`, `git push`, `git merge` | Wrong identity pollutes history |
 | PR lifecycle | Create PR, merge PR, approve | Skipped review → bad code in main |
 | Deployment | `npm publish`, `deploy`, CI config edits | Skipped checks → broken production |
-| Agent instruction edits | Edit `Agents.md`, `.ai-guidance/*` | Meta-corruption affects all future tasks |
+| Agent instruction edits | Edit `AGENTS.md`, `.ai-guidance/*` | Meta-corruption affects all future tasks |
 
 ### Keyword Table Format
 
@@ -229,10 +229,10 @@ If agents rely solely on a keyword table to load guidance, incomplete or stale m
 
 ### When Refactoring Triggers
 
-After any agent edit to `Agents.md`, the agent runs:
+After any agent edit to `AGENTS.md`, the agent runs:
 
 ```bash
-wc -l < Agents.md
+wc -l < AGENTS.md
 ```
 
 If result > 250, the agent MUST pause its primary task and refactor before continuing.
@@ -240,7 +240,7 @@ If result > 250, the agent MUST pause its primary task and refactor before conti
 ### Refactoring Steps
 
 1. **PAUSE PRIMARY TASK** — Save current task context for resumption after refactor
-2. **SNAPSHOT ORIGINAL CONTENT** — Copy full Agents.md content for zero-loss verification
+2. **SNAPSHOT ORIGINAL CONTENT** — Copy full AGENTS.md content for zero-loss verification
 3. **CREATE .ai-guidance/ IF NEEDED** — `mkdir -p .ai-guidance`
 4. **CLASSIFY CONTENT BY TOPIC**
    - Critical/always-needed → `invariants.md`
@@ -249,9 +249,9 @@ If result > 250, the agent MUST pause its primary task and refactor before conti
    - Architecture-related → `architecture.md`
    - Multi-step procedures → `workflows.md`
 5. **EXTRACT TO SUB-FILES** — Move classified content to appropriate files
-6. **UPDATE LOADING TABLE** — Add/update keyword mappings in Agents.md
+6. **UPDATE LOADING TABLE** — Add/update keyword mappings in AGENTS.md
 7. **VERIFY ZERO DATA LOSS** — Compare original snapshot to new structure
-8. **VERIFY LINE COUNT** — Confirm Agents.md ≤250 lines
+8. **VERIFY LINE COUNT** — Confirm AGENTS.md ≤250 lines
 9. **RESUME PRIMARY TASK** — Continue original work with refactored structure
 
 ### What Can Be Removed During Refactoring
@@ -296,10 +296,10 @@ Before completing any refactor, the agent MUST verify:
 
 ```bash
 # Step 1: Capture original content
-cat Agents.md > /tmp/original-agents.md
+cat AGENTS.md > /tmp/original-agents.md
 
 # Step 2: After refactoring, concatenate all files
-cat Agents.md .ai-guidance/*.md > /tmp/new-total.md
+cat AGENTS.md .ai-guidance/*.md > /tmp/new-total.md
 
 # Step 3: Compare project-specific content
 # (Agent performs semantic comparison, not exact diff)
@@ -329,19 +329,19 @@ If verification fails:
 
 ### The Bootstrap Problem
 
-How does the instruction "check for bloat after editing Agents.md" reach the agent without itself contributing to bloat?
+How does the instruction "check for bloat after editing AGENTS.md" reach the agent without itself contributing to bloat?
 
 ### Solution: Two-Part Bootstrap
 
 The self-management capability is split between a minimal in-file block and detailed external rules.
 
-### Part 1: In `Agents.md` (5 lines, framework-injected)
+### Part 1: In `AGENTS.md` (5 lines, framework-injected)
 
 ```markdown
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
-2. After editing THIS file, run: `wc -l Agents.md` — if >250, refactor before continuing
+2. After editing THIS file, run: `wc -l AGENTS.md` — if >250, refactor before continuing
 <!-- GOLDEN:self-manage:end -->
 ```
 
@@ -356,15 +356,15 @@ The self-management capability is split between a minimal in-file block and deta
 # Critical Invariants — Always Follow
 
 ## Self-Management Protocol
-After editing `Agents.md` or any `.ai-guidance/*.md` file:
-1. Check: `wc -l Agents.md`
+After editing `AGENTS.md` or any `.ai-guidance/*.md` file:
+1. Check: `wc -l AGENTS.md`
 2. If >250 lines: STOP current task, refactor before continuing
 3. Refactoring must be ZERO DATA LOSS
 4. Verify total content preserved before resuming
 
 ## Zero Data Loss Verification
 - Snapshot original before changes
-- Compare: original vs (Agents.md + all .ai-guidance/*.md)
+- Compare: original vs (AGENTS.md + all .ai-guidance/*.md)
 - Every project-specific line must appear somewhere
 ```
 
@@ -379,7 +379,7 @@ After editing `Agents.md` or any `.ai-guidance/*.md` file:
 ### Framework Integration
 
 The `generate-agents.sh` script automatically:
-1. Injects the 5-line self-manage block into new `Agents.md` files
+1. Injects the 5-line self-manage block into new `AGENTS.md` files
 2. Adds the block during `--upgrade` for existing files
 3. Creates `invariants.md` with default content during modular migration
 

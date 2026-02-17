@@ -1,7 +1,7 @@
 # CLI Tools Conventions
 
 > **Priority**: HIGH - Apply to CLI/terminal tools  
-> **Source**: codebase-reviewer, scripts Agents.md
+> **Source**: codebase-reviewer, scripts AGENTS.md
 
 ## 🚨 CLI Integration Testing - QUALITY GATE
 

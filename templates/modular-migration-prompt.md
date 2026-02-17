@@ -1,19 +1,19 @@
 # Modular Migration Prompt
 
-> **MISSION:** Refactor a bloated Agents.md (>250 lines) into a modular structure using `.ai-guidance/` sub-files.
+> **MISSION:** Refactor a bloated AGENTS.md (>250 lines) into a modular structure using `.ai-guidance/` sub-files.
 >
-> This file was created because your Agents.md exceeds the 250-line limit.
+> This file was created because your AGENTS.md exceeds the 250-line limit.
 > AI agents struggle with long instruction files — they drift and miss important rules.
 
 ## Success Criteria
 
 | Component | Limit |
 |-----------|-------|
-| `Agents.md` (root file) | ≤250 lines |
+| `AGENTS.md` (root file) | ≤250 lines |
 | Each `.ai-guidance/*.md` sub-file | ≤250 lines |
 | Total content | ZERO data loss |
 
-**If Agents.md still exceeds 250 lines after migration, continue extracting content.**
+**If AGENTS.md still exceeds 250 lines after migration, continue extracting content.**
 
 ## Directory Structure
 
@@ -21,7 +21,7 @@ After migration, you should have:
 
 ```
 project/
-├── Agents.md              # ≤250 lines, references sub-files
+├── AGENTS.md              # ≤250 lines, references sub-files
 ├── .ai-guidance/
 │   ├── invariants.md      # Critical rules (provided)
 │   ├── domain-rules.md    # Project-specific domain logic
@@ -31,7 +31,7 @@ project/
 
 ## Classification Rules
 
-### What Goes in Agents.md (Root File)
+### What Goes in AGENTS.md (Root File)
 
 - Header metadata (generator, languages, type)
 - Self-management bootstrap block
@@ -55,10 +55,10 @@ project/
 
 Before completing migration:
 
-- [ ] Snapshot original: `cat Agents.md > /tmp/original-agents.md`
+- [ ] Snapshot original: `cat AGENTS.md > /tmp/original-agents.md`
 - [ ] Every section from original exists somewhere in new structure
 - [ ] No rules deleted — only reorganized
-- [ ] `diff /tmp/original-agents.md <(cat Agents.md .ai-guidance/*.md)` shows no lost content
+- [ ] `diff /tmp/original-agents.md <(cat AGENTS.md .ai-guidance/*.md)` shows no lost content
 - [ ] All custom commands, paths, and policies preserved
 
 ## Migration Process
@@ -68,8 +68,8 @@ Before completing migration:
 Count lines and identify sections:
 
 ```bash
-wc -l Agents.md
-grep "^##" Agents.md
+wc -l AGENTS.md
+grep "^##" AGENTS.md
 ```
 
 ### Step 2: Classify Each Section
@@ -91,7 +91,7 @@ mkdir -p .ai-guidance
 # Create file with header and content
 ```
 
-### Step 4: Update Agents.md Loading Table
+### Step 4: Update AGENTS.md Loading Table
 
 Add after the framework end marker:
 
@@ -108,7 +108,7 @@ Add after the framework end marker:
 ### Step 5: Verify
 
 ```bash
-wc -l Agents.md                    # Must be ≤250
+wc -l AGENTS.md                    # Must be ≤250
 wc -l .ai-guidance/*.md            # Each must be ≤250
 ```
 
@@ -118,8 +118,8 @@ Remove migration artifacts:
 
 ```bash
 rm MODULAR-MIGRATION-PROMPT.md
-git add Agents.md .ai-guidance/
-git commit -m "refactor: modularize Agents.md into .ai-guidance/"
+git add AGENTS.md .ai-guidance/
+git commit -m "refactor: modularize AGENTS.md into .ai-guidance/"
 ```
 
 ## Recovery
@@ -127,7 +127,7 @@ git commit -m "refactor: modularize Agents.md into .ai-guidance/"
 If something goes wrong:
 
 ```bash
-cp /tmp/original-agents.md Agents.md
+cp /tmp/original-agents.md AGENTS.md
 rm -rf .ai-guidance/
 ```
 

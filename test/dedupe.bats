@@ -68,14 +68,14 @@ EOF
     [[ "$output" == *"--dedupe requires --path"* ]]
 }
 
-# Test 2: --dedupe requires existing Agents.md
+# Test 2: --dedupe requires existing AGENTS.md
 @test "--dedupe requires existing Agents.md" {
     mkdir -p "$TEST_DIR"
-    # No Agents.md file
+    # No AGENTS.md file
 
     run "$GENERATE_SCRIPT" --dedupe --path="$TEST_DIR"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"No Agents.md found"* ]]
+    [[ "$output" == *"No AGENTS.md found"* ]]
 }
 
 # Test 3: --dedupe requires files WITH markers

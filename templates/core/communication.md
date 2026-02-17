@@ -1,7 +1,7 @@
 # Communication Standards
 
 > **Priority**: HIGH - Governs all AI-generated text  
-> **Source**: superpowers-plus, genesis, codebase-reviewer, bloginator Agents.md
+> **Source**: superpowers-plus, genesis, codebase-reviewer, bloginator AGENTS.md
 
 ## Core Principles
 

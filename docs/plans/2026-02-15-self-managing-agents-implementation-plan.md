@@ -1,10 +1,10 @@
-# Self-Managing Agents.md Implementation Plan
+# Self-Managing AGENTS.md Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Enable AI agents to automatically detect and refactor bloated Agents.md files using the self-managing architecture.
+**Goal:** Enable AI agents to automatically detect and refactor bloated AGENTS.md files using the self-managing architecture.
 
-**Architecture:** Inject a 5-line bootstrap block into Agents.md that instructs agents to: (1) load `.ai-guidance/invariants.md` at conversation start, (2) check `wc -l Agents.md` after edits, (3) refactor if >250 lines. The `--upgrade` command auto-detects bloated files (>250 lines) and generates a modular migration prompt.
+**Architecture:** Inject a 5-line bootstrap block into AGENTS.md that instructs agents to: (1) load `.ai-guidance/invariants.md` at conversation start, (2) check `wc -l AGENTS.md` after edits, (3) refactor if >250 lines. The `--upgrade` command auto-detects bloated files (>250 lines) and generates a modular migration prompt.
 
 **Tech Stack:** Bash (generate-agents.sh), BATS (testing), Markdown (templates)
 
@@ -59,7 +59,7 @@ generate_self_manage_block() {
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
-2. After editing THIS file, run: `wc -l Agents.md` — if >250, refactor before continuing
+2. After editing THIS file, run: `wc -l AGENTS.md` — if >250, refactor before continuing
 <!-- GOLDEN:self-manage:end -->
 
 SELF_MANAGE
@@ -107,8 +107,8 @@ Create test in `test/self-manage.bats`:
 @test "new file contains self-manage block" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/Agents.md" "if >250, refactor"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "if >250, refactor"
 }
 ```
 
@@ -145,12 +145,12 @@ Add to `test/self-manage.bats`:
 @test "upgrade adds self-manage block to existing file" {
     create_agents_with_markers "$TEST_DIR"
     # Verify no self-manage block initially
-    run grep "GOLDEN:self-manage" "$TEST_DIR/Agents.md"
+    run grep "GOLDEN:self-manage" "$TEST_DIR/AGENTS.md"
     [ "$status" -ne 0 ]
     
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
 }
 ```
 
@@ -193,9 +193,9 @@ git commit -m "feat: inject self-manage block during upgrade"
 
 ## Self-Management Protocol
 
-After editing `Agents.md` or any `.ai-guidance/*.md` file:
+After editing `AGENTS.md` or any `.ai-guidance/*.md` file:
 
-1. **Check line count:** `wc -l Agents.md`
+1. **Check line count:** `wc -l AGENTS.md`
 2. **If >250 lines:** STOP current task, refactor before continuing
 3. **Refactoring must be ZERO DATA LOSS**
 4. **Verify total content preserved** before resuming original task
@@ -211,17 +211,17 @@ Before completing any refactor:
 
 ## Refactoring Steps
 
-1. Snapshot original: `cat Agents.md > /tmp/original.md`
+1. Snapshot original: `cat AGENTS.md > /tmp/original.md`
 2. Create directory: `mkdir -p .ai-guidance`
 3. Classify content by topic
 4. Extract to sub-files (≤250 lines each)
-5. Update loading table in Agents.md
+5. Update loading table in AGENTS.md
 6. Verify: all original content exists in new structure
-7. Confirm: `wc -l Agents.md` ≤250
+7. Confirm: `wc -l AGENTS.md` ≤250
 
 ## Recovery
 
-If verification fails: `cp /tmp/original.md Agents.md`
+If verification fails: `cp /tmp/original.md AGENTS.md`
 ```
 
 **Step 2: Run shellcheck on templates (validation)**
@@ -248,8 +248,8 @@ git commit -m "feat: add invariants.md template for self-management"
 **Step 1: Write the template (~100 lines)**
 
 Key sections to include:
-- Mission statement (refactor bloated Agents.md to modular structure)
-- Success criteria (Agents.md ≤250 lines, sub-files ≤250 lines each)
+- Mission statement (refactor bloated AGENTS.md to modular structure)
+- Success criteria (AGENTS.md ≤250 lines, sub-files ≤250 lines each)
 - Classification rules (what goes where)
 - Zero data loss checklist
 - Step-by-step process
@@ -290,7 +290,7 @@ create_bloated_agents_with_markers() {
     local dir="$1"
     local lines="${2:-200}"
     mkdir -p "$dir"
-    cat > "$dir/Agents.md" << 'EOF'
+    cat > "$dir/AGENTS.md" << 'EOF'
 # AI Agent Guidelines - Test Project
 
 <!-- GOLDEN:framework:start -->
@@ -304,7 +304,7 @@ create_bloated_agents_with_markers() {
 EOF
     # Add bloat lines
     for i in $(seq 1 "$lines"); do
-        echo "- Rule $i: Do something specific" >> "$dir/Agents.md"
+        echo "- Rule $i: Do something specific" >> "$dir/AGENTS.md"
     done
 }
 ```
@@ -321,7 +321,7 @@ After applying upgrade, check line count:
 local line_count
 line_count=$(wc -l < "$existing_file" | tr -d ' ')
 if [[ "$line_count" -gt 250 ]]; then
-    echo "[WARN] Agents.md exceeds 250 lines ($line_count lines)"
+    echo "[WARN] AGENTS.md exceeds 250 lines ($line_count lines)"
     echo "  Creating modular migration prompt..."
     create_modular_migration_prompt "$OUTPUT_PATH"
 fi

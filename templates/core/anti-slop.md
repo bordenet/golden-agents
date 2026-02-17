@@ -1,7 +1,7 @@
 # Anti-Slop Writing Rules
 
 > **Priority**: CRITICAL - Apply to ALL generated text  
-> **Source**: superpowers-plus, bloginator Agents.md
+> **Source**: superpowers-plus, bloginator AGENTS.md
 
 ## ⛔ Banned Phrases
 

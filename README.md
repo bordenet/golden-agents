@@ -9,7 +9,7 @@
 
 ## The Problem
 
-AI guidance files (`CLAUDE.md`, `Agents.md`) start small. Then you add rules. More rules. Soon you have 500+ lines and the AI ignores half of them.
+AI guidance files (`CLAUDE.md`, `AGENTS.md`) start small. Then you add rules. More rules. Soon you have 500+ lines and the AI ignores half of them.
 
 **Golden Agents solves this.** Files that exceed thresholds trigger the AI to refactor them automatically—no human intervention required.
 
@@ -23,9 +23,9 @@ git clone https://github.com/bordenet/golden-agents.git ~/.golden-agents
 
 Then tell your AI assistant:
 
-> "Read `~/.golden-agents/Agents.md` and run `generate-agents.sh --adopt ~/my-project`"
+> "Read `~/.golden-agents/AGENTS.md` and run `generate-agents.sh --adopt ~/my-project`"
 
-Your project gets a self-managing `Agents.md` in ~30 seconds.
+Your project gets a self-managing `AGENTS.md` in ~30 seconds.
 
 **[→ Full Usage Guide](docs/USAGE.md)** | **[→ Sample Output](docs/SAMPLE.md)**
 
@@ -33,14 +33,14 @@ Your project gets a self-managing `Agents.md` in ~30 seconds.
 
 ## How Self-Maintenance Works
 
-Every generated `Agents.md` includes a **self-management protocol**:
+Every generated `AGENTS.md` includes a **self-management protocol**:
 
 ```markdown
 <!-- GOLDEN:self-manage:start -->
 ## 🔄 Self-Management Protocol
 
 After ANY edit to this file or .ai-guidance/*.md, verify:
-1. `wc -l Agents.md` — if >250 lines → extract content to .ai-guidance/
+1. `wc -l AGENTS.md` — if >250 lines → extract content to .ai-guidance/
 2. `wc -l .ai-guidance/*.md` — if any file >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 ```
@@ -60,7 +60,7 @@ When thresholds are exceeded, the AI:
 
 | File Type | Limit | Action When Exceeded |
 |-----------|-------|----------------------|
-| `Agents.md` | 250 lines | Extract to `.ai-guidance/*.md` |
+| `AGENTS.md` | 250 lines | Extract to `.ai-guidance/*.md` |
 | `.ai-guidance/*.md` | 250 lines | Split into sub-directory |
 
 These limits keep files within effective context windows for all major AI assistants.
@@ -71,10 +71,10 @@ These limits keep files within effective context windows for all major AI assist
 
 ```
 my-project/
-├── Agents.md                    # ≤250 lines, self-managing
-├── CLAUDE.md                    # Redirect → Agents.md
-├── GEMINI.md                    # Redirect → Agents.md
-├── COPILOT.md                   # Redirect → Agents.md
+├── AGENTS.md                    # ≤250 lines, self-managing
+├── CLAUDE.md                    # Redirect → AGENTS.md
+├── GEMINI.md                    # Redirect → AGENTS.md
+├── COPILOT.md                   # Redirect → AGENTS.md
 └── .ai-guidance/                # Auto-created when needed
     ├── invariants.md            # Self-management rules (always loaded)
     ├── testing.md               # On-demand topic file
@@ -98,7 +98,7 @@ For projects with bloated guidance files:
 ~/.golden-agents/generate-agents.sh --upgrade ~/my-project
 ```
 
-This injects the self-management protocol. If `Agents.md` exceeds 250 lines, it also creates `MODULAR-MIGRATION-PROMPT.md` with step-by-step refactoring instructions for the AI.
+This injects the self-management protocol. If `AGENTS.md` exceeds 250 lines, it also creates `MODULAR-MIGRATION-PROMPT.md` with step-by-step refactoring instructions for the AI.
 
 **[→ Design Details](docs/plans/2026-02-15-self-managing-agents-design.md)**
 
@@ -133,11 +133,11 @@ Update templates: `~/.golden-agents/generate-agents.sh --sync`
 
 | Assistant | File Created |
 |-----------|--------------|
-| Claude Code | `CLAUDE.md` → `Agents.md` |
-| Augment Code | Reads `Agents.md` directly |
-| OpenAI Codex CLI | `CODEX.md` → `Agents.md` |
-| Amp | `AGENT.md` → `Agents.md` |
-| Gemini | `GEMINI.md` → `Agents.md` |
+| Claude Code | `CLAUDE.md` → `AGENTS.md` |
+| Augment Code | Reads `AGENTS.md` directly |
+| OpenAI Codex CLI | `CODEX.md` → `AGENTS.md` |
+| Amp | `AGENT.md` → `AGENTS.md` |
+| Gemini | `GEMINI.md` → `AGENTS.md` |
 | GitHub Copilot | `COPILOT.md` + `.github/copilot-instructions.md` |
 
 ---

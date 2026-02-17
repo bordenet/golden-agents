@@ -1,7 +1,7 @@
 # Testing Standards
 
 > **Priority**: HIGH - Apply to all code changes  
-> **Source**: genesis, pr-faq-validator, bloginator, scripts Agents.md
+> **Source**: genesis, pr-faq-validator, bloginator, scripts AGENTS.md
 
 ## Coverage Requirements by Language
 
@@ -59,7 +59,7 @@ For new features, follow TDD:
 
 ## 🚨 CLI Integration Testing - QUALITY GATE
 
-> Source: codebase-reviewer Agents.md
+> Source: codebase-reviewer AGENTS.md
 
 CLI tools MUST have integration tests that verify:
 
@@ -86,7 +86,7 @@ CLI tools MUST have integration tests that verify:
 
 ## Pre-Push Audit Checklist
 
-> Source: scripts/Agents.md
+> Source: scripts/AGENTS.md
 
 Before pushing to remote, verify ALL of these:
 
@@ -103,7 +103,7 @@ Before pushing to remote, verify ALL of these:
 
 ## Impact Analysis Before Changes
 
-> Source: scripts/Agents.md
+> Source: scripts/AGENTS.md
 
 Before modifying shared code:
 

@@ -1,7 +1,7 @@
 # Python Coding Conventions
 
 > **Priority**: HIGH - Apply to all Python projects  
-> **Source**: pr-faq-validator, bloginator Agents.md
+> **Source**: pr-faq-validator, bloginator AGENTS.md
 
 ## Code Quality Requirements
 

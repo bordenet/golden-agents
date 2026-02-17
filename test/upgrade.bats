@@ -19,7 +19,7 @@ teardown() {
 @test "upgrade fails when no Agents.md exists" {
     run "$GENERATE_SCRIPT" --upgrade --path="$TEST_DIR"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"No Agents.md found"* ]] || [[ "$output" == *"does not exist"* ]]
+    [[ "$output" == *"No AGENTS.md found"* ]] || [[ "$output" == *"does not exist"* ]]
 }
 
 # Test 2: Upgrade on file WITHOUT markers REFUSES

@@ -1,7 +1,7 @@
 # Genesis Tools Project Conventions
 
 > **Priority**: HIGH - Apply to all genesis-tools projects  
-> **Source**: genesis, architecture-decision-record, strategic-proposal Agents.md
+> **Source**: genesis, architecture-decision-record, strategic-proposal AGENTS.md
 
 ## Reference Implementations
 
@@ -55,8 +55,8 @@ project/
 ├── src/                    # Source code
 ├── web/                    # Web interface (if applicable)
 ├── docs/                   # Documentation
-├── Agents.md               # AI guidance
-├── CLAUDE.md               # Redirect to Agents.md
+├── AGENTS.md               # AI guidance
+├── CLAUDE.md               # Redirect to AGENTS.md
 └── README.md               # Project readme
 ```
 
@@ -71,7 +71,7 @@ project/
 
 ## Adversarial Workflow Pattern
 
-> Source: genesis-tools Agents.md - For document-generation apps
+> Source: genesis-tools AGENTS.md - For document-generation apps
 
 **Assume users will NOT follow the happy path.** Design for:
 

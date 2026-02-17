@@ -1,7 +1,7 @@
 # Deployment Workflow
 
 > **Priority**: HIGH - Applies to all projects with CI/CD  
-> **Source**: strategic-proposal, architecture-decision-record, genesis Agents.md
+> **Source**: strategic-proposal, architecture-decision-record, genesis AGENTS.md
 
 ## ⚠️ MANDATORY: CI Before Deploy
 

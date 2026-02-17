@@ -1,7 +1,7 @@
 # Shell Script Conventions
 
 > **Priority**: HIGH - Apply to all shell scripts  
-> **Source**: scripts/Agents.md (extensive documentation)
+> **Source**: scripts/AGENTS.md (extensive documentation)
 
 ## Common Pitfalls to Avoid
 
@@ -101,7 +101,7 @@ bash -n script.sh
 
 ## Failure Cases & Lessons Learned
 
-> Source: scripts/Agents.md - Document failures to prevent recurrence
+> Source: scripts/AGENTS.md - Document failures to prevent recurrence
 
 ### Failure 1: Untested Export
 **Symptom**: Script works standalone, fails when sourced

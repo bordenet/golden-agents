@@ -123,7 +123,7 @@ Add explicit gates before high-risk actions:
 
 ### Option 3: Session Start Checklist
 
-At the top of Agents.md:
+At the top of AGENTS.md:
 
 ```markdown
 ## Session Start

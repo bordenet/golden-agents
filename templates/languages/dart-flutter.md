@@ -1,7 +1,7 @@
 # Dart/Flutter Coding Conventions
 
 > **Priority**: HIGH - Apply to all Dart/Flutter projects  
-> **Source**: RecipeArchive/Agents.md
+> **Source**: RecipeArchive/AGENTS.md
 
 ## Code Quality Requirements
 

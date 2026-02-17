@@ -18,7 +18,7 @@ This framework incorporates official guidance from:
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **CLAUDE.md hierarchy** | Redirect files (CLAUDE.md, GEMINI.md, etc.) are auto-created and point to `Agents.md` |
+| **CLAUDE.md hierarchy** | Redirect files (CLAUDE.md, GEMINI.md, etc.) are auto-created and point to `AGENTS.md` |
 | **Subagents for complex tasks** | Progressive loading triggers: `🔴 BEFORE writing ANY .go file → cat ~/.golden-agents/templates/languages/go.md`. Each module is a focused "subagent" |
 | **Explore-plan-code-commit** | Workflow checklists in generated output. Optional: superpowers skills for enforcement |
 
@@ -50,7 +50,7 @@ Before ANY PR: all of the above + manual review of changes
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **AGENTS.md specification** | CODEX.md redirect auto-created (AGENTS.md skipped to avoid case-sensitivity conflicts with Agents.md) |
+| **AGENTS.md specification** | CODEX.md redirect auto-created (AGENTS.md skipped to avoid case-sensitivity conflicts with AGENTS.md) |
 | **Tool-use directives** | Templates include explicit tool preferences (e.g., "use `go test`, not `go run`") |
 | **Anti-slop guidance** | Banned phrases list in [`templates/core/anti-slop.md`](../templates/core/anti-slop.md) |
 
@@ -66,15 +66,15 @@ Never use: "seamless", "robust", "cutting-edge", "leverage"
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **GEMINI.md context files** | GEMINI.md redirect auto-created, points to `Agents.md` |
+| **GEMINI.md context files** | GEMINI.md redirect auto-created, points to `AGENTS.md` |
 | **MCP integration** | Optional superpowers skill for Perplexity research via MCP |
-| **Multi-scope context** | Progressive loading: global rules in `Agents.md`, detailed modules in `~/.golden-agents/templates/` |
+| **Multi-scope context** | Progressive loading: global rules in `AGENTS.md`, detailed modules in `~/.golden-agents/templates/` |
 
 **How progressive loading works:**
 
 ```
 my-project/
-├── Agents.md           # Global rules (~60 lines) with loading triggers
+├── AGENTS.md           # Global rules (~60 lines) with loading triggers
 
 ~/.golden-agents/templates/    # Shared across all projects
 ├── languages/go.md            # Go-specific guidance
@@ -86,7 +86,7 @@ my-project/
 
 | Recommendation | Our Implementation |
 |----------------|-------------------|
-| **Reduce fragmentation** | One canonical `Agents.md` instead of scattered CLAUDE.md, GEMINI.md, AGENTS.md files |
+| **Reduce fragmentation** | One canonical `AGENTS.md` instead of scattered CLAUDE.md, GEMINI.md, AGENTS.md files |
 | **Standardization** | Templates in [`templates/`](../templates/) ensure consistent structure across projects |
 | **Opt-in adoption** | `--adopt` and `--migrate` flags preserve existing content while adding framework |
 
@@ -94,9 +94,9 @@ my-project/
 
 ```
 Before:                          After:
-├── CLAUDE.md (200 lines)        ├── Agents.md (60 lines)
-├── GEMINI.md (150 lines)        ├── CLAUDE.md → "See Agents.md"
-├── AGENTS.md (180 lines)        ├── GEMINI.md → "See Agents.md"
+├── CLAUDE.md (200 lines)        ├── AGENTS.md (60 lines)
+├── GEMINI.md (150 lines)        ├── CLAUDE.md → "See AGENTS.md"
+├── AGENTS.md (180 lines)        ├── GEMINI.md → "See AGENTS.md"
 └── .cursorrules (100 lines)     └── (modules in ~/.golden-agents/templates/)
                                         ├── languages/go.md
     630 lines, 4 files                  └── workflows/security.md

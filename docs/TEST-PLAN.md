@@ -14,7 +14,7 @@ Golden Agents is tested on every commit. Here's what we verify.
 | **Argument Parsing** | 17 | CLI flags work correctly, errors are clear |
 | **Mode Detection** | 7 | Correct mode chosen based on existing files |
 | **Migrations** | 10 | CLAUDE.md/GEMINI.md content preserved |
-| **Adoptions** | 12 | Existing Agents.md content preserved |
+| **Adoptions** | 12 | Existing AGENTS.md content preserved |
 | **Upgrades** | 10 | Framework updates don't lose project rules |
 | **Deduplication** | 12 | Bloated project sections handled correctly |
 | **Generation** | 10 | Core output generation works correctly |

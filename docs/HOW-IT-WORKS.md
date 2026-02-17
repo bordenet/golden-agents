@@ -16,7 +16,7 @@ There are two distinct components:
 │                         THE FULL PICTURE                             │
 └─────────────────────────────────────────────────────────────────────┘
 
-    generate-agents.sh              Agents.md              Your AI Assistant
+    generate-agents.sh              AGENTS.md              Your AI Assistant
     ┌──────────────────┐           ┌──────────────┐       ┌──────────────────┐
     │ Creates text     │ ────────▶ │ Instructions │ ────▶ │ MODIFIES YOUR    │
     │ files only       │           │ for AI       │       │ PROJECT FILES    │
@@ -45,8 +45,8 @@ This is normal and expected. That's what AI coding assistants do.
 1. **Reads command-line arguments** (`--language=go`, `--path=./my-project`)
 2. **Reads template files** from `templates/` directory (plain text)
 3. **Concatenates text** based on your selections
-4. **Writes a Markdown file** (`Agents.md`) to your project
-5. **Optionally creates redirect files** (`CLAUDE.md`, `GEMINI.md`) that point to `Agents.md`
+4. **Writes a Markdown file** (`AGENTS.md`) to your project
+5. **Optionally creates redirect files** (`CLAUDE.md`, `GEMINI.md`) that point to `AGENTS.md`
 
 ### ❌ What `generate-agents.sh` DOES NOT DO
 
@@ -63,7 +63,7 @@ This is normal and expected. That's what AI coding assistants do.
 
 ## The Output: Just Text Files
 
-The generated `Agents.md` is a **plain text file** containing:
+The generated `AGENTS.md` is a **plain text file** containing:
 
 - Coding style guidelines
 - Quality gate checklists (lint, build, test)
@@ -94,7 +94,7 @@ This file has **no executable content**. It's instructions that an AI assistant 
 When you open a project in an AI-enabled editor:
 
 1. **You** open your project folder
-2. **The AI assistant** (Claude Code, Copilot, etc.) automatically reads `Agents.md`
+2. **The AI assistant** (Claude Code, Copilot, etc.) automatically reads `AGENTS.md`
 3. **The AI** follows these instructions when you ask it to do things
 4. **The AI modifies your files** based on your requests + the guidance
 
@@ -104,7 +104,7 @@ When you open a project in an AI-enabled editor:
 └─────────────────────────────────────────────────────────────────────┘
 
     ┌──────────────┐     reads      ┌──────────────┐
-    │ AI Assistant │ ◀───────────── │ Agents.md    │
+    │ AI Assistant │ ◀───────────── │ AGENTS.md    │
     │ (Claude,     │                │ (text file)  │
     │  Copilot)    │                └──────────────┘
     └──────────────┘
@@ -118,7 +118,7 @@ When you open a project in an AI-enabled editor:
     └──────────────┘
 ```
 
-**Important:** The AI assistant will modify your project files. That's the point. The `Agents.md` file just influences *how* it does so (coding style, quality gates, etc.).
+**Important:** The AI assistant will modify your project files. That's the point. The `AGENTS.md` file just influences *how* it does so (coding style, quality gates, etc.).
 
 ---
 
@@ -138,7 +138,7 @@ The script itself is safe and auditable:
 
 ### Your AI Assistant (Separate Concern)
 
-Your AI coding assistant is a different story. When it reads `Agents.md` and you ask it to do work:
+Your AI coding assistant is a different story. When it reads `AGENTS.md` and you ask it to do work:
 
 | Action | Will It Happen? |
 |--------|-----------------|
@@ -149,7 +149,7 @@ Your AI coding assistant is a different story. When it reads `Agents.md` and you
 | Push to remote | ⚠️ If you allow it |
 | Install dependencies | ⚠️ If you ask it to |
 
-**This is normal.** That's what AI coding assistants do. The `Agents.md` file just provides guidelines for *how* the AI should work — it doesn't limit *what* the AI can do.
+**This is normal.** That's what AI coding assistants do. The `AGENTS.md` file just provides guidelines for *how* the AI should work — it doesn't limit *what* the AI can do.
 
 ### Controlling Your AI Assistant
 

@@ -1,7 +1,7 @@
 # Web Application Conventions
 
 > **Priority**: HIGH - Apply to web apps/interfaces  
-> **Source**: genesis Agents.md
+> **Source**: genesis AGENTS.md
 
 ## UI Workflow Principles
 

@@ -22,14 +22,14 @@ teardown() {
     [[ "$output" == *"--adopt requires --language"* ]]
 }
 
-# Test 2: --adopt requires existing Agents.md
+# Test 2: --adopt requires existing AGENTS.md
 @test "--adopt requires existing Agents.md" {
     mkdir -p "$TEST_DIR"
-    # No Agents.md file
+    # No AGENTS.md file
 
     run "$GENERATE_SCRIPT" --adopt --language=go --path="$TEST_DIR"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"No Agents.md found"* ]]
+    [[ "$output" == *"No AGENTS.md found"* ]]
 }
 
 # Test 3: --adopt refuses files with markers
@@ -104,7 +104,7 @@ EOF
     [ "$status" -eq 0 ]
     [ -f "$TEST_DIR/.gitignore" ]
     grep -q "ADOPT-PROMPT.md" "$TEST_DIR/.gitignore"
-    grep -q "Agents.md.original" "$TEST_DIR/.gitignore"
+    grep -q "AGENTS.md.original" "$TEST_DIR/.gitignore"
 }
 
 # Test 9: --adopt preserves framework markers in output

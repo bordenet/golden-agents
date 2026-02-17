@@ -1,7 +1,7 @@
 # Security Workflow
 
 > **Priority**: CRITICAL - IP protection and vulnerability management  
-> **Source**: codebase-reviewer, scripts Agents.md, security-upgrade skill
+> **Source**: codebase-reviewer, scripts AGENTS.md, security-upgrade skill
 
 ## 🔒 Pre-Commit Hooks - NEVER BYPASS
 

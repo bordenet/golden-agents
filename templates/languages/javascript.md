@@ -1,7 +1,7 @@
 # JavaScript/TypeScript Coding Conventions
 
 > **Priority**: HIGH - Apply to all JS/TS projects  
-> **Source**: genesis, architecture-decision-record, strategic-proposal Agents.md
+> **Source**: genesis, architecture-decision-record, strategic-proposal AGENTS.md
 
 ## Code Quality Requirements
 
@@ -89,7 +89,7 @@ NEVER defer linting fixes. Fix them before committing.
 
 ## UI/Web Application Patterns
 
-> Source: genesis-tools Agents.md
+> Source: genesis-tools AGENTS.md
 
 ### 🚨 Stillborn Apps Prevention
 

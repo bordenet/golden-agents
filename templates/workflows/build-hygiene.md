@@ -1,7 +1,7 @@
 # Build Hygiene Standards
 
 > **Priority**: CRITICAL - Apply to all projects with build steps  
-> **Source**: RecipeArchive, genesis-tools Agents.md
+> **Source**: RecipeArchive, genesis-tools AGENTS.md
 
 ## ⚠️ NEVER Modify Source In Place
 

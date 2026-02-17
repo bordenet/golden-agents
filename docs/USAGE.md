@@ -32,7 +32,7 @@ Open your target project, then ask:
 
 Your AI will:
 1. Read the golden-agents instructions
-2. Detect existing guidance files (CLAUDE.md, Agents.md, etc.)
+2. Detect existing guidance files (CLAUDE.md, AGENTS.md, etc.)
 3. Choose the right mode (generate, migrate, adopt, upgrade)
 4. Run with `--dry-run` first, then apply
 5. Verify zero data loss
@@ -48,11 +48,11 @@ If you prefer CLI control, see the command reference below.
 
 | Your Situation | Command | What Happens |
 |----------------|---------|--------------|
-| **No Agents.md file** (or <10 lines) | `--language=X --path=Y` | Generates new file with framework |
+| **No AGENTS.md file** (or <10 lines) | `--language=X --path=Y` | Generates new file with framework |
 | **Existing CLAUDE.md, GEMINI.md, CODEX.md** | `--migrate --path=Y` | Creates migration prompt, preserves originals |
-| **Existing Agents.md WITHOUT markers** | `--adopt --language=X --path=Y` | Backs up original, generates framework, appends content |
-| **Existing Agents.md WITH markers (outdated)** | `--upgrade --path=Y` | Preview changes (dry-run), then `--apply` to update |
-| **Existing Agents.md WITH markers (bloated)** | `--dedupe --path=Y` | Creates deduplication prompt if >100 lines |
+| **Existing AGENTS.md WITHOUT markers** | `--adopt --language=X --path=Y` | Backs up original, generates framework, appends content |
+| **Existing AGENTS.md WITH markers (outdated)** | `--upgrade --path=Y` | Preview changes (dry-run), then `--apply` to update |
+| **Existing AGENTS.md WITH markers (bloated)** | `--dedupe --path=Y` | Creates deduplication prompt if >100 lines |
 
 **How to tell if your file has markers:** Look for `<!-- GOLDEN:framework:start -->` near the top.
 
@@ -62,7 +62,7 @@ If you prefer CLI control, see the command reference below.
 |------|----------------|-----------------|----------------|
 | Generate (`--language`) | ❌ (new file) | Use `--dry-run` | Creates new files |
 | Migrate (`--migrate`) | ✅ Preserves originals | ❌ | Creates MIGRATION-PROMPT.md only |
-| Adopt (`--adopt`) | ✅ `Agents.md.original` | ❌ | Rewrites Agents.md |
+| Adopt (`--adopt`) | ✅ `AGENTS.md.original` | ❌ | Rewrites AGENTS.md |
 | Upgrade (`--upgrade`) | ✅ `.backup` on apply | ✅ Preview first | Only with `--apply` |
 | Dedupe (`--dedupe`) | ❌ (doesn't modify) | ✅ Always | Creates ADOPT-PROMPT.md only |
 
@@ -86,7 +86,7 @@ If you prefer CLI control, see the command reference below.
 ./generate-agents.sh --upgrade --path=./my-project
 ./generate-agents.sh --upgrade --apply --path=./my-project
 
-# Adopt existing Agents.md into framework
+# Adopt existing AGENTS.md into framework
 ./generate-agents.sh --adopt --language=python --path=./my-project
 ```
 

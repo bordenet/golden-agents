@@ -1,6 +1,6 @@
 # Golden Agents Adoption - Deduplication Prompt
 
-> **MISSION:** Produce a minimal, high-signal Agents.md that AI assistants can follow faithfully.
+> **MISSION:** Produce a minimal, high-signal AGENTS.md that AI assistants can follow faithfully.
 >
 > 800 lines of guidance is too much — AI agents drift and ignore bloated instructions.
 > Your job is to **aggressively deduplicate** while preserving only what's truly unique to this project.
@@ -78,7 +78,7 @@ For each piece of content, ask: *"Can I express this project-specific info in un
 
 ### Step 1: Verify Structure
 
-Confirm these exist in `Agents.md`:
+Confirm these exist in `AGENTS.md`:
 - `<!-- GOLDEN:framework:start -->` marker
 - `<!-- GOLDEN:framework:end -->` marker
 - Project-specific section after the end marker (may be titled `## Preserved Project Content`, `## Project-Specific Rules`, `## Project-Specific Guidelines`, or similar)
@@ -140,7 +140,7 @@ Final section size: [X] lines
 Framework markers: INTACT
 Status: READY FOR COMMIT
 
-Next: Delete this ADOPT-PROMPT.md and commit Agents.md
+Next: Delete this ADOPT-PROMPT.md and commit AGENTS.md
 ```
 
 ## Safety Net
@@ -156,14 +156,14 @@ When uncertain about an item:
 
 ### If Something Goes Wrong
 
-The original content is preserved in `Agents.md.original`. To restore:
+The original content is preserved in `AGENTS.md.original`. To restore:
 
 ```bash
 # View what was lost
-diff Agents.md Agents.md.original
+diff AGENTS.md AGENTS.md.original
 
 # Full restore
-cp Agents.md.original Agents.md
+cp AGENTS.md.original AGENTS.md
 ```
 
 ### Red Flags — Stop and Ask

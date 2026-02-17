@@ -15,7 +15,7 @@ Manage context window effectively to prevent context rot and maximize signal-to-
 Load context in stages, not all upfront:
 
 ```
-Level 1: Agents.md (always loaded)
+Level 1: AGENTS.md (always loaded)
   └── Essential rules, quality gates, banned phrases
 
 Level 2: On-demand modules (loaded when relevant)
@@ -66,7 +66,7 @@ For complex multi-step tasks, maintain notes:
 
 When resuming after context switch or new session:
 
-1. Load Agents.md
+1. Load AGENTS.md
 2. Review recent git commits: `git log --oneline -10`
 3. Check modified files: `git status`
 4. Load session notes if maintained
@@ -77,7 +77,7 @@ When resuming after context switch or new session:
 | Anti-Pattern | Problem | Better Approach |
 |--------------|---------|-----------------|
 | Pasting entire files | Wastes tokens | Use view with line ranges |
-| Repeating instructions | Context bloat | Reference Agents.md |
+| Repeating instructions | Context bloat | Reference AGENTS.md |
 | Including full stack traces | Low signal | Extract relevant lines |
 | Verbose error descriptions | Token waste | State error + hypothesis |
 

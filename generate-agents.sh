@@ -2,7 +2,7 @@
 #
 # generate-agents.sh - Golden Agents Framework Generator
 #
-# Generates project-specific Agents.md files from modular templates.
+# Generates project-specific AGENTS.md files from modular templates.
 # Supports progressive loading (~60 lines) for efficient AI context usage.
 #
 # Repository: https://github.com/bordenet/golden-agents
@@ -53,7 +53,7 @@ SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
 usage() {
     cat << 'EOF'
 NAME
-    generate-agents.sh - Generate project-specific Agents.md from modular templates
+    generate-agents.sh - Generate project-specific AGENTS.md from modular templates
 
 SYNOPSIS
     generate-agents.sh [OPTIONS]
@@ -64,7 +64,7 @@ SYNOPSIS
     generate-agents.sh --dedupe --path=PATH
 
 DESCRIPTION
-    Generates an Agents.md file from modular templates.
+    Generates an AGENTS.md file from modular templates.
 
     Output mode:
     Progressive (~60 lines core with on-demand module loading from templates)
@@ -92,9 +92,9 @@ OPTIONS
     --sync              Update local templates from GitHub
     --dry-run           Print what would be generated without writing
     --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
-    --adopt             Adopt existing Agents.md (backs up, appends, creates ADOPT-PROMPT.md)
+    --adopt             Adopt existing AGENTS.md (backs up, appends, creates ADOPT-PROMPT.md)
     --dedupe            Deduplicate bloated project-specific section (for files WITH markers)
-    --upgrade           Upgrade existing Agents.md (dry-run by default, shows diff)
+    --upgrade           Upgrade existing AGENTS.md (dry-run by default, shows diff)
     --apply             Apply upgrade changes (requires --upgrade, creates backup first)
     -h, --help          Show this help message
     -v, --version       Show version information
@@ -112,7 +112,7 @@ MIGRATION (First-time adoption)
     When existing guidance files are detected (CLAUDE.md, AGENTS.md with content),
     generation is blocked to prevent data loss. Use --migrate to:
 
-    1. Generate the framework Agents.md
+    1. Generate the framework AGENTS.md
     2. Create MIGRATION-PROMPT.md with your existing content
     3. Add MIGRATION-PROMPT.md to .gitignore
 
@@ -125,11 +125,11 @@ UPGRADE SAFETY
     - Files WITHOUT markers: REFUSES to upgrade (suggests migration)
     - Project-specific sections (outside markers) are ALWAYS preserved
 
-ADOPTION (Existing Agents.md without markers)
-    Use --adopt when you have an existing Agents.md that wasn't created by
+ADOPTION (Existing AGENTS.md without markers)
+    Use --adopt when you have an existing AGENTS.md that wasn't created by
     golden-agents. This mode:
 
-    1. Backs up your original Agents.md to Agents.md.original
+    1. Backs up your original AGENTS.md to AGENTS.md.original
     2. Generates framework content with markers
     3. Appends your original content under "## Preserved Project Content"
     4. Creates ADOPT-PROMPT.md with aggressive deduplication instructions
@@ -141,14 +141,14 @@ ADOPTION (Existing Agents.md without markers)
 
     If your result exceeds 100 lines, you kept too much generic advice.
 
-DEDUPLICATION (Existing Agents.md with bloated project section)
-    Use --dedupe when you have an Agents.md that WAS created by golden-agents
+DEDUPLICATION (Existing AGENTS.md with bloated project section)
+    Use --dedupe when you have an AGENTS.md that WAS created by golden-agents
     but has a bloated project-specific section (>100 lines). This mode:
 
     1. Verifies the file has framework markers
     2. Counts project-specific lines (after the end marker)
     3. Creates ADOPT-PROMPT.md with deduplication instructions
-    4. Does NOT modify the Agents.md (you apply changes after review)
+    4. Does NOT modify the AGENTS.md (you apply changes after review)
 
     This is for files that already have markers but need aggressive pruning.
     The --adopt command is for files WITHOUT markers.
@@ -166,7 +166,7 @@ EXAMPLES
     # Migrate existing CLAUDE.md/AGENTS.md into golden-agents framework
     generate-agents.sh --migrate --language=js,go --type=web-apps --path=./my-project
 
-    # Adopt existing Agents.md (backs up, appends, generates dedup prompt)
+    # Adopt existing AGENTS.md (backs up, appends, generates dedup prompt)
     generate-agents.sh --adopt --language=typescript --path=./existing-project
 
     # Deduplicate bloated project section (for files already using golden-agents)
@@ -361,12 +361,12 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 ## Instructions
 
 1. Read the **Existing Content** below (from the old guidance files)
-2. Read the **New Framework** in `Agents.md` (already generated)
+2. Read the **New Framework** in `AGENTS.md` (already generated)
 3. Apply the **10-word test** to each piece of content:
    - Can you express this in under 10 words with specific names/paths/commands?
    - YES → Keep it (project-specific)
    - NO → Skip it (framework already covers it)
-4. Add ONLY project-specific content to `Agents.md` after `<!-- GOLDEN:framework:end -->`
+4. Add ONLY project-specific content to `AGENTS.md` after `<!-- GOLDEN:framework:end -->`
 5. **DO NOT** duplicate content already in the framework (quality gates, anti-slop, etc.)
 6. **DO NOT** lose any genuinely project-specific information
 
@@ -381,8 +381,8 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 **If your project exceeds 100 lines** of genuinely project-specific content:
 1. Create a \`.ai-guidance/\` directory in your repo
 2. Split content into topic-specific modules (e.g., \`mobile-builds.md\`, \`security.md\`)
-3. Add a loading table to Agents.md referencing when to load each module
-4. Keep Agents.md under 150 lines with quick reference + loading instructions
+3. Add a loading table to AGENTS.md referencing when to load each module
+4. Keep AGENTS.md under 150 lines with quick reference + loading instructions
 
 ## Source Files
 PROMPT_EOF
@@ -400,7 +400,7 @@ PROMPT_EOF
     echo ""
     echo "## Report Metrics"
     echo ""
-    echo "After adding project-specific content to Agents.md, report:"
+    echo "After adding project-specific content to AGENTS.md, report:"
     echo ""
     echo '```'
     echo "MIGRATION SUMMARY"
@@ -415,7 +415,7 @@ PROMPT_EOF
     echo ""
     echo "## Next Steps"
     echo ""
-    echo "1. Open \`Agents.md\` and find the \`<!-- GOLDEN:framework:end -->\` marker"
+    echo "1. Open \`AGENTS.md\` and find the \`<!-- GOLDEN:framework:end -->\` marker"
     echo "2. Add your project-specific content after that marker"
     echo "3. Report the metrics above"
     echo "4. Delete this \`MIGRATION-PROMPT.md\` file"
@@ -505,8 +505,8 @@ if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DE
         echo "[ERROR] Found existing guidance files: $existing" >&2
         echo "" >&2
         echo "  These files contain project-specific content that would be lost." >&2
-        echo "  Use --migrate to safely incorporate this content into the new Agents.md." >&2
-        echo "  Use --adopt to bring an existing Agents.md into the framework." >&2
+        echo "  Use --migrate to safely incorporate this content into the new AGENTS.md." >&2
+        echo "  Use --adopt to bring an existing AGENTS.md into the framework." >&2
         echo "" >&2
         echo "  Example: generate-agents.sh --migrate --language=go --path=$OUTPUT_PATH" >&2
         echo "  Example: generate-agents.sh --adopt --language=go --path=$OUTPUT_PATH" >&2
@@ -547,36 +547,48 @@ if [[ "$MIGRATE" == "true" ]]; then
         echo "[INFO] No existing guidance files found. Running normal generation."
     fi
 
-    # Continue with normal generation (framework Agents.md)
+    # Continue with normal generation (framework AGENTS.md)
     # Fall through to normal generation below
 fi
 
-# Handle adopt mode - bring existing Agents.md into framework
+# Handle adopt mode - bring existing AGENTS.md into framework
 if [[ "$ADOPT" == "true" ]]; then
     mkdir -p "$OUTPUT_PATH"
 
-    # Check for existing Agents.md without markers
-    if [[ ! -f "$OUTPUT_PATH/Agents.md" ]]; then
-        echo "[ERROR] No Agents.md found at $OUTPUT_PATH" >&2
-        echo "  --adopt requires an existing Agents.md file to adopt." >&2
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy) without markers
+    existing_agents_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/Agents.md"
+    fi
+
+    if [[ -z "$existing_agents_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at $OUTPUT_PATH" >&2
+        echo "  --adopt requires an existing AGENTS.md file to adopt." >&2
         exit 1
     fi
 
-    if grep -q "$MARKER_START" "$OUTPUT_PATH/Agents.md"; then
-        echo "[ERROR] Agents.md already has framework markers" >&2
+    if grep -q "$MARKER_START" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") already has framework markers" >&2
         echo "  Use --upgrade instead to update framework sections." >&2
         exit 1
     fi
 
-    echo "[INFO] Adopting existing Agents.md into golden-agents framework..."
+    echo "[INFO] Adopting existing $(basename "$existing_agents_file") into golden-agents framework..."
 
     # Backup original
-    cp "$OUTPUT_PATH/Agents.md" "$OUTPUT_PATH/Agents.md.original"
-    echo "[OK] Backed up original: $OUTPUT_PATH/Agents.md.original"
+    cp "$existing_agents_file" "$OUTPUT_PATH/AGENTS.md.original"
+    echo "[OK] Backed up original: $OUTPUT_PATH/AGENTS.md.original"
 
     # Store original content
-    original_content=$(cat "$OUTPUT_PATH/Agents.md.original")
-    original_lines=$(wc -l < "$OUTPUT_PATH/Agents.md.original" | tr -d ' ')
+    original_content=$(cat "$OUTPUT_PATH/AGENTS.md.original")
+    original_lines=$(wc -l < "$OUTPUT_PATH/AGENTS.md.original" | tr -d ' ')
+
+    # Remove old file if it was lowercase (will be replaced with AGENTS.md)
+    if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+        rm "$existing_agents_file"
+    fi
 
     # Copy ADOPT-PROMPT.md template
     if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
@@ -591,13 +603,13 @@ if [[ "$ADOPT" == "true" ]]; then
         if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
             echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
         fi
-        if ! grep -q "Agents.md.original" "$OUTPUT_PATH/.gitignore"; then
-            echo "Agents.md.original" >> "$OUTPUT_PATH/.gitignore"
+        if ! grep -q "AGENTS.md.original" "$OUTPUT_PATH/.gitignore"; then
+            echo "AGENTS.md.original" >> "$OUTPUT_PATH/.gitignore"
         fi
     else
-        printf "ADOPT-PROMPT.md\nAgents.md.original\n" > "$OUTPUT_PATH/.gitignore"
+        printf "ADOPT-PROMPT.md\nAGENTS.md.original\n" > "$OUTPUT_PATH/.gitignore"
     fi
-    echo "[OK] Added ADOPT-PROMPT.md and Agents.md.original to .gitignore"
+    echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
 
     # Generate framework content, then append original
     # We'll set a flag to append after generation
@@ -609,25 +621,32 @@ fi
 
 # Handle dedupe mode - generate deduplication prompt for files WITH markers
 if [[ "$DEDUPE" == "true" ]]; then
-    # Check for existing Agents.md WITH markers
-    if [[ ! -f "$OUTPUT_PATH/Agents.md" ]]; then
-        echo "[ERROR] No Agents.md found at $OUTPUT_PATH" >&2
-        echo "  --dedupe requires an existing Agents.md file with framework markers." >&2
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy) WITH markers
+    existing_agents_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/Agents.md"
+    fi
+
+    if [[ -z "$existing_agents_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at $OUTPUT_PATH" >&2
+        echo "  --dedupe requires an existing AGENTS.md file with framework markers." >&2
         exit 1
     fi
 
-    if ! grep -q "$MARKER_START" "$OUTPUT_PATH/Agents.md"; then
-        echo "[ERROR] Agents.md does not have framework markers" >&2
+    if ! grep -q "$MARKER_START" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") does not have framework markers" >&2
         echo "  Use --adopt instead for files created without golden-agents." >&2
         exit 1
     fi
 
     # Count lines in project-specific section (after MARKER_END)
-    marker_end_line=$(grep -n "$MARKER_END" "$OUTPUT_PATH/Agents.md" | head -1 | cut -d: -f1)
-    total_lines=$(wc -l < "$OUTPUT_PATH/Agents.md" | tr -d ' ')
+    marker_end_line=$(grep -n "$MARKER_END" "$existing_agents_file" | head -1 | cut -d: -f1)
+    total_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')
     project_lines=$((total_lines - marker_end_line))
 
-    echo "[INFO] Analyzing Agents.md for deduplication..."
+    echo "[INFO] Analyzing $(basename "$existing_agents_file") for deduplication..."
     echo "  Total lines: $total_lines"
     echo "  Framework section ends at line: $marker_end_line"
     echo "  Project-specific section: $project_lines lines"
@@ -670,10 +689,10 @@ if [[ "$DEDUPE" == "true" ]]; then
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
     echo "  1. Open ADOPT-PROMPT.md in your AI assistant"
-    echo "  2. Paste the contents of Agents.md after the prompt"
+    echo "  2. Paste the contents of AGENTS.md after the prompt"
     echo "  3. The AI will propose aggressive deduplication"
     echo "  4. Review and approve the proposed changes"
-    echo "  5. Apply the minimal result to Agents.md"
+    echo "  5. Apply the minimal result to AGENTS.md"
     echo "  6. Delete ADOPT-PROMPT.md and commit"
     echo ""
     echo "  Target: Reduce project-specific section from $project_lines to <100 lines"
@@ -711,11 +730,11 @@ get_lang_commands() {
 }
 
 # generate_progressive()
-# Generates a progressive-loading Agents.md (~60-80 lines).
+# Generates a progressive-loading AGENTS.md (~60-80 lines).
 # Uses on-demand module loading from $HOME/.golden-agents/templates/.
 # Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
 # Arguments: none (uses globals)
-# Returns: Complete Agents.md content via stdout
+# Returns: Complete AGENTS.md content via stdout
 generate_progressive() {
     local today
     today=$(date +%Y-%m-%d)
@@ -835,12 +854,12 @@ FOOTER
 }
 
 # generate_full()
-# Generates a full self-contained Agents.md (~800 lines).
+# Generates a full self-contained AGENTS.md (~800 lines).
 # DEPRECATED: This mode generates files too large for AI assistants to follow.
 # Includes all templates inline rather than using on-demand loading.
 # Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
 # Arguments: none (uses globals)
-# Returns: Complete Agents.md content via stdout
+# Returns: Complete AGENTS.md content via stdout
 generate_full() {
     local today
     today=$(date +%Y-%m-%d)
@@ -954,8 +973,8 @@ generate_self_manage_block() {
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
-2. After editing ANY guidance file, check: `wc -l Agents.md .ai-guidance/*.md 2>/dev/null`
-   - `Agents.md` >150 lines → refactor into `.ai-guidance/`
+2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
+   - `AGENTS.md` >150 lines → refactor into `.ai-guidance/`
    - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 
@@ -963,26 +982,32 @@ SELF_MANAGE
 }
 
 # upgrade_agents_md()
-# Safely upgrades an existing Agents.md file with framework markers.
+# Safely upgrades an existing AGENTS.md file with framework markers.
 # Preserves all content outside the framework markers (project-specific sections).
 # Creates a backup before applying changes when --apply is used.
 # Reads from global: OUTPUT_PATH, LANGUAGES, PROJECT_TYPE, FULL, APPLY
 # Arguments: none (uses globals)
 # Returns: 0 on success, 1 on error
-# Side effects: May modify Agents.md and create .backup file
+# Side effects: May modify AGENTS.md and create .backup file
 upgrade_agents_md() {
-    local existing_file="$OUTPUT_PATH/Agents.md"
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy)
+    local existing_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_file="$OUTPUT_PATH/Agents.md"
+    fi
 
     # Check if file exists
-    if [[ ! -f "$existing_file" ]]; then
-        echo "[ERROR] No Agents.md found at: $existing_file" >&2
+    if [[ -z "$existing_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at: $OUTPUT_PATH" >&2
         echo "  Use --language=... to generate a new file instead." >&2
         exit 1
     fi
 
     # Check for markers
     if ! grep -q "$MARKER_START" "$existing_file" || ! grep -q "$MARKER_END" "$existing_file"; then
-        echo "[ERROR] Cannot upgrade: Agents.md lacks framework markers" >&2
+        echo "[ERROR] Cannot upgrade: $(basename "$existing_file") lacks framework markers" >&2
         echo "" >&2
         echo "  This file was not generated by golden-agents v1.2.0+ or was manually" >&2
         echo "  created. Upgrade requires these markers to identify framework sections:" >&2
@@ -1084,7 +1109,7 @@ ${after_marker}"
         line_count=$(wc -l < "$existing_file" | tr -d ' ')
         if [[ "$line_count" -gt 150 ]]; then
             echo ""
-            echo "[WARN] Agents.md exceeds 150 lines ($line_count lines)"
+            echo "[WARN] AGENTS.md exceeds 150 lines ($line_count lines)"
             echo "  Creating modular migration prompt..."
             create_modular_migration_prompt "$OUTPUT_PATH"
         fi
@@ -1092,7 +1117,7 @@ ${after_marker}"
 }
 
 # create_modular_migration_prompt()
-# Creates the modular migration prompt file for bloated Agents.md files.
+# Creates the modular migration prompt file for bloated AGENTS.md files.
 # Also creates .ai-guidance/ directory with invariants.md template.
 # Copies the template and optionally adds to .gitignore.
 # Arguments:
@@ -1137,7 +1162,7 @@ if [[ "$UPGRADE" == "true" ]]; then
 fi
 
 # create_redirect <filepath> <title>
-# Creates a redirect file that points to Agents.md.
+# Creates a redirect file that points to AGENTS.md.
 # Used for AI assistant-specific files (CLAUDE.md, CODEX.md, etc.).
 # Arguments:
 #   $1 - Full path to the redirect file to create
@@ -1150,13 +1175,13 @@ create_redirect() {
     cat > "$path" << EOF
 # $title
 
-See **[Agents.md](./Agents.md)** for all AI guidance.
+See **[AGENTS.md](./AGENTS.md)** for all AI guidance.
 EOF
 }
 
 # Output (new file generation)
 if [[ "$DRY_RUN" == "true" ]]; then
-    echo "=== DRY RUN ($mode_label mode): Would generate the following Agents.md ==="
+    echo "=== DRY RUN ($mode_label mode): Would generate the following AGENTS.md ==="
     echo ""
     $generator
     echo ""
@@ -1168,10 +1193,9 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "  COPILOT.md       → GitHub Copilot"
     echo "  .github/copilot-instructions.md → GitHub Copilot (custom instructions)"
     echo ""
-    echo "Note: AGENTS.md not created (conflicts with Agents.md on case-insensitive filesystems)"
 else
     mkdir -p "$OUTPUT_PATH"
-    output_file="$OUTPUT_PATH/Agents.md"
+    output_file="$OUTPUT_PATH/AGENTS.md"
     $generator > "$output_file"
 
     # If in adopt mode, append the original content
@@ -1182,7 +1206,7 @@ else
 
 ## Preserved Project Content
 
-> **Note:** The content below was preserved from your original Agents.md.
+> **Note:** The content below was preserved from your original AGENTS.md.
 > Run the ADOPT-PROMPT.md instructions with your AI assistant to deduplicate.
 > Delete redundant content, keep only project-specific guidance.
 > Target: 0-50 lines for most projects, max 100 lines for complex projects.
@@ -1190,7 +1214,7 @@ else
 ADOPT_SECTION
         echo "$ADOPT_ORIGINAL_CONTENT" >> "$output_file"
         echo ""
-        echo "[OK] Adopted existing Agents.md into framework"
+        echo "[OK] Adopted existing AGENTS.md into framework"
         echo "  Original: ${ADOPT_ORIGINAL_LINES:-?} lines preserved"
         echo "  Framework: generated with markers"
         echo ""
@@ -1214,21 +1238,17 @@ ADOPT_SECTION
     create_redirect "$OUTPUT_PATH/GEMINI.md" "Google Gemini Code Assist Instructions"
     create_redirect "$OUTPUT_PATH/COPILOT.md" "GitHub Copilot Instructions"
 
-    # Note: We do NOT create AGENTS.md because it conflicts with Agents.md
-    # on case-insensitive filesystems (macOS default, Windows).
-    # OpenAI Codex CLI will use CODEX.md or read Agents.md directly.
-
     # Create GitHub Copilot custom instructions file
     mkdir -p "$OUTPUT_PATH/.github"
     cat > "$OUTPUT_PATH/.github/copilot-instructions.md" << EOF
 # GitHub Copilot Custom Instructions
 
-See **[../Agents.md](../Agents.md)** for all AI guidance.
+See **[../AGENTS.md](../AGENTS.md)** for all AI guidance.
 
 ## Summary
 
 This project uses the Golden Agents Framework for AI coding assistant guidance.
-All instructions are consolidated in Agents.md at the project root.
+All instructions are consolidated in AGENTS.md at the project root.
 EOF
 
     echo "  ✓ CLAUDE.md        (Claude Code)"
@@ -1237,7 +1257,5 @@ EOF
     echo "  ✓ GEMINI.md        (Google Gemini)"
     echo "  ✓ COPILOT.md       (GitHub Copilot)"
     echo "  ✓ .github/copilot-instructions.md (GitHub Copilot custom)"
-    echo ""
-    echo "Note: AGENTS.md not created (conflicts with Agents.md on case-insensitive filesystems)"
 fi
 
