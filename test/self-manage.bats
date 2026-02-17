@@ -16,8 +16,8 @@ teardown() {
 @test "new file contains self-manage block" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/Agents.md" ">150 lines"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ">150 lines"
 }
 
 # Test 2: Self-manage block appears before framework markers
@@ -27,8 +27,8 @@ teardown() {
     
     # Get line numbers
     local self_manage_line framework_line
-    self_manage_line=$(grep -n "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
-    framework_line=$(grep -n "GOLDEN:framework:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
+    self_manage_line=$(grep -n "GOLDEN:self-manage:start" "$TEST_DIR/AGENTS.md" | head -1 | cut -d: -f1)
+    framework_line=$(grep -n "GOLDEN:framework:start" "$TEST_DIR/AGENTS.md" | head -1 | cut -d: -f1)
     
     # Self-manage should come before framework
     [ "$self_manage_line" -lt "$framework_line" ]
@@ -38,15 +38,15 @@ teardown() {
 @test "self-manage block contains bootstrap instructions" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    assert_file_contains "$TEST_DIR/Agents.md" "Before ANY Task"
-    assert_file_contains "$TEST_DIR/Agents.md" "Load.*invariants.md"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "Before ANY Task"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "Load.*invariants.md"
 }
 
 # Test 4: Self-manage block is properly closed
 @test "self-manage block is properly closed" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:end"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:end"
 }
 
 # Test 5: Upgrade adds self-manage block to existing file
@@ -55,7 +55,7 @@ teardown() {
     create_agents_with_markers "$TEST_DIR"
 
     # Verify no self-manage block initially
-    run grep "GOLDEN:self-manage" "$TEST_DIR/Agents.md"
+    run grep "GOLDEN:self-manage" "$TEST_DIR/AGENTS.md"
     [ "$status" -ne 0 ]
 
     # Run upgrade
@@ -63,8 +63,8 @@ teardown() {
     [ "$status" -eq 0 ]
 
     # Verify self-manage block was added
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/Agents.md" ">150 lines"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ">150 lines"
 }
 
 # Test 6: Upgrade preserves existing self-manage block
@@ -74,11 +74,11 @@ teardown() {
     [ "$status" -eq 0 ]
 
     # Verify self-manage block exists
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:self-manage:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
 
     # Count self-manage markers before upgrade
     local before_count
-    before_count=$(grep -c "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md")
+    before_count=$(grep -c "GOLDEN:self-manage:start" "$TEST_DIR/AGENTS.md")
 
     # Run upgrade
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
@@ -86,7 +86,7 @@ teardown() {
 
     # Verify exactly one self-manage block (not duplicated)
     local after_count
-    after_count=$(grep -c "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md")
+    after_count=$(grep -c "GOLDEN:self-manage:start" "$TEST_DIR/AGENTS.md")
     [ "$after_count" -eq 1 ]
 }
 
@@ -101,8 +101,8 @@ teardown() {
 
     # Get line numbers
     local self_manage_line framework_line
-    self_manage_line=$(grep -n "GOLDEN:self-manage:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
-    framework_line=$(grep -n "GOLDEN:framework:start" "$TEST_DIR/Agents.md" | head -1 | cut -d: -f1)
+    self_manage_line=$(grep -n "GOLDEN:self-manage:start" "$TEST_DIR/AGENTS.md" | head -1 | cut -d: -f1)
+    framework_line=$(grep -n "GOLDEN:framework:start" "$TEST_DIR/AGENTS.md" | head -1 | cut -d: -f1)
 
     # Self-manage should come before framework
     [ "$self_manage_line" -lt "$framework_line" ]
@@ -164,7 +164,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     # Should reference checking .ai-guidance/*.md files
-    assert_file_contains "$TEST_DIR/Agents.md" ".ai-guidance/\*.md"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ".ai-guidance/\*.md"
 }
 
 # Test 14: Self-manage block includes 250-line threshold for sub-files
@@ -172,7 +172,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     # Should mention 250-line threshold for sub-files
-    assert_file_contains "$TEST_DIR/Agents.md" ">250 lines"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ">250 lines"
 }
 
 # Test 15: invariants.md includes self-management protocol

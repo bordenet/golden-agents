@@ -15,19 +15,19 @@ teardown() {
 }
 
 # =============================================================================
-# SCENARIO 1: Greenfield project gets usable progressive Agents.md
+# SCENARIO 1: Greenfield project gets usable progressive AGENTS.md
 # =============================================================================
-@test "SCENARIO: Greenfield project gets usable progressive Agents.md" {
+@test "SCENARIO: Greenfield project gets usable progressive AGENTS.md" {
     mkdir -p "$TEST_DIR/new-project"
     
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR/new-project"
     [ "$status" -eq 0 ]
     
     # Verify file exists and is usable
-    assert_file_exists "$TEST_DIR/new-project/Agents.md"
-    assert_progressive_size "$TEST_DIR/new-project/Agents.md"
-    assert_file_contains "$TEST_DIR/new-project/Agents.md" "GOLDEN:framework:start"
-    assert_file_contains "$TEST_DIR/new-project/Agents.md" "GOLDEN:framework:end"
+    assert_file_exists "$TEST_DIR/new-project/AGENTS.md"
+    assert_progressive_size "$TEST_DIR/new-project/AGENTS.md"
+    assert_file_contains "$TEST_DIR/new-project/AGENTS.md" "GOLDEN:framework:start"
+    assert_file_contains "$TEST_DIR/new-project/AGENTS.md" "GOLDEN:framework:end"
 }
 
 # =============================================================================
@@ -48,16 +48,16 @@ teardown() {
     assert_content_preserved "$TEST_DIR/MIGRATION-PROMPT.md" "UNIQUE_MARKER_AI_BEHAVIOR" "migration"
     assert_content_preserved "$TEST_DIR/MIGRATION-PROMPT.md" "UNIQUE_MARKER_DOMAIN_KNOWLEDGE" "migration"
     
-    # Verify Agents.md is usable size
-    assert_progressive_size "$TEST_DIR/Agents.md"
+    # Verify AGENTS.md is usable size
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
 
 # =============================================================================
-# SCENARIO 3: Adopt existing Agents.md without data loss
+# SCENARIO 3: Adopt existing AGENTS.md without data loss
 # =============================================================================
-@test "SCENARIO: Adopt existing Agents.md without data loss" {
+@test "SCENARIO: Adopt existing AGENTS.md without data loss" {
     mkdir -p "$TEST_DIR"
-    cat > "$TEST_DIR/Agents.md" << 'EOF'
+    cat > "$TEST_DIR/AGENTS.md" << 'EOF'
 # My Existing Guide
 
 Custom content line 1: UNIQUE_ADOPT_MARKER_1
@@ -74,13 +74,13 @@ EOF
     [ "$status" -eq 0 ]
     
     # Verify all markers preserved
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_ADOPT_MARKER_1" "adoption"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_ADOPT_MARKER_2" "adoption"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_ADOPT_MARKER_3" "adoption"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "UNIQUE_ADOPT_MARKER_1" "adoption"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "UNIQUE_ADOPT_MARKER_2" "adoption"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "UNIQUE_ADOPT_MARKER_3" "adoption"
     
     # Verify framework markers added
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:framework:start"
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:framework:end"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:framework:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:framework:end"
 }
 
 # =============================================================================
@@ -90,19 +90,19 @@ EOF
     create_agents_with_markers "$TEST_DIR"
     
     # Add unique content to test preservation
-    echo "" >> "$TEST_DIR/Agents.md"
-    echo "### Special Project Content" >> "$TEST_DIR/Agents.md"
-    echo "UNIQUE_UPGRADE_MARKER_1" >> "$TEST_DIR/Agents.md"
-    echo "UNIQUE_UPGRADE_MARKER_2" >> "$TEST_DIR/Agents.md"
+    echo "" >> "$TEST_DIR/AGENTS.md"
+    echo "### Special Project Content" >> "$TEST_DIR/AGENTS.md"
+    echo "UNIQUE_UPGRADE_MARKER_1" >> "$TEST_DIR/AGENTS.md"
+    echo "UNIQUE_UPGRADE_MARKER_2" >> "$TEST_DIR/AGENTS.md"
     
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
     # Verify unique content preserved
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_UPGRADE_MARKER_1" "upgrade"
-    assert_content_preserved "$TEST_DIR/Agents.md" "UNIQUE_UPGRADE_MARKER_2" "upgrade"
-    assert_content_preserved "$TEST_DIR/Agents.md" "My Custom Rule" "upgrade"
-    assert_content_preserved "$TEST_DIR/Agents.md" "feature branches" "upgrade"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "UNIQUE_UPGRADE_MARKER_1" "upgrade"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "UNIQUE_UPGRADE_MARKER_2" "upgrade"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "My Custom Rule" "upgrade"
+    assert_content_preserved "$TEST_DIR/AGENTS.md" "feature branches" "upgrade"
 }
 
 # =============================================================================
@@ -113,10 +113,10 @@ EOF
         --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_progressive_size "$TEST_DIR/Agents.md"
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
 
     # Verify all languages mentioned
-    assert_file_contains "$TEST_DIR/Agents.md" "go"
-    assert_file_contains "$TEST_DIR/Agents.md" "python"
-    assert_file_contains "$TEST_DIR/Agents.md" "javascript"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "go"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "python"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "javascript"
 }

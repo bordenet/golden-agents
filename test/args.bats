@@ -83,7 +83,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --dry-run
     [ "$status" -eq 0 ]
     [[ "$output" == *"DRY RUN"* ]]
-    [ ! -f "$TEST_DIR/Agents.md" ]  # Should not create file in test dir
+    [ ! -f "$TEST_DIR/AGENTS.md" ]  # Should not create file in test dir
 }
 
 # Test 11-16: Language alias resolution

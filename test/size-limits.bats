@@ -22,7 +22,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
-    assert_progressive_size "$TEST_DIR/Agents.md"
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
 
 @test "SIZE LIMIT: Progressive mode with single language under limit" {
@@ -33,7 +33,7 @@ teardown() {
         run "$GENERATE_SCRIPT" --language="$lang" --path="$TEST_DIR"
         [ "$status" -eq 0 ]
         
-        assert_progressive_size "$TEST_DIR/Agents.md"
+        assert_progressive_size "$TEST_DIR/AGENTS.md"
     done
 }
 
@@ -41,7 +41,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
-    assert_progressive_size "$TEST_DIR/Agents.md"
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
 
 @test "SIZE LIMIT: Progressive mode with all project types under limit" {
@@ -52,7 +52,7 @@ teardown() {
         run "$GENERATE_SCRIPT" --language=go --type="$ptype" --path="$TEST_DIR"
         [ "$status" -eq 0 ]
         
-        assert_progressive_size "$TEST_DIR/Agents.md"
+        assert_progressive_size "$TEST_DIR/AGENTS.md"
     done
 }
 
@@ -79,20 +79,20 @@ teardown() {
     [ "$status" -eq 0 ]
 
     # Result should still be progressive (under 100 lines)
-    assert_progressive_size "$TEST_DIR/Agents.md"
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
 
 @test "SIZE LIMIT: Generated file is dramatically smaller than bloated input" {
     # Create a bloated 600-line fixture
     create_bloated_fixture "$TEST_DIR" 600
     local original_lines
-    original_lines=$(get_line_count "$TEST_DIR/Agents.md")
+    original_lines=$(get_line_count "$TEST_DIR/AGENTS.md")
     
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
     local new_lines
-    new_lines=$(get_line_count "$TEST_DIR/Agents.md")
+    new_lines=$(get_line_count "$TEST_DIR/AGENTS.md")
     
     # New file should be at least 3x smaller
     [ "$new_lines" -lt $((original_lines / 3)) ]

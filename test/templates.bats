@@ -52,9 +52,9 @@ teardown() {
     [ "$status" -eq 0 ]
     
     # Full mode should contain superpowers integration
-    assert_file_contains "$TEST_DIR/Agents.md" "superpowers" || \
-    assert_file_contains "$TEST_DIR/Agents.md" "Superpowers" || \
-    assert_file_contains "$TEST_DIR/Agents.md" "bootstrap"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "superpowers" || \
+    assert_file_contains "$TEST_DIR/AGENTS.md" "Superpowers" || \
+    assert_file_contains "$TEST_DIR/AGENTS.md" "bootstrap"
 }
 
 # Test 6: Full mode includes language-specific content
@@ -63,7 +63,7 @@ teardown() {
     [ "$status" -eq 0 ]
     
     # Should contain Go-specific guidance
-    grep -qi "go" "$TEST_DIR/Agents.md"
+    grep -qi "go" "$TEST_DIR/AGENTS.md"
 }
 
 # Test 7: Full mode includes type-specific content
@@ -72,9 +72,9 @@ teardown() {
     [ "$status" -eq 0 ]
     
     # Should contain CLI-related guidance
-    assert_file_contains "$TEST_DIR/Agents.md" "cli" || \
-    assert_file_contains "$TEST_DIR/Agents.md" "CLI" || \
-    assert_file_contains "$TEST_DIR/Agents.md" "command"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "cli" || \
+    assert_file_contains "$TEST_DIR/AGENTS.md" "CLI" || \
+    assert_file_contains "$TEST_DIR/AGENTS.md" "command"
 }
 
 # Test 8: Unknown type handled gracefully
@@ -84,7 +84,7 @@ teardown() {
     # Should either succeed (ignoring unknown type) or fail gracefully
     # The file should still be created if it succeeds
     if [ "$status" -eq 0 ]; then
-        assert_file_exists "$TEST_DIR/Agents.md"
+        assert_file_exists "$TEST_DIR/AGENTS.md"
     else
         [[ "$output" == *"Warning"* ]] || [[ "$output" == *"template"* ]] || [[ "$output" == *"type"* ]]
     fi

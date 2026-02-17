@@ -40,7 +40,7 @@ teardown() {
 
     run "$GENERATE_SCRIPT" --language=go --path="$project_dir"
     [ "$status" -eq 0 ]
-    assert_file_exists "$project_dir/Agents.md"
+    assert_file_exists "$project_dir/AGENTS.md"
 }
 
 # Test 2: Spaces in path
@@ -50,7 +50,7 @@ teardown() {
 
     run "$GENERATE_SCRIPT" --language=python --path="$project_dir"
     [ "$status" -eq 0 ]
-    assert_file_exists "$project_dir/Agents.md"
+    assert_file_exists "$project_dir/AGENTS.md"
 }
 
 # Test 3: Special characters in project name (but valid for filesystem)
@@ -60,7 +60,7 @@ teardown() {
 
     run "$GENERATE_SCRIPT" --language=go --path="$project_dir"
     [ "$status" -eq 0 ]
-    assert_file_contains "$project_dir/Agents.md" "my-project_v2.0"
+    assert_file_contains "$project_dir/AGENTS.md" "my-project_v2.0"
 }
 
 # Test 4: Empty project name defaults to directory name
@@ -71,7 +71,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --name="" --path="$project_dir"
     [ "$status" -eq 0 ]
     # Should contain directory name, not empty
-    assert_file_contains "$project_dir/Agents.md" "fallback-name"
+    assert_file_contains "$project_dir/AGENTS.md" "fallback-name"
 }
 
 # Test 5: Very long project name (edge of filesystem limits)

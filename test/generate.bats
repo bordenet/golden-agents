@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 # P2: New File Generation Tests
-# Tests for generating new Agents.md files
+# Tests for generating new AGENTS.md files
 
 load 'test_helper'
 
@@ -18,8 +18,8 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_exists "$TEST_DIR/Agents.md"
-    assert_progressive_size "$TEST_DIR/Agents.md"
+    assert_file_exists "$TEST_DIR/AGENTS.md"
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
 
 # Test 2: Explicit progressive flag works
@@ -27,10 +27,10 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --progressive --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_exists "$TEST_DIR/Agents.md"
+    assert_file_exists "$TEST_DIR/AGENTS.md"
     # Progressive mode generates ~60-80 lines (minimal core with on-demand loading)
     local line_count
-    line_count=$(wc -l < "$TEST_DIR/Agents.md" | tr -d ' ')
+    line_count=$(wc -l < "$TEST_DIR/AGENTS.md" | tr -d ' ')
     [ "$line_count" -gt 40 ]  # Must have some content
     [ "$line_count" -lt 100 ] # Progressive should be under 100 lines
 }
@@ -40,7 +40,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:framework:start"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:framework:start"
 }
 
 # Test 4: Output contains end marker
@@ -48,7 +48,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_contains "$TEST_DIR/Agents.md" "GOLDEN:framework:end"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:framework:end"
 }
 
 # Test 5: Output contains language header
@@ -56,7 +56,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=python --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_contains "$TEST_DIR/Agents.md" "python"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "python"
 }
 
 # Test 6: Output contains type header
@@ -64,7 +64,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --type=cli-tools --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_contains "$TEST_DIR/Agents.md" "cli-tools"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "cli-tools"
 }
 
 # Test 7: Creates output directory if missing
@@ -75,7 +75,7 @@ teardown() {
     [ "$status" -eq 0 ]
 
     assert_dir_exists "$new_dir"
-    assert_file_exists "$new_dir/Agents.md"
+    assert_file_exists "$new_dir/AGENTS.md"
 }
 
 # Test 8: Project name from directory
@@ -86,7 +86,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$project_dir"
     [ "$status" -eq 0 ]
 
-    assert_file_contains "$project_dir/Agents.md" "my-cool-project"
+    assert_file_contains "$project_dir/AGENTS.md" "my-cool-project"
 }
 
 # Test 9: Custom project name
@@ -94,7 +94,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --name=CustomProjectName --path="$TEST_DIR"
     [ "$status" -eq 0 ]
 
-    assert_file_contains "$TEST_DIR/Agents.md" "CustomProjectName"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "CustomProjectName"
 }
 
 # Test 10: Multiple languages in header
@@ -103,8 +103,8 @@ teardown() {
     [ "$status" -eq 0 ]
 
     # All languages should appear
-    assert_file_contains "$TEST_DIR/Agents.md" "go"
-    assert_file_contains "$TEST_DIR/Agents.md" "python"
-    assert_file_contains "$TEST_DIR/Agents.md" "javascript"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "go"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "python"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "javascript"
 }
 

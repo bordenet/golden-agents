@@ -12,13 +12,13 @@ teardown() {
     [[ -d "$TEST_DIR" ]] && rm -rf "$TEST_DIR"
 }
 
-# Helper: Create Agents.md with markers and bloated project section
+# Helper: Create AGENTS.md with markers and bloated project section
 create_bloated_agents() {
     local dir="$1"
     local project_lines="${2:-200}"
     mkdir -p "$dir"
     
-    cat > "$dir/Agents.md" << 'EOF'
+    cat > "$dir/AGENTS.md" << 'EOF'
 # AI Agent Guidelines
 
 <!-- GOLDEN:framework:start -->
@@ -34,16 +34,16 @@ EOF
     
     # Add bloated project content
     for i in $(seq 1 "$project_lines"); do
-        echo "Line $i of project-specific content that is probably redundant." >> "$dir/Agents.md"
+        echo "Line $i of project-specific content that is probably redundant." >> "$dir/AGENTS.md"
     done
 }
 
-# Helper: Create Agents.md with markers and minimal project section
+# Helper: Create AGENTS.md with markers and minimal project section
 create_minimal_agents() {
     local dir="$1"
     mkdir -p "$dir"
     
-    cat > "$dir/Agents.md" << 'EOF'
+    cat > "$dir/AGENTS.md" << 'EOF'
 # AI Agent Guidelines
 
 <!-- GOLDEN:framework:start -->
@@ -69,7 +69,7 @@ EOF
 }
 
 # Test 2: --dedupe requires existing AGENTS.md
-@test "--dedupe requires existing Agents.md" {
+@test "--dedupe requires existing AGENTS.md" {
     mkdir -p "$TEST_DIR"
     # No AGENTS.md file
 
@@ -81,7 +81,7 @@ EOF
 # Test 3: --dedupe requires files WITH markers
 @test "--dedupe requires files with framework markers" {
     mkdir -p "$TEST_DIR"
-    echo "# Manual Guide" > "$TEST_DIR/Agents.md"
+    echo "# Manual Guide" > "$TEST_DIR/AGENTS.md"
 
     run "$GENERATE_SCRIPT" --dedupe --path="$TEST_DIR"
     [ "$status" -ne 0 ]
@@ -164,15 +164,15 @@ EOF
     [[ "$output" == *"Target: Reduce"* ]]
 }
 
-# Test 11: --dedupe does NOT modify original Agents.md
-@test "--dedupe does not modify Agents.md" {
+# Test 11: --dedupe does NOT modify original AGENTS.md
+@test "--dedupe does not modify AGENTS.md" {
     create_bloated_agents "$TEST_DIR" 200
-    original_hash=$(md5sum "$TEST_DIR/Agents.md" | cut -d' ' -f1)
+    original_hash=$(md5sum "$TEST_DIR/AGENTS.md" | cut -d' ' -f1)
 
     run "$GENERATE_SCRIPT" --dedupe --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
-    new_hash=$(md5sum "$TEST_DIR/Agents.md" | cut -d' ' -f1)
+    new_hash=$(md5sum "$TEST_DIR/AGENTS.md" | cut -d' ' -f1)
     [ "$original_hash" = "$new_hash" ]
 }
 

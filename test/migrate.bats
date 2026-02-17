@@ -35,14 +35,14 @@ EOF
 # Test 2: Ignores small redirect CLAUDE.md (<100 bytes)
 @test "ignores small redirect CLAUDE.md" {
     mkdir -p "$TEST_DIR"
-    echo "See Agents.md" > "$TEST_DIR/CLAUDE.md"
+    echo "See AGENTS.md" > "$TEST_DIR/CLAUDE.md"
     
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR" --dry-run
     [ "$status" -eq 0 ]
 }
 
-# Test 3: Detects existing Agents.md without markers
-@test "detects existing Agents.md without markers" {
+# Test 3: Detects existing AGENTS.md without markers
+@test "detects existing AGENTS.md without markers" {
     create_agents_without_markers "$TEST_DIR"
     
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
@@ -50,8 +50,8 @@ EOF
     [[ "$output" == *"existing"* ]] || [[ "$output" == *"--migrate"* ]]
 }
 
-# Test 4: Allows overwriting Agents.md WITH markers (upgrade path)
-@test "allows overwriting Agents.md with markers" {
+# Test 4: Allows overwriting AGENTS.md WITH markers (upgrade path)
+@test "allows overwriting AGENTS.md with markers" {
     create_agents_with_markers "$TEST_DIR"
     
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR" --dry-run
@@ -87,7 +87,7 @@ EOF
     run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     [ -f "$TEST_DIR/MIGRATION-PROMPT.md" ]
-    [ -f "$TEST_DIR/Agents.md" ]
+    [ -f "$TEST_DIR/AGENTS.md" ]
 }
 
 # Test 7: MIGRATION-PROMPT.md contains existing content
@@ -138,11 +138,11 @@ EOF
 # Test 10: --migrate with no existing content skips prompt generation
 @test "--migrate with no existing content skips prompt generation" {
     mkdir -p "$TEST_DIR"
-    # No CLAUDE.md or Agents.md
+    # No CLAUDE.md or AGENTS.md
 
     run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    [ -f "$TEST_DIR/Agents.md" ]
+    [ -f "$TEST_DIR/AGENTS.md" ]
     [ ! -f "$TEST_DIR/MIGRATION-PROMPT.md" ]
 }
 
