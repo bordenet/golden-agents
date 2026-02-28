@@ -176,6 +176,15 @@ PRs welcome for new templates in `templates/`.
 
 ---
 
+## Related Projects
+
+| Project | Purpose |
+|---------|---------|
+| [superpowers-plus](https://github.com/bordenet/superpowers-plus) | 33 AI coding skills for assistants |
+| [docforge-ai](https://github.com/bordenet/docforge-ai) | Adversarial document generation |
+
+---
+
 ## License
 
 MIT — [LICENSE](LICENSE)
