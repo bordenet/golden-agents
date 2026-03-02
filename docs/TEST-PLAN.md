@@ -24,7 +24,7 @@ Golden Agents is tested on every commit. Here's what we verify.
 | **Self-Management** | 12 | Bootstrap block, bloat detection, modular migration |
 | **Windows** | 15 | PowerShell wrapper works correctly |
 
-**Total: 124 tests** (109 BATS + 15 Pester)
+**Total: 143 tests** (128 BATS + 15 Pester)
 
 ---
 

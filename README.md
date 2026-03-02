@@ -1,6 +1,6 @@
 # Golden Agents
 
-**Self-maintaining AI guidance files.** Your AI assistants automatically keep their own instruction files under control.
+**Self-maintaining AI guidance files.** AI assistants automatically refactor their own instruction files when they exceed size thresholds.
 
 [![Tests](https://github.com/bordenet/golden-agents/actions/workflows/test.yml/badge.svg)](https://github.com/bordenet/golden-agents/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,9 +9,9 @@
 
 ## The Problem
 
-AI guidance files (`CLAUDE.md`, `AGENTS.md`) start small. Then you add rules. More rules. Soon you have 500+ lines and the AI ignores half of them.
+AI guidance files (`CLAUDE.md`, `AGENTS.md`) accumulate rules over time. Past a certain size, AI assistants start ignoring instructions buried deep in the file.
 
-**Golden Agents solves this.** Files that exceed thresholds trigger the AI to refactor them automatically—no human intervention required.
+Golden Agents embeds a self-management protocol into generated files. When a file exceeds 250 lines, the AI extracts content to topic-specific modules—no human intervention required.
 
 ---
 
@@ -25,7 +25,7 @@ Then tell your AI assistant:
 
 > "Read `~/.golden-agents/AGENTS.md` and run `generate-agents.sh --adopt ~/my-project`"
 
-Your project gets a self-managing `AGENTS.md` in ~30 seconds.
+Your project gets a self-managing `AGENTS.md`.
 
 **[→ Full Usage Guide](docs/USAGE.md)** | **[→ Sample Output](docs/SAMPLE.md)**
 
@@ -52,7 +52,7 @@ When thresholds are exceeded, the AI:
 3. **Updates references** — Adds loading triggers so nothing is lost
 4. **Verifies the result** — Confirms all content preserved, thresholds met
 
-**No manual cleanup. No context overflow. The AI maintains its own instructions.**
+The AI maintains its own instructions without manual intervention.
 
 ---
 
@@ -63,7 +63,7 @@ When thresholds are exceeded, the AI:
 | `AGENTS.md` | 250 lines | Extract to `.ai-guidance/*.md` |
 | `.ai-guidance/*.md` | 250 lines | Split into sub-directory |
 
-These limits keep files within effective context windows for all major AI assistants.
+These limits keep files within the effective working range for Claude, Augment, and similar assistants.
 
 ---
 
@@ -98,7 +98,7 @@ For projects with bloated guidance files:
 ~/.golden-agents/generate-agents.sh --upgrade ~/my-project
 ```
 
-This injects the self-management protocol. If `AGENTS.md` exceeds 250 lines, it also creates `MODULAR-MIGRATION-PROMPT.md` with step-by-step refactoring instructions for the AI.
+This injects the self-management protocol into existing files. For files exceeding 250 lines, it also creates `MODULAR-MIGRATION-PROMPT.md` with refactoring instructions.
 
 **[→ Design Details](docs/plans/2026-02-15-self-managing-agents-design.md)**
 
@@ -160,7 +160,7 @@ Update templates: `~/.golden-agents/generate-agents.sh --sync`
 | [SAMPLE.md](docs/SAMPLE.md) | Generated output examples |
 | [PROGRESSIVE-LOADING.md](docs/PROGRESSIVE-LOADING.md) | On-demand module loading |
 | [HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) | Script vs AI responsibilities |
-| [TEST-PLAN.md](docs/TEST-PLAN.md) | 124 tests |
+| [TEST-PLAN.md](docs/TEST-PLAN.md) | Test suite documentation |
 
 ---
 
@@ -180,7 +180,7 @@ PRs welcome for new templates in `templates/`.
 
 | Project | Purpose |
 |---------|---------|
-| [superpowers-plus](https://github.com/bordenet/superpowers-plus) | 33 AI coding skills for assistants |
+| [superpowers-plus](https://github.com/bordenet/superpowers-plus) | Skills for Claude, Augment, and other AI coding assistants |
 | [docforge-ai](https://github.com/bordenet/docforge-ai) | Adversarial document generation |
 
 ---
