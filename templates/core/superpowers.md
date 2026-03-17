@@ -44,6 +44,7 @@ This is not optional. Skills exist to ensure quality and consistency.
 
 | Skill | When to Use |
 |-------|-------------|
+| `superpowers:todo-management` | ANY task/todo query ("what are our todos", "what's pending", "show tasks") — reads TODO.md FIRST |
 | `superpowers:brainstorming` | Before ANY creative/feature work |
 | `superpowers:systematic-debugging` | Before fixing bugs |
 | `superpowers:test-driven-development` | Before writing implementation |
