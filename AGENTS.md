@@ -55,7 +55,7 @@ After applying changes, verify:
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
 2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
-   - `AGENTS.md` >250 lines → refactor into `.ai-guidance/`
+   - `AGENTS.md` >150 lines → refactor into `.ai-guidance/`
    - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 <!-- GOLDEN:framework:start -->
@@ -99,12 +99,22 @@ Before ANY commit:
 - 🟡 **BEFORE deploying to any environment**: Read `$HOME/.golden-agents/templates/workflows/deployment.md`
 - 🟡 **WHEN conversation exceeds 50 exchanges**: Read `$HOME/.golden-agents/templates/workflows/context-management.md`
 
+### Project type guidance:
+- Read `$HOME/.golden-agents/templates/project-types/cli-tools.md`
+
 ### Optional: Superpowers integration
 
-If [superpowers](https://github.com/obra/superpowers) is installed, run at session start:
+Two parallel, mutually exclusive skill ecosystems exist. At the **START of every conversation**, detect which THIS machine uses and bootstrap accordingly:
 
+- **superpowers-callbox**: No bootstrap required (skills are pre-deployed as symlinks).
+- **superpowers-plus**: Run the js bootstrap:
+  ```bash
+  node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+  ```
+
+This loads available skills into the environment. To load a specific skill manually (plus only):
 ```bash
-node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+node ~/.codex/superpowers-augment/superpowers-augment.js use-skill <name>
 ```
 
 <!-- GOLDEN:framework:end -->
