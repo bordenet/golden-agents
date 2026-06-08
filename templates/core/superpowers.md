@@ -5,19 +5,18 @@
 
 ## Superpowers Bootstrap
 
-At the **START of every conversation**, run:
+Two parallel, mutually exclusive skill ecosystems exist. At the **START of every conversation**, detect which THIS machine uses and bootstrap accordingly:
 
+- **superpowers-callbox**: No bootstrap required (skills are pre-deployed as symlinks). To (re)install, use `cb-ai-toolkit install --all`.
+- **superpowers-plus**: Run the js bootstrap:
+  ```bash
+  node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+  ```
+
+This loads available skills into the environment. To load a specific skill manually:
 ```bash
-node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
-```
-
-This loads available skills from:
-- **obra/superpowers** - Core skills: brainstorming, TDD, debugging, verification
-- **bordenet/superpowers-plus** - Extended skills: slop detection, security upgrades, code review
-
-To load a specific skill:
-```bash
-node ~/.codex/superpowers-augment/superpowers-augment.js use-skill superpowers:<skill-name>
+# superpowers-plus only
+node ~/.codex/superpowers-augment/superpowers-augment.js use-skill <name>
 ```
 
 ## The Rule
