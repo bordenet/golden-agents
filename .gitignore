@@ -21,3 +21,6 @@ MODULAR-MIGRATION-PROMPT.md
 .env
 .env.local
 .env.*.local
+
+*.pem
+*.key
