@@ -146,3 +146,21 @@ EOF
     [ ! -f "$TEST_DIR/MIGRATION-PROMPT.md" ]
 }
 
+# Test 11: --migrate --dry-run must not write MIGRATION-PROMPT.md, .gitignore, or AGENTS.md
+# Regression test: dry-run previously leaked side effects (wrote MIGRATION-PROMPT.md
+# and appended to .gitignore for real) despite correctly withholding AGENTS.md.
+@test "--migrate --dry-run does not write MIGRATION-PROMPT.md or .gitignore" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF'
+# Project Guide
+Substantial content that would normally trigger migration prompt generation.
+More content to exceed the 100 byte threshold for detection.
+EOF
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_DIR/MIGRATION-PROMPT.md" ]
+    [ ! -f "$TEST_DIR/.gitignore" ]
+    [ ! -f "$TEST_DIR/AGENTS.md" ]
+}
+

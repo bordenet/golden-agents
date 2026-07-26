@@ -185,3 +185,14 @@ EOF
     [[ "$output" == *"already within target"* ]]
 }
 
+# Test 13: --dedupe --dry-run must not write ADOPT-PROMPT.md or .gitignore
+# Regression test: dry-run previously leaked side effects for --dedupe just like --migrate.
+@test "--dedupe --dry-run does not write ADOPT-PROMPT.md or .gitignore" {
+    create_bloated_agents "$TEST_DIR" 200
+
+    run "$GENERATE_SCRIPT" --dedupe --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_DIR/ADOPT-PROMPT.md" ]
+    [ ! -f "$TEST_DIR/.gitignore" ]
+}
+

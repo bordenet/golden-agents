@@ -152,3 +152,26 @@ EOF
     [ -f "$TEST_DIR/ADOPT-PROMPT.md" ]
 }
 
+# Test 13: --adopt --dry-run must not write AGENTS.md.original, ADOPT-PROMPT.md, or .gitignore
+# Regression test: dry-run previously leaked side effects for --adopt just like --migrate.
+@test "--adopt --dry-run does not write AGENTS.md.original, ADOPT-PROMPT.md, or .gitignore" {
+    mkdir -p "$TEST_DIR"
+    echo "# Existing Guide" > "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --adopt --language=go --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 0 ]
+    [ ! -f "$TEST_DIR/AGENTS.md.original" ]
+    [ ! -f "$TEST_DIR/ADOPT-PROMPT.md" ]
+    [ ! -f "$TEST_DIR/.gitignore" ]
+}
+
+# Test 14: --adopt --dry-run does not remove legacy Agents.md
+@test "--adopt --dry-run does not remove legacy Agents.md" {
+    mkdir -p "$TEST_DIR"
+    echo "# Legacy Guide" > "$TEST_DIR/Agents.md"
+
+    run "$GENERATE_SCRIPT" --adopt --language=go --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/Agents.md" ]
+}
+

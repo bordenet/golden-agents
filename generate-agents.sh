@@ -516,8 +516,6 @@ fi
 
 # Handle migrate mode - generate migration prompt if needed
 if [[ "$MIGRATE" == "true" ]]; then
-    mkdir -p "$OUTPUT_PATH"
-
     # Check if there's content to migrate
     existing=$(check_existing_guidance "$OUTPUT_PATH")
     if [[ -n "$existing" ]]; then
@@ -527,22 +525,29 @@ if [[ "$MIGRATE" == "true" ]]; then
 
         echo "[INFO] Found existing guidance: $existing"
         echo "[INFO] Source file: $source_file ($source_lines lines)"
-        echo "[INFO] Generating migration prompt..."
 
-        # Generate the migration prompt
-        generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
-        echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
-        echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
-
-        # Add to .gitignore
-        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-            if ! grep -q "MIGRATION-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                echo "MIGRATION-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
-            fi
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "[DRY RUN] Would generate migration prompt: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[DRY RUN] Would add MIGRATION-PROMPT.md to $OUTPUT_PATH/.gitignore"
         else
-            echo "MIGRATION-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+            mkdir -p "$OUTPUT_PATH"
+            echo "[INFO] Generating migration prompt..."
+
+            # Generate the migration prompt
+            generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
+
+            # Add to .gitignore
+            if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+                if ! grep -q "MIGRATION-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
+                    echo "MIGRATION-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+                fi
+            else
+                echo "MIGRATION-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+            fi
+            echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
         fi
-        echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
     else
         echo "[INFO] No existing guidance files found. Running normal generation."
     fi
@@ -553,8 +558,6 @@ fi
 
 # Handle adopt mode - bring existing AGENTS.md into framework
 if [[ "$ADOPT" == "true" ]]; then
-    mkdir -p "$OUTPUT_PATH"
-
     # Check for existing AGENTS.md (preferred) or Agents.md (legacy) without markers
     existing_agents_file=""
     if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
@@ -577,39 +580,50 @@ if [[ "$ADOPT" == "true" ]]; then
 
     echo "[INFO] Adopting existing $(basename "$existing_agents_file") into golden-agents framework..."
 
-    # Backup original
-    cp "$existing_agents_file" "$OUTPUT_PATH/AGENTS.md.original"
-    echo "[OK] Backed up original: $OUTPUT_PATH/AGENTS.md.original"
+    # Store original content (read-only; safe to do even in dry-run)
+    original_content=$(cat "$existing_agents_file")
+    original_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')
 
-    # Store original content
-    original_content=$(cat "$OUTPUT_PATH/AGENTS.md.original")
-    original_lines=$(wc -l < "$OUTPUT_PATH/AGENTS.md.original" | tr -d ' ')
-
-    # Remove old file if it was lowercase (will be replaced with AGENTS.md)
-    if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
-        rm "$existing_agents_file"
-    fi
-
-    # Copy ADOPT-PROMPT.md template
-    if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
-        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
-        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
-    else
-        echo "[WARN] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
-    fi
-
-    # Add to .gitignore
-    if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-        if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-            echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would back up original: $OUTPUT_PATH/AGENTS.md.original"
+        if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+            echo "[DRY RUN] Would remove legacy file: $existing_agents_file"
         fi
-        if ! grep -q "AGENTS.md.original" "$OUTPUT_PATH/.gitignore"; then
-            echo "AGENTS.md.original" >> "$OUTPUT_PATH/.gitignore"
-        fi
+        echo "[DRY RUN] Would create: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[DRY RUN] Would add ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
     else
-        printf "ADOPT-PROMPT.md\nAGENTS.md.original\n" > "$OUTPUT_PATH/.gitignore"
+        mkdir -p "$OUTPUT_PATH"
+
+        # Backup original
+        cp "$existing_agents_file" "$OUTPUT_PATH/AGENTS.md.original"
+        echo "[OK] Backed up original: $OUTPUT_PATH/AGENTS.md.original"
+
+        # Remove old file if it was lowercase (will be replaced with AGENTS.md)
+        if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+            rm "$existing_agents_file"
+        fi
+
+        # Copy ADOPT-PROMPT.md template
+        if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+            cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+            echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        else
+            echo "[WARN] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+        fi
+
+        # Add to .gitignore
+        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+            if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
+                echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+            fi
+            if ! grep -q "AGENTS.md.original" "$OUTPUT_PATH/.gitignore"; then
+                echo "AGENTS.md.original" >> "$OUTPUT_PATH/.gitignore"
+            fi
+        else
+            printf "ADOPT-PROMPT.md\nAGENTS.md.original\n" > "$OUTPUT_PATH/.gitignore"
+        fi
+        echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
     fi
-    echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
 
     # Generate framework content, then append original
     # We'll set a flag to append after generation
@@ -663,24 +677,30 @@ if [[ "$DEDUPE" == "true" ]]; then
     echo "  Current: $project_lines lines"
     echo ""
 
-    # Copy ADOPT-PROMPT.md template (same prompt works for dedupe)
-    if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
-        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
-        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
-    else
+    # ADOPT-PROMPT.md template is required regardless of dry-run (read-only check)
+    if [[ ! -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
         echo "[ERROR] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
         exit 1
     fi
 
-    # Add to .gitignore if not already there
-    if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-        if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-            echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
-            echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
-        fi
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would create: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[DRY RUN] Would add ADOPT-PROMPT.md to .gitignore"
     else
-        echo "ADOPT-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
-        echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
+        # Copy ADOPT-PROMPT.md template (same prompt works for dedupe)
+        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+
+        # Add to .gitignore if not already there
+        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+            if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
+                echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+                echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
+            fi
+        else
+            echo "ADOPT-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+            echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
+        fi
     fi
 
     echo ""
