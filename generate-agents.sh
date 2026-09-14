@@ -858,7 +858,7 @@ MIDDLE
 
 Two parallel, mutually exclusive skill ecosystems exist. At the **START of every conversation**, detect which THIS machine uses and bootstrap accordingly:
 
-- **superpowers-callbox**: No bootstrap required (skills are pre-deployed as symlinks).
+- **superpowers-acme**: No bootstrap required (skills are pre-deployed as symlinks).
 - **superpowers-plus**: Run the js bootstrap:
   \`\`\`bash
   node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
