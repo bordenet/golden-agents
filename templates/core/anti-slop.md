@@ -11,7 +11,7 @@
 | **Hype Words** | game-changing, revolutionary, cutting-edge, transformative, groundbreaking, innovative |
 | **Filler Boosters** | incredibly, extremely, highly, truly, absolutely, very, really |
 | **Vague Quality** | robust, seamless, comprehensive, holistic, elegant, powerful, flexible |
-| **AI Tells** | leverage, utilize, facilitate, enable, empower, streamline, optimize |
+| **AI Tells** | leverage, utilize, facilitate, enable, empower, streamline, optimize, failure mode |
 | **Sycophancy** | Great question!, Happy to help!, Excellent point!, I appreciate..., Absolutely! |
 
 ## Writing Principles
