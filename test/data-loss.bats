@@ -158,3 +158,56 @@ teardown() {
     [[ "$output" == *"Would back up"*"AGENTS.md"* ]]
     [ -z "$(find "$TEST_DIR" -maxdepth 1 -name '*.bak')" ]
 }
+
+# =============================================================================
+# DATA LOSS: Upgrade must keep user bytes (including blank lines) exactly
+# =============================================================================
+
+# user_regions <file>
+# Prints every line outside the framework markers and the self-manage block,
+# with a trailing "EOF" sentinel so trailing blank lines are compared too.
+user_regions() {
+    awk '
+        index($0, "<!-- GOLDEN:self-manage:start -->") { skip = 1 }
+        index($0, "<!-- GOLDEN:framework:start -->") { skip = 1 }
+        !skip { print }
+        index($0, "<!-- GOLDEN:self-manage:end -->") { skip = 0 }
+        index($0, "<!-- GOLDEN:framework:end -->") { skip = 0 }
+    ' "$1"
+    echo "EOF"
+}
+
+@test "DATA LOSS: upgrade preserves user blank lines byte-for-byte" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    printf '\n### Rule A\n\n\nline after two blanks\n\n\n' >> "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    user_regions "$TEST_DIR/AGENTS.md.backup" > "$TEST_DIR/before.txt"
+    user_regions "$TEST_DIR/AGENTS.md" > "$TEST_DIR/after.txt"
+    diff "$TEST_DIR/before.txt" "$TEST_DIR/after.txt"
+}
+
+@test "DATA LOSS: upgrade injecting a self-manage block keeps user blank lines" {
+    create_agents_with_markers "$TEST_DIR"
+    printf '\n\nTRAILING_RULE\n\n' >> "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    user_regions "$TEST_DIR/AGENTS.md.backup" > "$TEST_DIR/before.txt"
+    user_regions "$TEST_DIR/AGENTS.md" > "$TEST_DIR/after.txt"
+    diff "$TEST_DIR/before.txt" "$TEST_DIR/after.txt"
+}
+
+@test "DATA LOSS: second upgrade changes nothing" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    printf '\nRULE\n\n' >> "$TEST_DIR/AGENTS.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/first.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    cmp "$TEST_DIR/first.md" "$TEST_DIR/AGENTS.md"
+}

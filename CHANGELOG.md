@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   containing those words anywhere (a stray "Type of thing: no." became the project type).
   It now reads only the generated `> **Languages**:` and `> **Type**:` header lines, and
   escapes the marker strings before using them in sed addresses.
+- **Upgrade dropped blank lines** - The first `--upgrade --apply` removed blank lines around
+  the self-manage block and at the end of the project section, because each region passed
+  through command substitution. The upgraded file is now streamed: content outside the
+  framework markers and the self-manage block is kept byte-for-byte, and the self-manage
+  block is replaced in place.
 
 ---
 

@@ -1252,38 +1252,35 @@ upgrade_agents_md() {
         exit 1
     fi
 
-    # Extract preserved content (before start marker and after end marker)
-    local before_marker after_marker start_re end_re sm_start_re sm_end_re
+    # Assemble the upgraded file by streaming. Command substitution would strip
+    # trailing newlines, so user bytes outside the markers never pass through a variable.
+    local start_line end_line start_re end_re tmp_dir
+    start_line=$(MARK="$MARKER_START" awk 'index($0, ENVIRON["MARK"]) { print NR; exit }' "$existing_file")
+    end_line=$(MARK="$MARKER_END" awk 'index($0, ENVIRON["MARK"]) { print NR; exit }' "$existing_file")
     start_re=$(sed_regex_escape "$MARKER_START")
     end_re=$(sed_regex_escape "$MARKER_END")
-    sm_start_re=$(sed_regex_escape "$SELF_MANAGE_START")
-    sm_end_re=$(sed_regex_escape "$SELF_MANAGE_END")
-    before_marker=$(sed -n "1,/$start_re/p" "$existing_file" | sed '$ d')
-    after_marker=$(sed -n "/$end_re/,\$p" "$existing_file" | sed '1 d')
-
-    # Handle self-manage block: inject if missing, or replace if outdated
-    if ! grep -q "$SELF_MANAGE_START" "$existing_file"; then
-        # No self-manage block - inject it
-        before_marker="${before_marker}
-$(generate_self_manage_block)"
-    else
-        # Self-manage block exists - replace it with the latest version
-        # Remove the old self-manage block from before_marker
-        before_marker=$(echo "$before_marker" | sed "/$sm_start_re/,/$sm_end_re/d")
-        # Add the new self-manage block
-        before_marker="${before_marker}
-$(generate_self_manage_block)"
-    fi
-
-    # Generate new framework content
-    local new_framework
-    new_framework=$($generator | sed -n "/$start_re/,/$end_re/p")
-
-    # Assemble upgraded file
-    local upgraded_content
-    upgraded_content="${before_marker}
-${new_framework}
-${after_marker}"
+    tmp_dir=$(mktemp -d)
+    generate_self_manage_block > "$tmp_dir/self-manage.full"
+    SM_END="$SELF_MANAGE_END" awk '{ print } index($0, ENVIRON["SM_END"]) { exit }' \
+        "$tmp_dir/self-manage.full" > "$tmp_dir/self-manage"
+    {
+        # Before the start marker: replace the self-manage block in place, or
+        # inject it right before the marker if missing
+        SM_START="$SELF_MANAGE_START" SM_END="$SELF_MANAGE_END" BLOCK="$tmp_dir/self-manage" \
+            awk -v last="$((start_line - 1))" '
+            NR > last { exit }
+            !done && index($0, ENVIRON["SM_START"]) {
+                while ((getline line < ENVIRON["BLOCK"]) > 0) print line
+                skipping = 1
+                done = 1
+            }
+            skipping { if (index($0, ENVIRON["SM_END"])) skipping = 0; next }
+            { print }
+            END { if (!done) while ((getline line < ENVIRON["BLOCK"]) > 0) print line }
+            ' "$existing_file"
+        $generator | sed -n "/$start_re/,/$end_re/p"
+        tail -n +"$((end_line + 1))" "$existing_file"
+    } > "$tmp_dir/upgraded"
 
     # Show diff or apply
     if [[ "$APPLY" != "true" ]]; then
@@ -1293,7 +1290,8 @@ ${after_marker}"
         echo "Type: ${PROJECT_TYPE:-general}"
         echo ""
         echo "--- Changes ---"
-        diff -u "$existing_file" <(echo "$upgraded_content") || true
+        diff -u "$existing_file" "$tmp_dir/upgraded" || true
+        rm -rf "$tmp_dir"
         echo ""
         echo "[INFO] This is a preview. No changes made."
         echo "  To apply: generate-agents.sh --upgrade --apply --path=$OUTPUT_PATH"
@@ -1304,7 +1302,8 @@ ${after_marker}"
         echo "[OK] Backup created: $backup_file"
 
         # Write upgraded content
-        echo "$upgraded_content" > "$existing_file"
+        cat "$tmp_dir/upgraded" > "$existing_file"
+        rm -rf "$tmp_dir"
         echo "[OK] Upgraded: $existing_file"
         echo "  Framework: v${FRAMEWORK_VERSION}"
         echo "  Lines: $(wc -l < "$existing_file")"
