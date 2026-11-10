@@ -164,3 +164,26 @@ EOF
     [ ! -f "$TEST_DIR/AGENTS.md" ]
 }
 
+
+# Test 12: A single legacy Agents.md is collected once.
+# On case-insensitive volumes (macOS default) AGENTS.md and Agents.md name one
+# file; on case-sensitive volumes this test passes trivially.
+@test "migrate collects a single Agents.md once" {
+    printf '# Legacy guide\nUNIQUE_LEGACY_LINE\n' > "$TEST_DIR/Agents.md"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ "$(grep -c UNIQUE_LEGACY_LINE "$TEST_DIR/MIGRATION-PROMPT.md")" -eq 1 ]
+    local found
+    found=$(echo "$output" | grep 'Found existing guidance')
+    [ "$(echo "$found" | grep -o 'no markers' | wc -l | tr -d ' ')" -eq 1 ]
+}
+
+# Test 13: Plain run lists a single AGENTS.md once
+@test "plain run blocked by AGENTS.md lists it once" {
+    create_agents_without_markers "$TEST_DIR"
+
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [ "$(echo "$output" | grep -ci 'agents\.md (existing')" -eq 1 ]
+}

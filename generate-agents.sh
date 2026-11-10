@@ -385,8 +385,9 @@ check_existing_guidance() {
         found_files="CLAUDE.md ($size bytes)"
     fi
 
-    # Check Agents.md without markers
-    if [[ -f "$path/Agents.md" ]]; then
+    # Check Agents.md without markers (skip when it is the same file as AGENTS.md,
+    # as on case-insensitive filesystems)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]]; then
         if ! grep -q "$MARKER_START" "$path/Agents.md"; then
             local size
             size=$(wc -c < "$path/Agents.md" | tr -d ' ')
@@ -424,8 +425,9 @@ generate_migration_prompt() {
         existing_content=$(cat "$path/CLAUDE.md")
     fi
 
-    # Collect from Agents.md without markers
-    if [[ -f "$path/Agents.md" ]] && ! grep -q "$MARKER_START" "$path/Agents.md"; then
+    # Collect from Agents.md without markers (once, if it is the same file as AGENTS.md)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]] \
+        && ! grep -q "$MARKER_START" "$path/Agents.md"; then
         local size
         size=$(wc -c < "$path/Agents.md" | tr -d ' ')
         source_file="${source_file:+$source_file + }Agents.md"
@@ -611,6 +613,9 @@ BLOCKING_REDIRECTS=$(find_blocking_redirects "$OUTPUT_PATH")
 if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DEDUPE" != "true" && "$DRY_RUN" != "true" ]]; then
     blocking=""
     for name in AGENTS.md Agents.md; do
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
         if [[ -f "$OUTPUT_PATH/$name" ]]; then
             if grep -q "$MARKER_START" "$OUTPUT_PATH/$name"; then
                 blocking="${blocking}  $name (existing file with markers; use --upgrade)

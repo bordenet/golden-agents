@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only copy was the gitignored MIGRATION-PROMPT.md, or nothing when markers were present.
 - **`.ai-guidance/invariants.md` overwrite** - `--upgrade --apply` on a bloated AGENTS.md
   no longer replaces an existing `.ai-guidance/invariants.md` with the template.
+- **Case-insensitive double detection** - On case-insensitive filesystems a single
+  AGENTS.md or Agents.md was detected under both names, so MIGRATION-PROMPT.md contained
+  its content twice. Agents.md is now only counted when it is a different file (`-ef`).
 
 ---
 
