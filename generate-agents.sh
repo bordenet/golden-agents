@@ -369,6 +369,25 @@ backup_file() {
     echo "[OK] Backed up: $dest"
 }
 
+# gitignore_add <dir> <entry>
+# Appends entry to <dir>/.gitignore on its own line, creating the file if needed.
+# Skips the append when the entry already appears in the file.
+# Arguments:
+#   $1 - Directory containing .gitignore
+#   $2 - Entry to add
+# Returns: 0 if added, 1 if already present
+gitignore_add() {
+    local file="$1/.gitignore"
+    local entry="$2"
+    if [[ -f "$file" ]] && grep -qF "$entry" "$file"; then
+        return 1
+    fi
+    if [[ -s "$file" && -n "$(tail -c 1 "$file")" ]]; then
+        printf '\n' >> "$file"
+    fi
+    printf '%s\n' "$entry" >> "$file"
+}
+
 # check_existing_guidance <path>
 # Checks for existing guidance files that would be overwritten.
 # Detects non-generated CLAUDE.md, and Agents.md and AGENTS.md without markers.
@@ -670,13 +689,7 @@ if [[ "$MIGRATE" == "true" ]]; then
             echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
 
             # Add to .gitignore
-            if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-                if ! grep -q "MIGRATION-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                    echo "MIGRATION-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
-                fi
-            else
-                echo "MIGRATION-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
-            fi
+            gitignore_add "$OUTPUT_PATH" "MIGRATION-PROMPT.md" || true
             echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
         fi
     else
@@ -759,16 +772,8 @@ if [[ "$ADOPT" == "true" ]]; then
         fi
 
         # Add to .gitignore
-        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-            if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
-            fi
-            if ! grep -q "AGENTS.md.original" "$OUTPUT_PATH/.gitignore"; then
-                echo "AGENTS.md.original" >> "$OUTPUT_PATH/.gitignore"
-            fi
-        else
-            printf "ADOPT-PROMPT.md\nAGENTS.md.original\n" > "$OUTPUT_PATH/.gitignore"
-        fi
+        gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md" || true
+        gitignore_add "$OUTPUT_PATH" "AGENTS.md.original" || true
         echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
     fi
 
@@ -840,12 +845,11 @@ if [[ "$DEDUPE" == "true" ]]; then
 
         # Add to .gitignore if not already there
         if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-            if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+            if gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"; then
                 echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
             fi
         else
-            echo "ADOPT-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+            gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"
             echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
         fi
     fi
@@ -1305,9 +1309,7 @@ create_modular_migration_prompt() {
 
         # Add to .gitignore if it exists
         if [[ -f "$dir/.gitignore" ]]; then
-            if ! grep -q "MODULAR-MIGRATION-PROMPT.md" "$dir/.gitignore"; then
-                echo "MODULAR-MIGRATION-PROMPT.md" >> "$dir/.gitignore"
-            fi
+            gitignore_add "$dir" "MODULAR-MIGRATION-PROMPT.md" || true
         fi
     fi
 

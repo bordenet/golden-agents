@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Case-insensitive double detection** - On case-insensitive filesystems a single
   AGENTS.md or Agents.md was detected under both names, so MIGRATION-PROMPT.md contained
   its content twice. Agents.md is now only counted when it is a different file (`-ef`).
+- **.gitignore corruption** - Appending to a .gitignore without a trailing newline joined
+  entries (`dist` became `distMIGRATION-PROMPT.md`). All four append sites now use one
+  helper that adds the missing newline first.
 
 ---
 
