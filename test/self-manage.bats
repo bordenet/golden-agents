@@ -199,3 +199,16 @@ teardown() {
     # Should include guidance for splitting sub-files into sub-directories
     assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" "sub-directory"
 }
+
+# Test 17: Upgrade never overwrites an existing .ai-guidance/invariants.md
+@test "upgrade keeps a customized .ai-guidance/invariants.md byte-for-byte" {
+    create_bloated_agents_with_markers "$TEST_DIR" 200
+    mkdir -p "$TEST_DIR/.ai-guidance"
+    printf '# Our invariants\nUNIQUE_CUSTOM_INVARIANT\n' > "$TEST_DIR/.ai-guidance/invariants.md"
+    cp "$TEST_DIR/.ai-guidance/invariants.md" "$TEST_DIR/invariants.orig"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    cmp "$TEST_DIR/invariants.orig" "$TEST_DIR/.ai-guidance/invariants.md"
+    [[ "$output" == *"Kept existing"*"invariants.md"* ]]
+}

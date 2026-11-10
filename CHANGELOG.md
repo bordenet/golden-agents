@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`--migrate` AGENTS.md loss** - `--migrate` now backs up an existing AGENTS.md (with or
   without markers) to `AGENTS.md.<YYYYmmdd-HHMMSS>.bak` before replacing it. Previously the
   only copy was the gitignored MIGRATION-PROMPT.md, or nothing when markers were present.
+- **`.ai-guidance/invariants.md` overwrite** - `--upgrade --apply` on a bloated AGENTS.md
+  no longer replaces an existing `.ai-guidance/invariants.md` with the template.
 
 ---
 

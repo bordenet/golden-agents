@@ -1306,9 +1306,12 @@ create_modular_migration_prompt() {
         fi
     fi
 
-    # Create .ai-guidance directory with invariants.md
+    # Create .ai-guidance directory with invariants.md; files in .ai-guidance/ belong
+    # to the project once they exist and are never overwritten
     mkdir -p "$dir/.ai-guidance"
-    if [[ -f "$TEMPLATES_DIR/core/invariants.md" ]]; then
+    if [[ -e "$dir/.ai-guidance/invariants.md" ]]; then
+        echo "[OK] Kept existing: $dir/.ai-guidance/invariants.md"
+    elif [[ -f "$TEMPLATES_DIR/core/invariants.md" ]]; then
         cp "$TEMPLATES_DIR/core/invariants.md" "$dir/.ai-guidance/invariants.md"
         echo "[OK] Created: $dir/.ai-guidance/invariants.md"
     fi
