@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MIGRATION-PROMPT.md formatting** - Removed literal backslash-backticks from the prompt
   text. The Existing Content fence is now longer than the longest backtick run in the
   embedded content, so code blocks in the original file no longer close it early.
+- **Missing invariants file** - Generated AGENTS.md tells agents to load
+  `.ai-guidance/invariants.md`, but only the modular migration path created it. Fresh
+  generation (plain, `--adopt`, `--migrate`) and `--upgrade --apply` now create it from the
+  template when absent and never overwrite it.
 
 ---
 

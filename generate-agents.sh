@@ -1291,6 +1291,9 @@ ${after_marker}"
         echo "  Project-specific content preserved."
         echo "  Backup: $backup_file"
 
+        # The self-manage block tells agents to load this file
+        ensure_invariants "$OUTPUT_PATH"
+
         # Check for bloat and trigger modular migration if needed
         local line_count
         line_count=$(wc -l < "$existing_file" | tr -d ' ')
@@ -1322,12 +1325,21 @@ create_modular_migration_prompt() {
         fi
     fi
 
-    # Create .ai-guidance directory with invariants.md; files in .ai-guidance/ belong
-    # to the project once they exist and are never overwritten
-    mkdir -p "$dir/.ai-guidance"
+    ensure_invariants "$dir"
+}
+
+# ensure_invariants <dir>
+# Creates <dir>/.ai-guidance/invariants.md from the template when absent.
+# Files in .ai-guidance/ belong to the project once they exist and are never overwritten.
+# Arguments:
+#   $1 - Project directory
+# Returns: 0
+ensure_invariants() {
+    local dir="$1"
     if [[ -e "$dir/.ai-guidance/invariants.md" ]]; then
         echo "[OK] Kept existing: $dir/.ai-guidance/invariants.md"
     elif [[ -f "$TEMPLATES_DIR/core/invariants.md" ]]; then
+        mkdir -p "$dir/.ai-guidance"
         cp "$TEMPLATES_DIR/core/invariants.md" "$dir/.ai-guidance/invariants.md"
         echo "[OK] Created: $dir/.ai-guidance/invariants.md"
     fi
@@ -1384,6 +1396,9 @@ if [[ "$DRY_RUN" == "true" ]]; then
             echo "[DRY RUN] Would back up non-generated $rel to $rel.<timestamp>.bak"
         done
     fi
+    if [[ ! -e "$OUTPUT_PATH/.ai-guidance/invariants.md" ]]; then
+        echo "[DRY RUN] Would create: .ai-guidance/invariants.md"
+    fi
     echo ""
 else
     mkdir -p "$OUTPUT_PATH"
@@ -1438,5 +1453,8 @@ ADOPT_SECTION
     echo "  ✓ GEMINI.md        (Google Gemini)"
     echo "  ✓ COPILOT.md       (GitHub Copilot)"
     echo "  ✓ .github/copilot-instructions.md (GitHub Copilot custom)"
+
+    # The self-manage block tells agents to load this file
+    ensure_invariants "$OUTPUT_PATH"
 fi
 
