@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   250. The limit is now `MAX_GUIDANCE_LINES=250`, defined once, and `test/thresholds.bats`
   checks that every output and doc states the same value. Removed the nonexistent
   "Compact" mode from AGENTS.md.
+- **Upgrade header parse** - `--upgrade` took Languages and Type from the first line
+  containing those words anywhere (a stray "Type of thing: no." became the project type).
+  It now reads only the generated `> **Languages**:` and `> **Type**:` header lines, and
+  escapes the marker strings before using them in sed addresses.
 
 ---
 

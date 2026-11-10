@@ -1173,6 +1173,15 @@ SELF_MANAGE
 SELF_MANAGE
 }
 
+# sed_regex_escape <string>
+# Escapes BRE metacharacters and "/" so the string matches literally in a sed address.
+# Arguments:
+#   $1 - Literal string
+# Returns: Escaped string via stdout
+sed_regex_escape() {
+    printf '%s' "$1" | sed 's/[][\\/.^$*]/\\&/g'
+}
+
 # upgrade_agents_md()
 # Safely upgrades an existing AGENTS.md file with framework markers.
 # Preserves all content outside the framework markers (project-specific sections).
@@ -1215,10 +1224,13 @@ upgrade_agents_md() {
         exit 1
     fi
 
-    # Extract config from existing file header
+    # Extract config from the generated header lines ("> **Languages**: ..." / "> **Type**: ...")
     local existing_langs existing_type
-    existing_langs=$(grep "Languages" "$existing_file" | head -1 | sed 's/.*: //' || echo "")
-    existing_type=$(grep "Type" "$existing_file" | head -1 | sed 's/.*: //' || echo "general")
+    existing_langs=$(awk 'sub(/^> \*\*Languages\*\*: /, "") { print; exit }' "$existing_file")
+    existing_type=$(awk 'sub(/^> \*\*Type\*\*: /, "") { print; exit }' "$existing_file")
+    if [[ -z "$existing_type" ]]; then
+        existing_type="general"
+    fi
 
     # Use existing config if not overridden by flags
     if [[ -z "$LANGUAGES" ]]; then
@@ -1241,9 +1253,13 @@ upgrade_agents_md() {
     fi
 
     # Extract preserved content (before start marker and after end marker)
-    local before_marker after_marker
-    before_marker=$(sed -n "1,/$MARKER_START/p" "$existing_file" | sed '$ d')
-    after_marker=$(sed -n "/$MARKER_END/,\$p" "$existing_file" | sed '1 d')
+    local before_marker after_marker start_re end_re sm_start_re sm_end_re
+    start_re=$(sed_regex_escape "$MARKER_START")
+    end_re=$(sed_regex_escape "$MARKER_END")
+    sm_start_re=$(sed_regex_escape "$SELF_MANAGE_START")
+    sm_end_re=$(sed_regex_escape "$SELF_MANAGE_END")
+    before_marker=$(sed -n "1,/$start_re/p" "$existing_file" | sed '$ d')
+    after_marker=$(sed -n "/$end_re/,\$p" "$existing_file" | sed '1 d')
 
     # Handle self-manage block: inject if missing, or replace if outdated
     if ! grep -q "$SELF_MANAGE_START" "$existing_file"; then
@@ -1253,7 +1269,7 @@ $(generate_self_manage_block)"
     else
         # Self-manage block exists - replace it with the latest version
         # Remove the old self-manage block from before_marker
-        before_marker=$(echo "$before_marker" | sed "/$SELF_MANAGE_START/,/$SELF_MANAGE_END/d")
+        before_marker=$(echo "$before_marker" | sed "/$sm_start_re/,/$sm_end_re/d")
         # Add the new self-manage block
         before_marker="${before_marker}
 $(generate_self_manage_block)"
@@ -1261,7 +1277,7 @@ $(generate_self_manage_block)"
 
     # Generate new framework content
     local new_framework
-    new_framework=$($generator | sed -n "/$MARKER_START/,/$MARKER_END/p")
+    new_framework=$($generator | sed -n "/$start_re/,/$end_re/p")
 
     # Assemble upgraded file
     local upgraded_content

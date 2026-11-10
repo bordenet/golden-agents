@@ -128,3 +128,34 @@ teardown() {
     [ "$original_content" = "$backup_content" ]
 }
 
+
+# Test 11: Header parse ignores stray lines that mention Type or Languages
+@test "upgrade reads Languages and Type from the generated header lines only" {
+    create_agents_with_markers "$TEST_DIR" "python" "web-apps"
+    # Stray prose above the header that used to win the unanchored grep
+    sed -i.orig '1a\
+Type of thing: no.\
+Languages we avoid: perl
+' "$TEST_DIR/AGENTS.md"
+    rm "$TEST_DIR/AGENTS.md.orig"
+
+    run "$GENERATE_SCRIPT" --upgrade --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Languages: python"* ]]
+    [[ "$output" == *"Type: web-apps"* ]]
+}
+
+# Test 12: No header Type line means general
+@test "upgrade treats a missing Type header as general" {
+    {
+        echo "# Guide"
+        echo "Type of thing: no."
+        echo "<!-- GOLDEN:framework:start -->"
+        echo "x"
+        echo "<!-- GOLDEN:framework:end -->"
+    } > "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Type: general"* ]]
+}
