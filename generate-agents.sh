@@ -819,6 +819,13 @@ if [[ "$DEDUPE" == "true" ]]; then
         exit 1
     fi
 
+    if ! grep -qF "$MARKER_END" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") has $MARKER_START but no $MARKER_END" >&2
+        echo "  Restore the end marker after the framework section, then rerun --dedupe." >&2
+        echo "  No files were changed." >&2
+        exit 1
+    fi
+
     # Count lines in project-specific section (after MARKER_END)
     marker_end_line=$(grep -n "$MARKER_END" "$existing_agents_file" | head -1 | cut -d: -f1)
     total_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')

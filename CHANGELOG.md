@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through command substitution. The upgraded file is now streamed: content outside the
   framework markers and the self-manage block is kept byte-for-byte, and the self-manage
   block is replaced in place.
+- **Silent `--dedupe` failure** - An AGENTS.md with the start marker but no end marker made
+  `--dedupe` exit 1 with no output. It now prints which marker is missing.
 
 ---
 
