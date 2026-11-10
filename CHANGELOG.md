@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   language's gates and names the others. Single-language output is unchanged.
 - **"Minimum N/A%" coverage** - Languages without a coverage target (shell) no longer get a
   Coverage gate line.
+- **Unknown `--language` / `--type` accepted** - Values with no template (for example
+  `--language=rust`, `--type=bogus`) generated a file and exited 0. They now fail with
+  exit 1 and the list of valid values read from `templates/`.
 
 ---
 

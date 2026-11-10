@@ -270,6 +270,33 @@ resolve_languages() {
     echo "$resolved"
 }
 
+# list_templates <subdir>
+# Lists template names (file names without .md) in templates/<subdir>.
+# Arguments:
+#   $1 - Subdirectory of templates/ (languages, project-types)
+# Returns: Comma-separated names via stdout
+list_templates() {
+    local f names=""
+    for f in "$TEMPLATES_DIR/$1"/*.md; do
+        [[ -e "$f" ]] || continue
+        f=$(basename "$f" .md)
+        names="${names:+$names, }$f"
+    done
+    echo "$names"
+}
+
+# is_template <subdir> <name>
+# Arguments:
+#   $1 - Subdirectory of templates/
+#   $2 - Template name to check
+# Returns: 0 if templates/<subdir>/<name>.md exists and name is a plain token
+is_template() {
+    case "$2" in
+        "" | *[!a-z0-9-]*) return 1 ;;
+    esac
+    [[ -f "$TEMPLATES_DIR/$1/$2.md" ]]
+}
+
 # Redirect files carrying this line were written by the generator and may be overwritten.
 GENERATED_SENTINEL="<!-- golden-agents:generated -->"
 
@@ -604,6 +631,24 @@ fi
 if [[ "$SYNC" == "true" ]]; then
     sync_templates
     exit 0
+fi
+
+# Validate --language and --type against templates/
+if [[ -n "$LANGUAGES" ]]; then
+    IFS=',' read -ra requested_langs <<< "$LANGUAGES"
+    for lang in "${requested_langs[@]}"; do
+        if ! is_template languages "$lang"; then
+            echo "[ERROR] Unknown language: $lang" >&2
+            echo "  Valid languages: $(list_templates languages)" >&2
+            echo "  Aliases are listed under LANGUAGE ALIASES in --help." >&2
+            exit 1
+        fi
+    done
+fi
+if [[ -n "$PROJECT_TYPE" ]] && ! is_template project-types "$PROJECT_TYPE"; then
+    echo "[ERROR] Unknown project type: $PROJECT_TYPE" >&2
+    echo "  Valid types: $(list_templates project-types)" >&2
+    exit 1
 fi
 
 # Validate --adopt requires --language

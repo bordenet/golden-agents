@@ -139,3 +139,31 @@ teardown() {
     [[ "$output" == *"cli-tools"* ]] || [[ "$output" == *"web-apps"* ]]
 }
 
+
+# Unknown --language / --type values fail and list valid values
+@test "unknown --language fails and lists valid languages" {
+    run "$GENERATE_SCRIPT" --language=rust --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"rust"* ]]
+    [[ "$output" == *"go"*"python"*"shell"* ]]
+    [ ! -e "$TEST_DIR/AGENTS.md" ]
+}
+
+@test "one unknown language in a list fails" {
+    run "$GENERATE_SCRIPT" --language=go,cobol --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"cobol"* ]]
+}
+
+@test "unknown --type fails and lists valid types" {
+    run "$GENERATE_SCRIPT" --language=go --type=bogus --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"bogus"* ]]
+    [[ "$output" == *"cli-tools"*"web-apps"* ]]
+    [ ! -e "$TEST_DIR/AGENTS.md" ]
+}
+
+@test "language names cannot reach outside templates/languages" {
+    run "$GENERATE_SCRIPT" --language=../adopt-prompt --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 1 ]
+}
