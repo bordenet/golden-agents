@@ -167,3 +167,30 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=../adopt-prompt --path="$TEST_DIR" --dry-run
     [ "$status" -eq 1 ]
 }
+
+# Value options accept "--opt value" as well as "--opt=value"
+@test "space form works for --language, --type, --path and --name" {
+    run "$GENERATE_SCRIPT" --language go --type cli-tools --path "$TEST_DIR" --name SpaceForm
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" "^# AI Agent Guidelines - SpaceForm$"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "project-types/cli-tools.md"
+}
+
+@test "space form --path is honored by --dedupe" {
+    create_bloated_agents_with_markers "$TEST_DIR" 150
+    run "$GENERATE_SCRIPT" --dedupe --path "$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/ADOPT-PROMPT.md" ]
+}
+
+@test "value option at the end without a value fails with a message" {
+    run "$GENERATE_SCRIPT" --language=go --path
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--path requires a value"* ]]
+}
+
+@test "value option followed by another option fails with a message" {
+    run "$GENERATE_SCRIPT" --language --dry-run
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--language requires a value"* ]]
+}

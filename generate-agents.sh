@@ -94,6 +94,7 @@ OPTIONS
     --type=TYPE         Project type (genesis-tools, cli-tools, web-apps, mobile-apps)
     --path=PATH         Output directory (default: current directory)
     --name=NAME         Project name for header (default: directory name)
+                        Value options also accept a space: --path ./my-project
     --progressive       Generate minimal core (~60 lines) with on-demand loading (default)
     --sync              Update local templates from GitHub
     --dry-run           Print what would be generated without writing
@@ -590,8 +591,19 @@ PROMPT_EOF
     echo "5. Commit the changes"
 }
 
-# Parse arguments
-for arg in "$@"; do
+# Parse arguments (value options accept --opt=value and --opt value)
+while [[ $# -gt 0 ]]; do
+    arg="$1"
+    case $arg in
+        --language|--type|--path|--name)
+            if [[ $# -lt 2 || "$2" == --* ]]; then
+                echo "Error: $arg requires a value" >&2
+                exit 1
+            fi
+            arg="$arg=$2"
+            shift
+            ;;
+    esac
     case $arg in
         --language=*) LANGUAGES="${arg#*=}" ;;
         --type=*) PROJECT_TYPE="${arg#*=}" ;;
@@ -614,6 +626,7 @@ for arg in "$@"; do
         -v|--version) version; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
     esac
+    shift
 done
 
 # Validate --apply requires --upgrade

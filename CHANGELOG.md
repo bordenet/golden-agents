@@ -60,6 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unknown `--language` / `--type` accepted** - Values with no template (for example
   `--language=rust`, `--type=bogus`) generated a file and exited 0. They now fail with
   exit 1 and the list of valid values read from `templates/`.
+- **Space-separated option values** - `--path ./x` failed with "Unknown option". `--language`,
+  `--type`, `--path` and `--name` now accept a space or `=`; a missing value fails with
+  "<option> requires a value".
 
 ---
 
