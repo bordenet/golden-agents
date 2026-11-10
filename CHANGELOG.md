@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Redirect overwrite (data loss)** - Plain generation no longer overwrites hand-written
+  CLAUDE.md, CODEX.md, AGENT.md, GEMINI.md, COPILOT.md, .github/copilot-instructions.md,
+  or any existing AGENTS.md. It lists the blocking files, writes nothing, and exits 1.
+  `--adopt` and `--migrate` back each one up to `<file>.<YYYYmmdd-HHMMSS>.bak` first.
+  Generated redirects now end with `<!-- golden-agents:generated -->`; exact 1.4.x stubs
+  are also recognized. Replaces the ">100 bytes means real content" heuristic.
+
+---
+
 ## [1.4.3] - 2026-02-02
 
 ### Added

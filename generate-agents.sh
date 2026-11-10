@@ -119,6 +119,14 @@ MIGRATION (First-time adoption)
     Then paste MIGRATION-PROMPT.md content into your AI assistant to complete migration.
     Delete MIGRATION-PROMPT.md after migration is complete.
 
+WRITE SAFETY
+    Redirect files written by the generator end with the line
+    <!-- golden-agents:generated -->. Redirects without it (other than exact
+    1.4.x stubs) hold your content. Any existing AGENTS.md also counts.
+    - Plain generation: refuses, lists each blocking file, writes nothing, exits 1
+    - --adopt / --migrate: copies each blocking redirect to
+      <file>.<YYYYmmdd-HHMMSS>.bak first, then proceeds
+
 UPGRADE SAFETY
     - Without --apply: shows diff of what would change (safe)
     - With --apply: creates .backup, then applies changes
@@ -254,12 +262,114 @@ resolve_languages() {
     echo "$resolved"
 }
 
-# Minimum bytes to consider a file as having substantial content (not just a redirect)
-MIN_CONTENT_BYTES=100
+# Redirect files carrying this line were written by the generator and may be overwritten.
+GENERATED_SENTINEL="<!-- golden-agents:generated -->"
+
+# Redirect files the generator owns, relative to the output path.
+REDIRECT_FILES="CLAUDE.md CODEX.md AGENT.md GEMINI.md COPILOT.md .github/copilot-instructions.md"
+
+# redirect_title <relpath>
+# Returns: Markdown title for a redirect file via stdout
+redirect_title() {
+    case "$1" in
+        CLAUDE.md) echo "Claude Code Instructions" ;;
+        CODEX.md) echo "OpenAI Codex CLI Instructions" ;;
+        AGENT.md) echo "Amp by Sourcegraph Instructions" ;;
+        GEMINI.md) echo "Google Gemini Code Assist Instructions" ;;
+        COPILOT.md) echo "GitHub Copilot Instructions" ;;
+        .github/copilot-instructions.md) echo "GitHub Copilot Custom Instructions" ;;
+    esac
+}
+
+# redirect_body <relpath> <agents_name>
+# Prints a redirect body without the sentinel. With agents_name "AGENTS.md" or
+# "Agents.md" this is byte-identical to the stubs 1.4.x wrote.
+# Arguments:
+#   $1 - Redirect file path relative to the output path
+#   $2 - Name of the AGENTS file the redirect links to
+# Returns: Redirect body via stdout
+redirect_body() {
+    local rel="$1"
+    local agents="$2"
+    if [[ "$rel" == ".github/copilot-instructions.md" ]]; then
+        cat << EOF
+# $(redirect_title "$rel")
+
+See **[../$agents](../$agents)** for all AI guidance.
+
+## Summary
+
+This project uses the Golden Agents Framework for AI coding assistant guidance.
+All instructions are consolidated in $agents at the project root.
+EOF
+    else
+        cat << EOF
+# $(redirect_title "$rel")
+
+See **[$agents](./$agents)** for all AI guidance.
+EOF
+    fi
+}
+
+# is_generated_redirect <file> <relpath>
+# A redirect is generated if it carries the sentinel line or is byte-identical
+# to a 1.4.x stub (either AGENTS.md spelling).
+# Arguments:
+#   $1 - Path to an existing file
+#   $2 - Redirect file path relative to the output path
+# Returns: 0 if generated, 1 otherwise
+is_generated_redirect() {
+    local file="$1"
+    local rel="$2"
+    if grep -qxF "$GENERATED_SENTINEL" "$file"; then
+        return 0
+    fi
+    if cmp -s "$file" <(redirect_body "$rel" "AGENTS.md"); then
+        return 0
+    fi
+    if cmp -s "$file" <(redirect_body "$rel" "Agents.md"); then
+        return 0
+    fi
+    return 1
+}
+
+# find_blocking_redirects <path>
+# Lists redirect files that exist and hold non-generated content.
+# Arguments:
+#   $1 - Directory path to check
+# Returns: Newline-separated relative paths via stdout, or empty string
+find_blocking_redirects() {
+    local path="$1"
+    local rel
+    for rel in $REDIRECT_FILES; do
+        if [[ -f "$path/$rel" ]] && ! is_generated_redirect "$path/$rel" "$rel"; then
+            echo "$rel"
+        fi
+    done
+}
+
+# backup_file <file>
+# Copies a file to <file>.<YYYYmmdd-HHMMSS>.bak, adding -1, -2 on collision.
+# Arguments:
+#   $1 - Path to the file to back up
+# Returns: 0 on success
+backup_file() {
+    local src="$1"
+    local stamp dest
+    local n=0
+    stamp=$(date +%Y%m%d-%H%M%S)
+    dest="$src.$stamp.bak"
+    while [[ -e "$dest" ]]; do
+        n=$((n + 1))
+        dest="$src.$stamp-$n.bak"
+    done
+    cp -p "$src" "$dest"
+    echo "[OK] Backed up: $dest"
+}
 
 # check_existing_guidance <path>
 # Checks for existing guidance files that would be overwritten.
-# Detects CLAUDE.md, Agents.md, and AGENTS.md with substantial content.
+# Detects non-generated CLAUDE.md, and Agents.md and AGENTS.md without markers.
 # Arguments:
 #   $1 - Directory path to check
 # Returns: Space-separated list of found files with sizes via stdout, or empty string
@@ -267,13 +377,10 @@ check_existing_guidance() {
     local path="$1"
     local found_files=""
 
-    # Check CLAUDE.md (if >100 bytes, it's not just a redirect)
-    if [[ -f "$path/CLAUDE.md" ]]; then
+    if [[ -f "$path/CLAUDE.md" ]] && ! is_generated_redirect "$path/CLAUDE.md" "CLAUDE.md"; then
         local size
         size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
-        if [[ "$size" -gt "$MIN_CONTENT_BYTES" ]]; then
-            found_files="CLAUDE.md ($size bytes)"
-        fi
+        found_files="CLAUDE.md ($size bytes)"
     fi
 
     # Check Agents.md without markers
@@ -310,13 +417,9 @@ generate_migration_prompt() {
     local source_file=""
 
     # Collect existing content from CLAUDE.md
-    if [[ -f "$path/CLAUDE.md" ]]; then
-        local size
-        size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
-        if [[ "$size" -gt "$MIN_CONTENT_BYTES" ]]; then
-            source_file="CLAUDE.md"
-            existing_content=$(cat "$path/CLAUDE.md")
-        fi
+    if [[ -f "$path/CLAUDE.md" ]] && ! is_generated_redirect "$path/CLAUDE.md" "CLAUDE.md"; then
+        source_file="CLAUDE.md"
+        existing_content=$(cat "$path/CLAUDE.md")
     fi
 
     # Collect from Agents.md without markers
@@ -498,11 +601,32 @@ if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
     exit 1
 fi
 
+# Redirect files with non-generated content; backed up in --adopt/--migrate, block plain runs
+BLOCKING_REDIRECTS=$(find_blocking_redirects "$OUTPUT_PATH")
+
 # Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dedupe or --dry-run is used)
+# A blocked plain run writes nothing at all.
 if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DEDUPE" != "true" && "$DRY_RUN" != "true" ]]; then
-    existing=$(check_existing_guidance "$OUTPUT_PATH")
-    if [[ -n "$existing" ]]; then
-        echo "[ERROR] Found existing guidance files: $existing" >&2
+    blocking=""
+    for name in AGENTS.md Agents.md; do
+        if [[ -f "$OUTPUT_PATH/$name" ]]; then
+            if grep -q "$MARKER_START" "$OUTPUT_PATH/$name"; then
+                blocking="${blocking}  $name (existing file with markers; use --upgrade)
+"
+            else
+                blocking="${blocking}  $name (existing file without markers; use --adopt or --migrate)
+"
+            fi
+        fi
+    done
+    for rel in $BLOCKING_REDIRECTS; do
+        blocking="${blocking}  $rel (non-generated content)
+"
+    done
+    if [[ -n "$blocking" ]]; then
+        echo "[ERROR] Found existing guidance files. No files were written." >&2
+        echo "" >&2
+        printf '%s' "$blocking" >&2
         echo "" >&2
         echo "  These files contain project-specific content that would be lost." >&2
         echo "  Use --migrate to safely incorporate this content into the new AGENTS.md." >&2
@@ -1188,22 +1312,21 @@ if [[ "$UPGRADE" == "true" ]]; then
     exit 0
 fi
 
-# create_redirect <filepath> <title>
-# Creates a redirect file that points to AGENTS.md.
+# create_redirect <relpath>
+# Creates a sentinel-marked redirect file that points to AGENTS.md.
 # Used for AI assistant-specific files (CLAUDE.md, CODEX.md, etc.).
+# Callers must check find_blocking_redirects first.
 # Arguments:
-#   $1 - Full path to the redirect file to create
-#   $2 - Title for the markdown header
+#   $1 - Redirect file path relative to OUTPUT_PATH
 # Returns: 0 on success
 # Side effects: Creates/overwrites the specified file
 create_redirect() {
-    local path="$1"
-    local title="$2"
-    cat > "$path" << EOF
-# $title
-
-See **[AGENTS.md](./AGENTS.md)** for all AI guidance.
-EOF
+    local rel="$1"
+    mkdir -p "$(dirname "$OUTPUT_PATH/$rel")"
+    {
+        redirect_body "$rel" "AGENTS.md"
+        echo "$GENERATED_SENTINEL"
+    } > "$OUTPUT_PATH/$rel"
 }
 
 # Output (new file generation)
@@ -1219,9 +1342,18 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "  GEMINI.md        → Google Gemini Code Assist"
     echo "  COPILOT.md       → GitHub Copilot"
     echo "  .github/copilot-instructions.md → GitHub Copilot (custom instructions)"
+    if [[ "$ADOPT" == "true" || "$MIGRATE" == "true" ]]; then
+        for rel in $BLOCKING_REDIRECTS; do
+            echo "[DRY RUN] Would back up non-generated $rel to $rel.<timestamp>.bak"
+        done
+    fi
     echo ""
 else
     mkdir -p "$OUTPUT_PATH"
+    # Only --adopt/--migrate reach here with blockers; plain runs exited earlier
+    for rel in $BLOCKING_REDIRECTS; do
+        backup_file "$OUTPUT_PATH/$rel"
+    done
     output_file="$OUTPUT_PATH/AGENTS.md"
     $generator > "$output_file"
 
@@ -1259,24 +1391,9 @@ ADOPT_SECTION
     echo ""
     echo "Creating redirect files for AI assistants..."
 
-    create_redirect "$OUTPUT_PATH/CLAUDE.md" "Claude Code Instructions"
-    create_redirect "$OUTPUT_PATH/CODEX.md" "OpenAI Codex CLI Instructions"
-    create_redirect "$OUTPUT_PATH/AGENT.md" "Amp by Sourcegraph Instructions"
-    create_redirect "$OUTPUT_PATH/GEMINI.md" "Google Gemini Code Assist Instructions"
-    create_redirect "$OUTPUT_PATH/COPILOT.md" "GitHub Copilot Instructions"
-
-    # Create GitHub Copilot custom instructions file
-    mkdir -p "$OUTPUT_PATH/.github"
-    cat > "$OUTPUT_PATH/.github/copilot-instructions.md" << EOF
-# GitHub Copilot Custom Instructions
-
-See **[../AGENTS.md](../AGENTS.md)** for all AI guidance.
-
-## Summary
-
-This project uses the Golden Agents Framework for AI coding assistant guidance.
-All instructions are consolidated in AGENTS.md at the project root.
-EOF
+    for rel in $REDIRECT_FILES; do
+        create_redirect "$rel"
+    done
 
     echo "  ✓ CLAUDE.md        (Claude Code)"
     echo "  ✓ CODEX.md         (OpenAI Codex CLI)"
