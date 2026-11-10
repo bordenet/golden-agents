@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   block is replaced in place.
 - **Silent `--dedupe` failure** - An AGENTS.md with the start marker but no end marker made
   `--dedupe` exit 1 with no output. It now prints which marker is missing.
+- **`--dedupe --path=.` rejected** - `--dedupe` treated `--path=.` as "no path given".
+  It now tracks whether `--path` was passed.
 
 ---
 

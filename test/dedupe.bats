@@ -213,3 +213,14 @@ EOF
     cmp "$TEST_DIR/agents.orig" "$TEST_DIR/AGENTS.md"
     [ ! -e "$TEST_DIR/ADOPT-PROMPT.md" ]
 }
+
+# Test 15: --path=. is an explicit path
+@test "dedupe accepts --path=. for the current directory" {
+    create_bloated_agents_with_markers "$TEST_DIR" 150
+    cd "$TEST_DIR"
+
+    run "$GENERATE_SCRIPT" --dedupe --path=.
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"requires --path"* ]]
+    [ -f "$TEST_DIR/ADOPT-PROMPT.md" ]
+}

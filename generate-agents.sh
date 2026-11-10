@@ -26,6 +26,7 @@ REPO_URL="https://github.com/bordenet/golden-agents.git"
 LANGUAGES=""
 PROJECT_TYPE=""
 OUTPUT_PATH="."
+PATH_GIVEN=false
 PROJECT_NAME=""
 # Mode is progressive by default
 FULL=false        # Legacy mode, deprecated
@@ -565,7 +566,7 @@ for arg in "$@"; do
     case $arg in
         --language=*) LANGUAGES="${arg#*=}" ;;
         --type=*) PROJECT_TYPE="${arg#*=}" ;;
-        --path=*) OUTPUT_PATH="${arg#*=}" ;;
+        --path=*) OUTPUT_PATH="${arg#*=}"; PATH_GIVEN=true ;;
         --name=*) PROJECT_NAME="${arg#*=}" ;;
         --progressive) ;; # Already the default, flag accepted for clarity
         --full)
@@ -610,7 +611,7 @@ if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
 fi
 
 # Validate --dedupe requires --path
-if [[ "$DEDUPE" == "true" && "$OUTPUT_PATH" == "." ]]; then
+if [[ "$DEDUPE" == "true" && "$PATH_GIVEN" != "true" ]]; then
     echo "Error: --dedupe requires --path" >&2
     exit 1
 fi
