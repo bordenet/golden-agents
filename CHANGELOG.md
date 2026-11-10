@@ -63,6 +63,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Space-separated option values** - `--path ./x` failed with "Unknown option". `--language`,
   `--type`, `--path` and `--name` now accept a space or `=`; a missing value fails with
   "<option> requires a value".
+- **`--sync` rebased local history** - `--sync` ran `git pull --rebase origin main`. It now
+  runs `git fetch origin main` and `git merge --ff-only`, and refuses when tracked files
+  have uncommitted changes. docs/HOW-IT-WORKS.md no longer claims the script never uses
+  the network. The sync test no longer runs against this checkout.
 
 ---
 

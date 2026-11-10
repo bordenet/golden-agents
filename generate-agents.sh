@@ -96,7 +96,8 @@ OPTIONS
     --name=NAME         Project name for header (default: directory name)
                         Value options also accept a space: --path ./my-project
     --progressive       Generate minimal core (~60 lines) with on-demand loading (default)
-    --sync              Update local templates from GitHub
+    --sync              Update local templates from GitHub (git fetch, fast-forward
+                        only; refuses on uncommitted changes or local commits)
     --dry-run           Print what would be generated without writing
     --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
     --adopt             Adopt existing AGENTS.md (backs up, appends, creates ADOPT-PROMPT.md)
@@ -212,21 +213,30 @@ version() {
 }
 
 # sync_templates()
-# Updates local templates by pulling from the GitHub repository.
+# Updates local templates from origin/main with a fast-forward only merge.
+# Never rebases or merges local history, and refuses when tracked files are modified.
 # Requires the script directory to be a git repository.
 # Arguments: none
-# Returns: 0 on success, 1 if not a git repo
+# Returns: 0 on success; exits 1 if not a git repo, dirty, or diverged
 sync_templates() {
     echo "[INFO] Syncing templates from GitHub..."
 
-    if [[ -d "$SCRIPT_DIR/.git" ]]; then
-        cd "$SCRIPT_DIR"
-        git pull --rebase origin main
-        echo "[OK] Templates updated"
-    else
+    if [[ ! -d "$SCRIPT_DIR/.git" ]]; then
         echo "[WARN] Not a git repo. Re-clone from: $REPO_URL"
         exit 1
     fi
+    if [[ -n "$(git -C "$SCRIPT_DIR" status --porcelain --untracked-files=no)" ]]; then
+        echo "[ERROR] $SCRIPT_DIR has uncommitted changes; refusing to sync." >&2
+        echo "  Commit or stash them, then rerun --sync." >&2
+        exit 1
+    fi
+    git -C "$SCRIPT_DIR" fetch origin main
+    if ! git -C "$SCRIPT_DIR" merge --ff-only FETCH_HEAD; then
+        echo "[ERROR] Local history differs from origin/main and cannot fast-forward." >&2
+        echo "  Nothing was changed. Reconcile $SCRIPT_DIR by hand." >&2
+        exit 1
+    fi
+    echo "[OK] Templates updated"
 }
 
 # resolve_language_alias <alias>

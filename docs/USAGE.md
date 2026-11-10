@@ -93,7 +93,7 @@ If you prefer CLI control, see the command reference below.
 **Other options:**
 - `--migrate` - Import existing CLAUDE.md/GEMINI.md content
 - `--dedupe` - Trim bloated project-specific sections (>100 lines)
-- `--sync` - Update local templates from GitHub
+- `--sync` - Update local templates from GitHub (fast-forward only; refuses on uncommitted changes or local commits)
 - `--dry-run` - Preview without writing
 
 ## Available Languages

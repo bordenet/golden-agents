@@ -131,7 +131,7 @@ The script itself is safe and auditable:
 | Property | Status |
 |----------|--------|
 | Elevated privileges | ❌ Not required — runs as normal user |
-| Network access | ❌ None — entirely offline |
+| Network access | Only `--sync`: `git fetch origin main`, then fast-forward only; all other modes are offline |
 | Persistence | ❌ None — runs once, exits |
 | Side effects | ✅ Creates text files only |
 | Auditable | ✅ ~1000 lines of readable Bash |
