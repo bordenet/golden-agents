@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **.gitignore corruption** - Appending to a .gitignore without a trailing newline joined
   entries (`dist` became `distMIGRATION-PROMPT.md`). All four append sites now use one
   helper that adds the missing newline first.
+- **MIGRATION-PROMPT.md formatting** - Removed literal backslash-backticks from the prompt
+  text. The Existing Content fence is now longer than the longest backtick run in the
+  embedded content, so code blocks in the original file no longer close it early.
 
 ---
 

@@ -505,8 +505,8 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 | Complex (many integrations, strict domain rules) | **50-100 lines** |
 
 **If your project exceeds 100 lines** of genuinely project-specific content:
-1. Create a \`.ai-guidance/\` directory in your repo
-2. Split content into topic-specific modules (e.g., \`mobile-builds.md\`, \`security.md\`)
+1. Create a `.ai-guidance/` directory in your repo
+2. Split content into topic-specific modules (e.g., `mobile-builds.md`, `security.md`)
 3. Add a loading table to AGENTS.md referencing when to load each module
 4. Keep AGENTS.md under 150 lines with quick reference + loading instructions
 
@@ -518,11 +518,20 @@ PROMPT_EOF
     source_lines=$(echo "$existing_content" | wc -l | tr -d ' ')
     echo "Original size: $source_lines lines"
     echo ""
+    # The fence must be longer than any backtick run in the content, or an
+    # embedded code block closes it early
+    local longest_run fence=""
+    longest_run=$(printf '%s\n' "$existing_content" | awk '
+        { s = $0; while (match(s, /`+/)) { if (RLENGTH > m) m = RLENGTH; s = substr(s, RSTART + RLENGTH) } }
+        END { print m + 0 }')
+    while [[ ${#fence} -lt 3 || ${#fence} -le $longest_run ]]; do
+        fence="${fence}\`"
+    done
     echo "## Existing Content"
     echo ""
-    echo '```markdown'
+    echo "${fence}markdown"
     echo "$existing_content"
-    echo '```'
+    echo "$fence"
     echo ""
     echo "## Report Metrics"
     echo ""

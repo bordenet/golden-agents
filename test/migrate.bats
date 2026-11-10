@@ -187,3 +187,47 @@ EOF
     [ "$status" -eq 1 ]
     [ "$(echo "$output" | grep -ci 'agents\.md (existing')" -eq 1 ]
 }
+
+# Test 14: Prompt text has no literal backslash-backtick
+@test "migration prompt has no literal backslash-backtick" {
+    create_realistic_claude_md "$TEST_DIR"
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    run grep -n '\\`' "$TEST_DIR/MIGRATION-PROMPT.md"
+    [ "$status" -ne 0 ]
+}
+
+# Test 15: Embedded content with fences does not close the outer fence
+@test "migration prompt fence is longer than any backtick run in content" {
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF2'
+# Guide
+```bash
+npm test
+```
+````text
+nested four
+````
+UNIQUE_AFTER_FENCES
+EOF2
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    local prompt="$TEST_DIR/MIGRATION-PROMPT.md"
+    # Opening fence is five backticks; the matching close comes after the content
+    local open close marker
+    open=$(grep -n '^`````markdown$' "$prompt" | cut -d: -f1)
+    marker=$(grep -n 'UNIQUE_AFTER_FENCES' "$prompt" | cut -d: -f1)
+    close=$(grep -n '^`````$' "$prompt" | cut -d: -f1)
+    [ -n "$open" ]
+    [ -n "$marker" ]
+    [ -n "$close" ]
+    [ "$open" -lt "$marker" ]
+    [ "$marker" -lt "$close" ]
+}
+
+# Test 16: Content without fences keeps a three-backtick fence
+@test "migration prompt uses a three-backtick fence for plain content" {
+    printf '# Guide\nNo code blocks here, only `inline` code.\n' > "$TEST_DIR/CLAUDE.md"
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -qx '```markdown' "$TEST_DIR/MIGRATION-PROMPT.md"
+}
