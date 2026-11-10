@@ -112,9 +112,11 @@ MIGRATION (First-time adoption)
     When existing guidance files are detected (CLAUDE.md, AGENTS.md with content),
     generation is blocked to prevent data loss. Use --migrate to:
 
-    1. Generate the framework AGENTS.md
-    2. Create MIGRATION-PROMPT.md with your existing content
-    3. Add MIGRATION-PROMPT.md to .gitignore
+    1. Back up existing CLAUDE.md, AGENTS.md and other non-generated redirects
+       to <file>.<YYYYmmdd-HHMMSS>.bak (not gitignored)
+    2. Generate the framework AGENTS.md
+    3. Create MIGRATION-PROMPT.md with your existing content
+    4. Add MIGRATION-PROMPT.md to .gitignore
 
     Then paste MIGRATION-PROMPT.md content into your AI assistant to complete migration.
     Delete MIGRATION-PROMPT.md after migration is complete.
@@ -675,6 +677,22 @@ if [[ "$MIGRATE" == "true" ]]; then
     else
         echo "[INFO] No existing guidance files found. Running normal generation."
     fi
+
+    # Normal generation below replaces AGENTS.md, so back up any existing one
+    # (with or without markers). Both names may be one file on case-insensitive volumes.
+    for name in AGENTS.md Agents.md; do
+        if [[ ! -f "$OUTPUT_PATH/$name" ]]; then
+            continue
+        fi
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "[DRY RUN] Would back up $name to $name.<timestamp>.bak"
+        else
+            backup_file "$OUTPUT_PATH/$name"
+        fi
+    done
 
     # Continue with normal generation (framework AGENTS.md)
     # Fall through to normal generation below

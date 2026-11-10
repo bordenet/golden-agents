@@ -118,3 +118,43 @@ teardown() {
     assert_content_preserved "$TEST_DIR/AGENTS.md.original" "UNIQUE_ORIGINAL_CONTENT_XYZ" "backup"
 }
 
+
+# =============================================================================
+# DATA LOSS: Migration must back up AGENTS.md before replacing it
+# =============================================================================
+
+@test "DATA LOSS: --migrate backs up AGENTS.md without markers to timestamped .bak" {
+    create_realistic_claude_md "$TEST_DIR"
+    printf '# Team guide\nUNIQUE_AGENTS_ONLY_CONTENT\n' > "$TEST_DIR/AGENTS.md"
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/agents.orig"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    local baks
+    baks=$(find "$TEST_DIR" -maxdepth 1 -name 'AGENTS.md.*.bak')
+    [ "$(echo "$baks" | grep -c .)" -eq 1 ]
+    cmp "$TEST_DIR/agents.orig" "$baks"
+}
+
+@test "DATA LOSS: --migrate backs up AGENTS.md with markers when no CLAUDE.md exists" {
+    create_agents_with_markers "$TEST_DIR"
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/agents.orig"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    local baks
+    baks=$(find "$TEST_DIR" -maxdepth 1 -name 'AGENTS.md.*.bak')
+    [ "$(echo "$baks" | grep -c .)" -eq 1 ]
+    cmp "$TEST_DIR/agents.orig" "$baks"
+}
+
+@test "DATA LOSS: --migrate --dry-run writes no AGENTS.md backup" {
+    printf '# Team guide\nUNIQUE_AGENTS_ONLY_CONTENT\n' > "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Would back up"*"AGENTS.md"* ]]
+    [ -z "$(find "$TEST_DIR" -maxdepth 1 -name '*.bak')" ]
+}

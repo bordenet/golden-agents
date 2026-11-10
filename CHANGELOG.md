@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--adopt` and `--migrate` back each one up to `<file>.<YYYYmmdd-HHMMSS>.bak` first.
   Generated redirects now end with `<!-- golden-agents:generated -->`; exact 1.4.x stubs
   are also recognized. Replaces the ">100 bytes means real content" heuristic.
+- **`--migrate` AGENTS.md loss** - `--migrate` now backs up an existing AGENTS.md (with or
+  without markers) to `AGENTS.md.<YYYYmmdd-HHMMSS>.bak` before replacing it. Previously the
+  only copy was the gitignored MIGRATION-PROMPT.md, or nothing when markers were present.
 
 ---
 
