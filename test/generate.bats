@@ -137,3 +137,20 @@ teardown() {
     assert_file_contains "$TEST_DIR/AGENTS.md" 'gates shown for go; add equivalents for python, javascript, shell, dart-flutter'
     assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
+
+# Test 14: No coverage line when the language has no coverage target
+@test "shell generation omits the coverage gate instead of printing N/A%" {
+    run "$GENERATE_SCRIPT" --language=shell --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'N/A%'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'Coverage'
+    assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `bats test/`'
+}
+
+# Test 15: Coverage line stays for languages with a target
+@test "go generation keeps the coverage gate" {
+    run "$GENERATE_SCRIPT" --language=go,shell --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'Coverage\*\*: Minimum 80%'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'N/A%'
+}

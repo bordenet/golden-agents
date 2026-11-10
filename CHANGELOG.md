@@ -55,6 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for Go only. Multi-language output now has one labeled gate sub-list per language.
   If that would push the file past 100 lines (five languages), it shows the first
   language's gates and names the others. Single-language output is unchanged.
+- **"Minimum N/A%" coverage** - Languages without a coverage target (shell) no longer get a
+  Coverage gate line.
 
 ---
 

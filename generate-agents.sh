@@ -942,7 +942,9 @@ emit_lang_gates() {
     echo "${indent}1. **Lint**: \`$lint_cmd\`"
     echo "${indent}2. **Build**: \`$build_cmd\`"
     echo "${indent}3. **Test**: \`$test_cmd\`"
-    echo "${indent}4. **Coverage**: Minimum ${coverage}%"
+    if [[ "$coverage" != "N/A" ]]; then
+        echo "${indent}4. **Coverage**: Minimum ${coverage}%"
+    fi
 }
 
 # generate_progressive()
