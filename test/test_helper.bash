@@ -232,14 +232,14 @@ create_bloated_fixture() {
 
 # create_bloated_agents_with_markers <path> [lines]
 # Creates a bloated AGENTS.md WITH framework markers for self-manage testing.
-# The file will exceed the 150-line threshold to trigger modular migration.
+# The file will exceed the 250-line threshold to trigger modular migration.
 # Arguments:
 #   $1 - Directory path where AGENTS.md will be created
-#   $2 - (optional) Number of extra lines to add, default: 200
+#   $2 - (optional) Number of extra lines to add, default: 300
 # Returns: 0 on success
 create_bloated_agents_with_markers() {
     local dir="$1"
-    local lines="${2:-200}"
+    local lines="${2:-300}"
     mkdir -p "$dir"
     cat > "$dir/AGENTS.md" << 'EOF'
 # AI Agent Guidelines - Test Project
@@ -257,7 +257,7 @@ create_bloated_agents_with_markers() {
 
 ## Project-Specific Rules
 EOF
-    # Add bloat lines to exceed 150-line threshold
+    # Add bloat lines to exceed 250-line threshold
     for i in $(seq 1 "$lines"); do
         echo "- Rule $i: Do something specific for this project" >> "$dir/AGENTS.md"
     done

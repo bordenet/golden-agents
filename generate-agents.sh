@@ -41,6 +41,9 @@ DEDUPE=false
 MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
 FRAMEWORK_VERSION="1.4.0"
+# Line limit for AGENTS.md and each .ai-guidance/*.md. templates/core/invariants.md and
+# templates/modular-migration-prompt.md state it literally; test/thresholds.bats keeps them in sync.
+MAX_GUIDANCE_LINES=250
 SELF_MANAGE_START="<!-- GOLDEN:self-manage:start -->"
 # shellcheck disable=SC2034 # SELF_MANAGE_END defined for symmetry; will be used in Phase 3 bloat detection
 SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
@@ -508,10 +511,10 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 1. Create a `.ai-guidance/` directory in your repo
 2. Split content into topic-specific modules (e.g., `mobile-builds.md`, `security.md`)
 3. Add a loading table to AGENTS.md referencing when to load each module
-4. Keep AGENTS.md under 150 lines with quick reference + loading instructions
-
-## Source Files
 PROMPT_EOF
+    echo "4. Keep AGENTS.md under $MAX_GUIDANCE_LINES lines with quick reference + loading instructions"
+    echo ""
+    echo "## Source Files"
     echo ""
     echo "Migrated from: $source_file"
     local source_lines
@@ -1161,8 +1164,10 @@ generate_self_manage_block() {
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
 2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
-   - `AGENTS.md` >150 lines → refactor into `.ai-guidance/`
-   - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
+SELF_MANAGE
+    printf "   - \`AGENTS.md\` >%s lines → refactor into \`.ai-guidance/\`\n" "$MAX_GUIDANCE_LINES"
+    printf "   - Any \`.ai-guidance/*.md\` >%s lines → split into sub-directory\n" "$MAX_GUIDANCE_LINES"
+    cat << 'SELF_MANAGE'
 <!-- GOLDEN:self-manage:end -->
 
 SELF_MANAGE
@@ -1297,9 +1302,9 @@ ${after_marker}"
         # Check for bloat and trigger modular migration if needed
         local line_count
         line_count=$(wc -l < "$existing_file" | tr -d ' ')
-        if [[ "$line_count" -gt 150 ]]; then
+        if [[ "$line_count" -gt "$MAX_GUIDANCE_LINES" ]]; then
             echo ""
-            echo "[WARN] AGENTS.md exceeds 150 lines ($line_count lines)"
+            echo "[WARN] AGENTS.md exceeds $MAX_GUIDANCE_LINES lines ($line_count lines)"
             echo "  Creating modular migration prompt..."
             create_modular_migration_prompt "$OUTPUT_PATH"
         fi

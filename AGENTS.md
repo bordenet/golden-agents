@@ -50,12 +50,12 @@ cat /path/to/target/repo/MIGRATION-PROMPT.md  # or ADOPT-PROMPT.md
 After applying changes, verify:
 
 1. **All original content preserved** - Nothing from the original file was lost
-2. **Size within limits** - Progressive mode ≤250 lines, Compact ≤200 lines
+2. **Size within limits** - AGENTS.md <=250 lines
 <!-- GOLDEN:self-manage:start -->
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
 2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
-   - `AGENTS.md` >150 lines → refactor into `.ai-guidance/`
+   - `AGENTS.md` >250 lines → refactor into `.ai-guidance/`
    - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
 <!-- GOLDEN:self-manage:end -->
 <!-- GOLDEN:framework:start -->

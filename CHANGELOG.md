@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.ai-guidance/invariants.md`, but only the modular migration path created it. Fresh
   generation (plain, `--adopt`, `--migrate`) and `--upgrade --apply` now create it from the
   template when absent and never overwrite it.
+- **Conflicting size limits** - The script used 150 lines for AGENTS.md (self-manage block,
+  migration prompt, upgrade bloat check) while README, AGENTS.md and the templates said
+  250. The limit is now `MAX_GUIDANCE_LINES=250`, defined once, and `test/thresholds.bats`
+  checks that every output and doc states the same value. Removed the nonexistent
+  "Compact" mode from AGENTS.md.
 
 ---
 

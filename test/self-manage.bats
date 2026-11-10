@@ -17,7 +17,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/AGENTS.md" ">150 lines"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ">250 lines"
 }
 
 # Test 2: Self-manage block appears before framework markers
@@ -64,7 +64,7 @@ teardown() {
 
     # Verify self-manage block was added
     assert_file_contains "$TEST_DIR/AGENTS.md" "GOLDEN:self-manage:start"
-    assert_file_contains "$TEST_DIR/AGENTS.md" ">150 lines"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ">250 lines"
 }
 
 # Test 6: Upgrade preserves existing self-manage block
@@ -110,12 +110,12 @@ teardown() {
 
 # Test 8: Upgrade detects bloated file and creates migration prompt
 @test "upgrade detects bloated file and creates migration prompt" {
-    create_bloated_agents_with_markers "$TEST_DIR" 200
+    create_bloated_agents_with_markers "$TEST_DIR" 300
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     [ -f "$TEST_DIR/MODULAR-MIGRATION-PROMPT.md" ]
-    [[ "$output" == *"exceeds 150 lines"* ]] || [[ "$output" == *"bloat"* ]]
+    [[ "$output" == *"exceeds 250 lines"* ]] || [[ "$output" == *"bloat"* ]]
 }
 
 # Test 9: Non-bloated file does not trigger migration prompt
@@ -131,7 +131,7 @@ teardown() {
 
 # Test 10: Upgrade creates .ai-guidance directory for bloated files
 @test "upgrade creates .ai-guidance directory for bloated files" {
-    create_bloated_agents_with_markers "$TEST_DIR" 200
+    create_bloated_agents_with_markers "$TEST_DIR" 300
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
@@ -140,7 +140,7 @@ teardown() {
 
 # Test 11: Upgrade creates invariants.md for bloated files
 @test "upgrade creates invariants.md for bloated files" {
-    create_bloated_agents_with_markers "$TEST_DIR" 200
+    create_bloated_agents_with_markers "$TEST_DIR" 300
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
@@ -179,7 +179,7 @@ teardown() {
 
 # Test 15: invariants.md includes self-management protocol
 @test "invariants.md includes self-management protocol" {
-    create_bloated_agents_with_markers "$TEST_DIR" 200
+    create_bloated_agents_with_markers "$TEST_DIR" 300
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
@@ -192,7 +192,7 @@ teardown() {
 
 # Test 16: invariants.md includes sub-directory splitting guidance
 @test "invariants.md includes sub-directory splitting guidance" {
-    create_bloated_agents_with_markers "$TEST_DIR" 200
+    create_bloated_agents_with_markers "$TEST_DIR" 300
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
@@ -204,7 +204,7 @@ teardown() {
 
 # Test 17: Upgrade never overwrites an existing .ai-guidance/invariants.md
 @test "upgrade keeps a customized .ai-guidance/invariants.md byte-for-byte" {
-    create_bloated_agents_with_markers "$TEST_DIR" 200
+    create_bloated_agents_with_markers "$TEST_DIR" 300
     mkdir -p "$TEST_DIR/.ai-guidance"
     printf '# Our invariants\nUNIQUE_CUSTOM_INVARIANT\n' > "$TEST_DIR/.ai-guidance/invariants.md"
     cp "$TEST_DIR/.ai-guidance/invariants.md" "$TEST_DIR/invariants.orig"
