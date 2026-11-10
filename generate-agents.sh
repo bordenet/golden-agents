@@ -45,6 +45,8 @@ FRAMEWORK_VERSION="1.4.0"
 # Line limit for AGENTS.md and each .ai-guidance/*.md. templates/core/invariants.md and
 # templates/modular-migration-prompt.md state it literally; test/thresholds.bats keeps them in sync.
 MAX_GUIDANCE_LINES=250
+# Line budget for a freshly generated progressive AGENTS.md (test/size-limits.bats)
+MAX_PROGRESSIVE_LINES=100
 SELF_MANAGE_START="<!-- GOLDEN:self-manage:start -->"
 # shellcheck disable=SC2034 # SELF_MANAGE_END defined for symmetry; will be used in Phase 3 bloat detection
 SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
@@ -920,21 +922,15 @@ get_lang_commands() {
     esac
 }
 
-# generate_progressive()
-# Generates a progressive-loading AGENTS.md (~60-80 lines).
-# Uses on-demand module loading from $HOME/.golden-agents/templates/.
-# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
-# Arguments: none (uses globals)
-# Returns: Complete AGENTS.md content via stdout
-generate_progressive() {
-    local today
-    today=$(date +%Y-%m-%d)
-    local golden_agents_path="\$HOME/.golden-agents"
-
-    IFS=',' read -ra lang_array <<< "$LANGUAGES"
-    local first_lang="${lang_array[0]}"
-    local lint_cmd build_cmd test_cmd coverage
-
+# emit_lang_gates <language> [indent]
+# Prints the numbered lint/build/test/coverage gate list for one language.
+# Arguments:
+#   $1 - Canonical language name
+#   $2 - (optional) Prefix for each line, for nesting under a label
+# Returns: Gate list via stdout
+emit_lang_gates() {
+    local indent="${2:-}"
+    local line lint_cmd="" build_cmd="" test_cmd="" coverage=""
     while IFS= read -r line; do
         case "$line" in
             LINT:*) lint_cmd="${line#LINT:}" ;;
@@ -942,7 +938,46 @@ generate_progressive() {
             TEST:*) test_cmd="${line#TEST:}" ;;
             COV:*) coverage="${line#COV:}" ;;
         esac
-    done < <(get_lang_commands "$first_lang")
+    done < <(get_lang_commands "$1")
+    echo "${indent}1. **Lint**: \`$lint_cmd\`"
+    echo "${indent}2. **Build**: \`$build_cmd\`"
+    echo "${indent}3. **Test**: \`$test_cmd\`"
+    echo "${indent}4. **Coverage**: Minimum ${coverage}%"
+}
+
+# generate_progressive()
+# Generates a progressive-loading AGENTS.md (~60-80 lines).
+# Multi-language projects get gates per language unless that pushes the file past
+# MAX_PROGRESSIVE_LINES; then only the first language's gates are shown and the
+# rest are named.
+# Arguments: none (uses globals)
+# Returns: Complete AGENTS.md content via stdout
+generate_progressive() {
+    local tmp_dir lines
+    tmp_dir=$(mktemp -d)
+    generate_progressive_body "per-language" > "$tmp_dir/agents.md"
+    lines=$(wc -l < "$tmp_dir/agents.md" | tr -d ' ')
+    if [[ "$lines" -gt "$MAX_PROGRESSIVE_LINES" ]]; then
+        generate_progressive_body "first"
+    else
+        cat "$tmp_dir/agents.md"
+    fi
+    rm -rf "$tmp_dir"
+}
+
+# generate_progressive_body <gate_style>
+# Uses on-demand module loading from $HOME/.golden-agents/templates/.
+# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
+# Arguments:
+#   $1 - "per-language" or "first" (multi-language gate layout)
+# Returns: Complete AGENTS.md content via stdout
+generate_progressive_body() {
+    local gate_style="$1"
+    local today
+    today=$(date +%Y-%m-%d)
+    local golden_agents_path="\$HOME/.golden-agents"
+
+    IFS=',' read -ra lang_array <<< "$LANGUAGES"
 
     cat << HEADER
 # AI Agent Guidelines - $PROJECT_NAME
@@ -967,11 +1002,24 @@ $MARKER_START
 
 ## Quality Gates (MANDATORY)
 
-Before ANY commit:
-1. **Lint**: \`$lint_cmd\`
-2. **Build**: \`$build_cmd\`
-3. **Test**: \`$test_cmd\`
-4. **Coverage**: Minimum ${coverage}%
+FRAMEWORK_START
+
+    if [[ ${#lang_array[@]} -eq 1 ]]; then
+        echo "Before ANY commit:"
+        emit_lang_gates "${lang_array[0]}"
+    elif [[ "$gate_style" == "first" ]]; then
+        local others="${LANGUAGES#*,}"
+        echo "Before ANY commit (gates shown for ${lang_array[0]}; add equivalents for ${others//,/, }):"
+        emit_lang_gates "${lang_array[0]}"
+    else
+        echo "Before ANY commit, run the gates for each language you changed:"
+        for lang in "${lang_array[@]}"; do
+            echo "- **$lang**"
+            emit_lang_gates "$lang" "  "
+        done
+    fi
+
+    cat << FRAMEWORK_REST
 
 **Order matters.** Lint → Build → Test. Never skip steps.
 
@@ -993,7 +1041,7 @@ Before ANY commit:
 **STOP and load the relevant module BEFORE these actions:**
 
 ### Language Modules (🔴 Required)
-FRAMEWORK_START
+FRAMEWORK_REST
 
     # Generate language loading instructions with specific triggers
     for lang in "${lang_array[@]}"; do

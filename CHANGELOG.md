@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--dedupe` exit 1 with no output. It now prints which marker is missing.
 - **`--dedupe --path=.` rejected** - `--dedupe` treated `--path=.` as "no path given".
   It now tracks whether `--path` was passed.
+- **Multi-language gates** - `--language=go,python,javascript` emitted lint/build/test gates
+  for Go only. Multi-language output now has one labeled gate sub-list per language.
+  If that would push the file past 100 lines (five languages), it shows the first
+  language's gates and names the others. Single-language output is unchanged.
 
 ---
 
