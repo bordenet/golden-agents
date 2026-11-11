@@ -196,3 +196,31 @@ EOF
     [ ! -f "$TEST_DIR/.gitignore" ]
 }
 
+
+# Test 14: Start marker without end marker fails with a clear message
+@test "dedupe with start marker but no end marker explains the problem" {
+    {
+        echo "# Guide"
+        echo "<!-- GOLDEN:framework:start -->"
+        for i in $(seq 1 150); do echo "filler line $i"; done
+    } > "$TEST_DIR/AGENTS.md"
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/agents.orig"
+
+    run "$GENERATE_SCRIPT" --dedupe --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"GOLDEN:framework:end"* ]]
+    [[ "$output" == *"[ERROR]"* ]]
+    cmp "$TEST_DIR/agents.orig" "$TEST_DIR/AGENTS.md"
+    [ ! -e "$TEST_DIR/ADOPT-PROMPT.md" ]
+}
+
+# Test 15: --path=. is an explicit path
+@test "dedupe accepts --path=. for the current directory" {
+    create_bloated_agents_with_markers "$TEST_DIR" 150
+    cd "$TEST_DIR"
+
+    run "$GENERATE_SCRIPT" --dedupe --path=.
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"requires --path"* ]]
+    [ -f "$TEST_DIR/ADOPT-PROMPT.md" ]
+}
