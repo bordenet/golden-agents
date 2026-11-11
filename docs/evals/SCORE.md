@@ -3,8 +3,12 @@
 Cursor run: 2026-11-11, model Grok 4.7. Claude Code and Codex have no run.
 
 A missing eval is not a passing eval. Do not claim the generated files change
-agent behavior. On this Cursor run the with-guidance and without-guidance
-results are the same.
+agent behavior. The table below is one Cursor run where the two columns match.
+
+A second with-guidance run on the same fixture left `AGENTS.md` at 283 lines.
+The task 07 log rule is only in `drafts/app-log-rule.diff`, under the on-call
+sentence in a proposed `.ai-guidance/project-rules.md`. That run fails task 07.
+The table row is the run that wrote the log line into `AGENTS.md`.
 
 Run the prompt in `evals/fixture/tasks/<id>/TASK.md` against `evals/fixture/`.
 "With guidance" means the agent was also given the files
