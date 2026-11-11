@@ -206,7 +206,7 @@ See `templates/core/superpowers.md` for the module loading pattern.
 ### Quality Gates
 
 ```bash
-# Run all tests (128 BATS tests)
+# Run all tests
 bats test/*.bats
 
 # Lint shell scripts
@@ -223,15 +223,6 @@ When editing `templates/`:
 - Test with `--dry-run` after changes
 - Verify size limits still met
 - Update CHANGELOG.md
-
----
-
-## Anti-Slop Rules
-
-- **No flattery** - Skip "Great question!"
-- **No hype** - Avoid "revolutionary", "game-changing"
-- **Evidence-based** - Cite sources or qualify as opinion
-- **Direct** - State facts without embellishment
 
 ---
 
