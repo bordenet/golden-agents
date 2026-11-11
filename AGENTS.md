@@ -57,6 +57,7 @@ After applying changes, verify:
 2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
    - `AGENTS.md` >250 lines → refactor into `.ai-guidance/`
    - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
+3. Over the limit, draft a diff. Do not apply it. A human merges it.
 <!-- GOLDEN:self-manage:end -->
 <!-- GOLDEN:framework:start -->
 
