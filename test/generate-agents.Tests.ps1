@@ -67,7 +67,7 @@ Describe "generate-agents.ps1 PowerShell Wrapper" {
         It "Passes multiple languages correctly" {
             $result = & $script:ScriptPath --language=go,python,shell --dry-run 2>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
-            $result | Should -Match "go"
+            $result | Should -Match "go,python,shell"
         }
 
         It "Passes --type argument correctly" {
