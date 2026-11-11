@@ -1,5 +1,5 @@
     fi
-echo "[OK] Templates updated"
+    echo "[OK] Templates updated"
 }
 
 # resolve_language_alias <alias>
