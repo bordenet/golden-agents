@@ -93,7 +93,7 @@ If you prefer CLI control, see the command reference below.
 **Other options:**
 - `--migrate` - Import existing CLAUDE.md/GEMINI.md content
 - `--dedupe` - Trim bloated project-specific sections (>100 lines)
-- `--sync` - Update local templates from GitHub
+- `--sync` - Update local templates from GitHub (fast-forward only; refuses on uncommitted changes or local commits)
 - `--dry-run` - Preview without writing
 
 ## Available Languages
@@ -142,7 +142,7 @@ golden-agents/
 │   ├── REFERENCES.md          # Template reference with examples
 │   ├── SAMPLE.md              # Example generated output
 │   ├── SUPERPOWERS.md         # Optional superpowers integration
-│   ├── TEST-PLAN.md           # Test plan (124 tests)
+│   ├── TEST-PLAN.md           # Test plan
 │   ├── TRIGGER-DESIGN.md      # How triggers are designed
 │   ├── USAGE.md               # This file
 │   └── WINDOWS.md             # Windows-specific instructions
