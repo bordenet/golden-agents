@@ -11,7 +11,7 @@
 
 ## AppLogger Structured Logging
 
-**CRITICAL**: Use AppLogger for all logging. Never use raw `print()` or `debugPrint()`.
+Use AppLogger for logging. Do not use raw `print()` or `debugPrint()`.
 
 ```dart
 // Category-based loggers with privacy controls
