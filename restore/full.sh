@@ -228,3 +228,317 @@ EXAMPLES
     wsl ~/.golden-agents/generate-agents.sh --language=go --path=./my-project
 EOF
 }
+
+# version()
+# Prints the script version to stdout.
+# Arguments: none
+# Returns: 0
+version() {
+    echo "golden-agents generate-agents.sh v${FRAMEWORK_VERSION}"
+}
+
+# sync_templates()
+# Updates local templates from origin/main with a fast-forward only merge.
+# Never rebases or merges local history, and refuses when tracked files are modified.
+# Requires the script directory to be a git repository.
+# Arguments: none
+# Returns: 0 on success; exits 1 if not a git repo, dirty, or diverged
+sync_templates() {
+    echo "[INFO] Syncing templates from GitHub..."
+
+    if [[ ! -d "$SCRIPT_DIR/.git" ]]; then
+        echo "[WARN] Not a git repo. Re-clone from: $REPO_URL"
+        exit 1
+    fi
+    if [[ -n "$(git -C "$SCRIPT_DIR" status --porcelain --untracked-files=no)" ]]; then
+        echo "[ERROR] $SCRIPT_DIR has uncommitted changes; refusing to sync." >&2
+        echo "  Commit or stash them, then rerun --sync." >&2
+        exit 1
+    fi
+    git -C "$SCRIPT_DIR" fetch origin main
+    if ! git -C "$SCRIPT_DIR" merge --ff-only FETCH_HEAD; then
+        echo "[ERROR] Local history differs from origin/main and cannot fast-forward." >&2
+        echo "  Nothing was changed. Reconcile $SCRIPT_DIR by hand." >&2
+        exit 1
+    fi
+    echo "[OK] Templates updated"
+}
+
+# resolve_language_alias <alias>
+# Converts language aliases to their canonical names.
+# Arguments:
+#   $1 - Language name or alias (e.g., "js", "py", "golang")
+# Returns: Canonical language name via stdout (e.g., "javascript", "python", "go")
+resolve_language_alias() {
+    local lang="$1"
+    case "$lang" in
+        js|javascript|node|nodejs|ts|typescript) echo "javascript" ;;
+        py|python|python3) echo "python" ;;
+        bash|sh|zsh|shell) echo "shell" ;;
+        flutter|dart|dart-flutter) echo "dart-flutter" ;;
+        golang|go) echo "go" ;;
+        *) echo "$lang" ;;
+    esac
+}
+
+# resolve_languages <comma-separated-list>
+# Resolves a comma-separated list of language aliases to canonical names.
+# Deduplicates the result (e.g., "js,typescript" becomes "javascript").
+# Arguments:
+#   $1 - Comma-separated list of language names/aliases
+# Returns: Comma-separated list of canonical names via stdout
+resolve_languages() {
+    local input="$1"
+    local resolved=""
+    local IFS=','
+    for lang in $input; do
+        local canonical
+        canonical=$(resolve_language_alias "$lang")
+        if [[ -z "$resolved" ]]; then
+            resolved="$canonical"
+        else
+            # Avoid duplicates
+            if [[ ! ",$resolved," == *",$canonical,"* ]]; then
+                resolved="$resolved,$canonical"
+            fi
+        fi
+    done
+    echo "$resolved"
+}
+
+# list_templates <subdir>
+# Lists template names (file names without .md) in templates/<subdir>.
+# Arguments:
+#   $1 - Subdirectory of templates/ (languages, project-types)
+# Returns: Comma-separated names via stdout
+list_templates() {
+    local f names=""
+    for f in "$TEMPLATES_DIR/$1"/*.md; do
+        [[ -e "$f" ]] || continue
+        f=$(basename "$f" .md)
+        names="${names:+$names, }$f"
+    done
+    echo "$names"
+}
+
+# is_template <subdir> <name>
+# Arguments:
+#   $1 - Subdirectory of templates/
+#   $2 - Template name to check
+# Returns: 0 if templates/<subdir>/<name>.md exists and name is a plain token
+is_template() {
+    case "$2" in
+        "" | *[!a-z0-9-]*) return 1 ;;
+    esac
+    [[ -f "$TEMPLATES_DIR/$1/$2.md" ]]
+}
+
+# Redirect files carrying this line were written by the generator and may be overwritten.
+GENERATED_SENTINEL="<!-- golden-agents:generated -->"
+
+# Redirect files the generator still writes. Each one is an @AGENTS.md import.
+KEPT_REDIRECTS="CLAUDE.md GEMINI.md .github/copilot-instructions.md"
+# No longer written. A generated copy is removed. A hand-written copy stays.
+RETIRED_REDIRECTS="CODEX.md AGENT.md COPILOT.md"
+# Every path whose hand-written content blocks a plain run.
+REDIRECT_FILES="$KEPT_REDIRECTS $RETIRED_REDIRECTS"
+
+# redirect_title <relpath>
+# Returns: Markdown title for a redirect file via stdout
+redirect_title() {
+    case "$1" in
+        CLAUDE.md) echo "Claude Code Instructions" ;;
+        CODEX.md) echo "OpenAI Codex CLI Instructions" ;;
+        AGENT.md) echo "Amp by Sourcegraph Instructions" ;;
+        GEMINI.md) echo "Google Gemini Code Assist Instructions" ;;
+        COPILOT.md) echo "GitHub Copilot Instructions" ;;
+        .github/copilot-instructions.md) echo "GitHub Copilot Custom Instructions" ;;
+    esac
+}
+
+# legacy_redirect_body <relpath> <agents_name>
+# Byte-identical to the prose stubs 1.4.x wrote, without the sentinel.
+# Used only to recognize those stubs. New files are imports, not this text.
+# Arguments:
+#   $1 - Redirect file path relative to the output path
+#   $2 - Name of the AGENTS file the stub links to
+# Returns: Stub body via stdout
+legacy_redirect_body() {
+    local rel="$1"
+    local agents="$2"
+    if [[ "$rel" == ".github/copilot-instructions.md" ]]; then
+        cat << EOF
+# $(redirect_title "$rel")
+
+See **[../$agents](../$agents)** for all AI guidance.
+
+## Summary
+
+This project uses the Golden Agents Framework for AI coding assistant guidance.
+All instructions are consolidated in $agents at the project root.
+EOF
+    else
+        cat << EOF
+# $(redirect_title "$rel")
+
+See **[$agents](./$agents)** for all AI guidance.
+EOF
+    fi
+}
+
+# import_redirect_body <relpath>
+# One-line @AGENTS.md import. Copilot's file lives in .github/, so its import
+# walks up one directory. No prose.
+# Arguments:
+#   $1 - Redirect file path relative to the output path
+# Returns: Import line via stdout
+import_redirect_body() {
+    if [[ "$1" == ".github/copilot-instructions.md" ]]; then
+        echo '@../AGENTS.md'
+    else
+        echo '@AGENTS.md'
+    fi
+}
+
+# is_generated_redirect <file> <relpath>
+# A redirect is generated if it carries the sentinel line or is byte-identical
+# to a 1.4.x stub (either AGENTS.md spelling).
+# Arguments:
+#   $1 - Path to an existing file
+#   $2 - Redirect file path relative to the output path
+# Returns: 0 if generated, 1 otherwise
+is_generated_redirect() {
+    local file="$1"
+    local rel="$2"
+    if grep -qxF "$GENERATED_SENTINEL" "$file"; then
+        return 0
+    fi
+    if cmp -s "$file" <(legacy_redirect_body "$rel" "AGENTS.md"); then
+        return 0
+    fi
+    if cmp -s "$file" <(legacy_redirect_body "$rel" "Agents.md"); then
+        return 0
+    fi
+    if cmp -s "$file" <(import_redirect_body "$rel"); then
+        return 0
+    fi
+    return 1
+}
+
+# find_blocking_redirects <path>
+# Lists redirect files that exist and hold non-generated content.
+# Arguments:
+#   $1 - Directory path to check
+# Returns: Newline-separated relative paths via stdout, or empty string
+find_blocking_redirects() {
+    local path="$1"
+    local rel
+    for rel in $REDIRECT_FILES; do
+        if [[ -f "$path/$rel" ]] && ! is_generated_redirect "$path/$rel" "$rel"; then
+            echo "$rel"
+        fi
+    done
+}
+
+# backup_file <file>
+# Copies a file to <file>.<YYYYmmdd-HHMMSS>.bak, adding -1, -2 on collision.
+# Arguments:
+#   $1 - Path to the file to back up
+# Returns: 0 on success
+backup_file() {
+    local src="$1"
+    local stamp dest
+    local n=0
+    stamp=$(date +%Y%m%d-%H%M%S)
+    dest="$src.$stamp.bak"
+    while [[ -e "$dest" ]]; do
+        n=$((n + 1))
+        dest="$src.$stamp-$n.bak"
+    done
+    cp -p "$src" "$dest"
+    echo "[OK] Backed up: $dest"
+}
+
+# create_redirect <relpath>
+# Writes a sentinel-marked @AGENTS.md import.
+# Arguments:
+#   $1 - Redirect file path relative to OUTPUT_PATH
+# Returns: 0
+create_redirect() {
+    local rel="$1"
+    mkdir -p "$(dirname "$OUTPUT_PATH/$rel")"
+    {
+        import_redirect_body "$rel"
+        echo "$GENERATED_SENTINEL"
+    } > "$OUTPUT_PATH/$rel"
+}
+
+# sync_redirects <mode>
+# mode "preview" prints the plan and writes nothing.
+# mode "apply" writes kept imports when the file is missing or generated.
+# mode "apply-backup" is apply, and backs up a kept file before replacing it.
+# mode "apply-force" writes every kept import. Adopt and migrate use it after
+# they have already backed up hand-written copies.
+# A hand-written retired file is never removed.
+# Arguments:
+#   $1 - preview, apply, apply-backup, or apply-force
+# Returns: 0
+sync_redirects() {
+    local mode="$1"
+    local rel
+    for rel in $KEPT_REDIRECTS; do
+        if [[ "$mode" != "apply-force" && -f "$OUTPUT_PATH/$rel" ]] && ! is_generated_redirect "$OUTPUT_PATH/$rel" "$rel"; then
+            if [[ "$mode" == "preview" ]]; then
+                echo "  would leave $rel (hand-written)"
+            fi
+            continue
+        fi
+        if [[ "$mode" == "preview" ]]; then
+            echo "  would write $rel (@AGENTS.md import)"
+            continue
+        fi
+        if [[ "$mode" == "apply-backup" && -f "$OUTPUT_PATH/$rel" ]]; then
+            backup_file "$OUTPUT_PATH/$rel"
+        fi
+        create_redirect "$rel"
+    done
+    for rel in $RETIRED_REDIRECTS; do
+        if [[ ! -f "$OUTPUT_PATH/$rel" ]]; then
+            continue
+        fi
+        if ! is_generated_redirect "$OUTPUT_PATH/$rel" "$rel"; then
+            if [[ "$mode" == "preview" ]]; then
+                echo "  would leave $rel (hand-written)"
+            else
+                echo "  left $rel (hand-written)"
+            fi
+            continue
+        fi
+        if [[ "$mode" == "preview" ]]; then
+            echo "  would remove generated $rel"
+            continue
+        fi
+        backup_file "$OUTPUT_PATH/$rel"
+        rm -f "$OUTPUT_PATH/$rel"
+        echo "  removed generated $rel"
+    done
+}
+
+# gitignore_add <dir> <entry>
+# Appends entry to <dir>/.gitignore on its own line, creating the file if needed.
+# Skips the append when the entry already appears in the file.
+# Arguments:
+#   $1 - Directory containing .gitignore
+#   $2 - Entry to add
+# Returns: 0 if added, 1 if already present
+gitignore_add() {
+    local file="$1/.gitignore"
+    local entry="$2"
+    if [[ -f "$file" ]] && grep -qF "$entry" "$file"; then
+        return 1
+    fi
+    if [[ -s "$file" && -n "$(tail -c 1 "$file")" ]]; then
+        printf '\n' >> "$file"
+    fi
+    printf '%s\n' "$entry" >> "$file"
+}
