@@ -15,7 +15,7 @@ After editing ANY guidance file, run: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/
 | `AGENTS.md` | 250 lines | Extract to `.ai-guidance/*.md` |
 | `.ai-guidance/*.md` | 250 lines | Split into sub-directory |
 
-**If threshold exceeded:** STOP → Refactor (zero data loss) → Verify → Resume. The size cap exists so agents do not grow the file they are reading.
+**If threshold exceeded:** STOP → draft a diff for a human to merge. Do not apply the diff. The size cap exists so agents do not grow the file they are reading.
 
 ## Zero Data Loss Checklist
 
