@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Scoped rules** - Progressive generation writes the language module into
+  `.claude/rules/`, `.cursor/rules/*.mdc`, and
+  `.github/instructions/*.instructions.md`, with a path glob. Invariants,
+  security, and the project type always load. A hand-written rule without
+  the generated sentinel is left in place. The "conversation exceeds 50
+  exchanges" trigger is gone. Quality gates name the commands and say they
+  belong in CI or a hook.
 - **In-repo modules** - Progressive generation copies the selected language
   module, the project-type module, and the workflow modules named by the
   triggers into `.golden-agents/modules/`. Triggers read those paths.
@@ -312,4 +319,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Project detection (auto-detect language from files)
 - [ ] Template inheritance system
 - [ ] VS Code extension integration
-
