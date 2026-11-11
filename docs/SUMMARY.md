@@ -27,5 +27,5 @@ The stack is on `main`. The Branch column names the fix branch for each item.
 | 17 | fixed | sync refuses to rewrite a clone with local commits | fix/17-sync-ff-only | no |
 | 18 | fixed | fresh generation writes a stamp and no Last Updated line | fix/18-stamp-comment | no |
 | 19 | fixed | guidance docs do not hardcode a BATS or suite total | fix/19-doc-accuracy | no |
-| 20 | on main | test/modules.bats, test/rules.bats, test/emphasis.bats, test/superpowers.bats, test/size-tokens.bats, test/self-manage.bats, test/gates.bats, test/evals.bats. Sections A-H are in the generator. The score sheet has no model run. | main | no |
+| 20 | on main | test/modules.bats, test/rules.bats, test/emphasis.bats, test/superpowers.bats, test/size-tokens.bats, test/self-manage.bats, test/gates.bats, test/evals.bats. Sections A-H are in the generator. The Cursor column of the score sheet has one run. | main | no |
 | 21 | docs | docs/UPGRADE-GUIDE.md and this table | fix/21-upgrade-guide | no |
