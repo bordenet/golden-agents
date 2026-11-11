@@ -36,7 +36,7 @@ teardown() {
 
 @test "Makefile fills only the commands package.json did not define" {
     printf '%s\n' '{"scripts":{"test":"vitest"}}' > "$TEST_DIR/package.json"
-    printf '%s\n' 'test: deps' '	go test ./...' 'lint:' '	golangci-lint run' > "$TEST_DIR/Makefile"
+    printf '%s\n' 'test: deps' '\tgo test ./...' 'lint:' '\tgolangci-lint run' > "$TEST_DIR/Makefile"
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `npm run test` (package.json)'
@@ -45,7 +45,7 @@ teardown() {
 }
 
 @test "justfile and pyproject and a workflow step supply commands in order" {
-    printf '%s\n' 'build:' '	go build ./...' > "$TEST_DIR/justfile"
+    printf '%s\n' 'build:' '\tgo build ./...' > "$TEST_DIR/justfile"
     printf '%s\n' '[project.scripts]' 'lint = "ruff check ."' 'test = "pkg.mod:main"' > "$TEST_DIR/pyproject.toml"
     mkdir -p "$TEST_DIR/.github/workflows"
     printf '%s\n' 'jobs:' '  check:' '    steps:' '      - name: test' '        run: uv run pytest' \
@@ -63,4 +63,88 @@ teardown() {
     [ "$status" -eq 0 ]
     assert_file_not_contains "$TEST_DIR/AGENTS.md" 'Coverage'
     assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm bats test/'
+}
+
+@test "upgrade keeps existing shell gates and does not invent npm" {
+    cat > "$TEST_DIR/AGENTS.md" << 'EOF'
+# AI Agent Guidelines - Demo
+
+> **Languages**: shell,javascript
+> **Type**: cli-tools
+
+<!-- GOLDEN:framework:start -->
+
+## Quality Gates
+
+Before ANY commit:
+1. **Lint**: `shellcheck *.sh`
+2. **Build**: `bash -n *.sh`
+3. **Test**: `bats test/`
+
+<!-- GOLDEN:framework:end -->
+
+## Project-Specific Rules
+
+Keep this sentence.
+EOF
+    run "$GENERATE_SCRIPT" --upgrade --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    added=$(printf '%s\n' "$output" | grep '^+' || true)
+    [[ "$added" == *'1. **Lint**: `shellcheck *.sh`'* ]]
+    [[ "$added" == *'2. **Build**: `bash -n *.sh`'* ]]
+    [[ "$added" == *'3. **Test**: `bats test/`'* ]]
+    [[ "$added" != *'UNVERIFIED: confirm'* ]]
+    [[ "$output" != *'npm run'* ]]
+    [[ "$output" != *'npm test'* ]]
+    [[ "$output" == *'--- Gates left unset ---'* ]]
+    [[ "$output" == *'javascript'* ]]
+    grep -q 'Keep this sentence.' "$TEST_DIR/AGENTS.md"
+}
+
+@test "upgrade keeps a custom command that matches no language template" {
+    cat > "$TEST_DIR/AGENTS.md" << 'EOF'
+# AI Agent Guidelines - Demo
+
+> **Languages**: shell,javascript
+> **Type**: cli-tools
+
+<!-- GOLDEN:framework:start -->
+
+## Quality Gates
+
+1. **Lint**: `shellcheck *.sh`
+2. **Build**: `bash -n *.sh`
+3. **Test**: `bash tools/test-all.sh`
+
+<!-- GOLDEN:framework:end -->
+EOF
+    run "$GENERATE_SCRIPT" --upgrade --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    added=$(printf '%s\n' "$output" | grep '^+' || true)
+    [[ "$added" == *'3. **Test**: `bash tools/test-all.sh`'* ]]
+    [[ "$added" != *'bats test/'* ]]
+    [[ "$added" != *'npm test'* ]]
+}
+
+@test "upgrade prefers a detected command over the command already in the file" {
+    cat > "$TEST_DIR/AGENTS.md" << 'EOF'
+# AI Agent Guidelines - Demo
+
+> **Languages**: shell
+> **Type**: cli-tools
+
+<!-- GOLDEN:framework:start -->
+
+## Quality Gates
+
+1. **Test**: `bats test/`
+
+<!-- GOLDEN:framework:end -->
+EOF
+    printf '%s\n' 'test:' '\ttrue' > "$TEST_DIR/Makefile"
+    run "$GENERATE_SCRIPT" --upgrade --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'3. **Test**: `make test` (Makefile)'* ]]
+    added=$(printf '%s\n' "$output" | grep '^+' || true)
+    [[ "$added" != *'bats test/'* ]]
 }
