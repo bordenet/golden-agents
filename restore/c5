@@ -1,0 +1,335 @@
+# Returns: The comment via stdout
+modules_record() {
+    local name rel hash line=""
+    while read -r name rel; do
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        line="${line:+$line }${name}=${hash}"
+    done < <(each_selected_module)
+    echo "<!-- golden-agents:modules ${line} -->"
+}
+
+# preview_modules
+# Prints what --upgrade or --dry-run would do to .golden-agents/modules.
+# Writes nothing.
+# Arguments: none
+# Returns: 0
+preview_modules() {
+    local name rel dest have hash
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        if [[ ! -f "$dest" ]]; then
+            echo "  would write .golden-agents/modules/${name}.md"
+        else
+            have=$(file_sha256 "$dest")
+            if [[ "$have" == "$hash" ]]; then
+                echo "  unchanged .golden-agents/modules/${name}.md"
+            else
+                echo "  would update .golden-agents/modules/${name}.md"
+                echo "    have     $have"
+                echo "    template $hash"
+            fi
+        fi
+    done < <(each_selected_module)
+}
+
+# write_selected_modules
+# Copies selected templates into OUTPUT_PATH/.golden-agents/modules/.
+# Arguments: none
+# Returns: 0
+write_selected_modules() {
+    local name rel dest
+    mkdir -p "$OUTPUT_PATH/.golden-agents/modules"
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        cp "$TEMPLATES_DIR/$rel" "$dest"
+        echo "  wrote .golden-agents/modules/${name}.md"
+    done < <(each_selected_module)
+}
+
+# apply_modules_comment <file>
+# Inserts or replaces the modules comment. A stamp line keeps it on the next
+# line. A file with no stamp gets it immediately before the framework marker.
+# Arguments:
+#   $1 - AGENTS.md path
+# Returns: 0
+apply_modules_comment() {
+    local file="$1"
+    local desired tmp
+    desired=$(modules_record)
+    tmp=$(mktemp)
+    MARK="$MARKER_START" DESIRED="$desired" awk '
+        index($0, "<!-- golden-agents:modules ") == 1 { next }
+        !inserted && index($0, "<!-- golden-agents:stamp ") == 1 {
+            print
+            print ENVIRON["DESIRED"]
+            inserted = 1
+            next
+        }
+        !inserted && index($0, ENVIRON["MARK"]) {
+            print ENVIRON["DESIRED"]
+            inserted = 1
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+# rule_glob <language>
+# Path glob for a language module. Empty for an unknown language.
+rule_glob() {
+    case "$1" in
+        go) echo '**/*.go' ;;
+        python) echo '**/*.py' ;;
+        javascript) echo '**/*.{js,ts,jsx,tsx}' ;;
+        shell) echo '**/*.sh' ;;
+        dart-flutter) echo '**/*.dart' ;;
+        *) echo '' ;;
+    esac
+}
+
+# rule_owned <file>
+# A rule file is ours when it is missing or carries the generated sentinel.
+# A hand-written file is left alone.
+rule_owned() {
+    local file="$1"
+    [[ ! -e "$file" ]] && return 0
+    grep -qxF "$GENERATED_SENTINEL" "$file"
+}
+
+# render_rule <dest> <frontmatter> <body>
+# Frontmatter may be empty. The sentinel is the last line.
+render_rule() {
+    local dest="$1" front="$2" body="$3"
+    mkdir -p "$(dirname "$dest")"
+    {
+        if [[ -n "$front" ]]; then
+            printf '%s\n' "$front"
+            echo
+        fi
+        cat "$body"
+        echo
+        echo "$GENERATED_SENTINEL"
+    } > "$dest"
+}
+
+# each_scoped_rule
+# Lines of "<name> <body-path> <mode> <glob>".
+# mode is "always" or "scoped". Invariants and security always load.
+# A language rule is scoped to that language's files.
+# A project type applies to the whole project.
+each_scoped_rule() {
+    local lang glob rel
+    echo "invariants $TEMPLATES_DIR/core/invariants.md always"
+    echo "security $TEMPLATES_DIR/workflows/security.md always"
+    local IFS=','
+    for lang in $LANGUAGES; do
+        rel="$TEMPLATES_DIR/languages/${lang}.md"
+        glob=$(rule_glob "$lang")
+        if [[ -f "$rel" && -n "$glob" ]]; then
+            echo "${lang} ${rel} scoped ${glob}"
+        fi
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} $TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md always"
+    fi
+}
+
+# rule_frontmatter <tool> <mode> <glob> <name>
+# tool is claude, cursor, or copilot.
+rule_frontmatter() {
+    local tool="$1" mode="$2" glob="$3" name="$4"
+    case "$tool" in
+        claude)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "paths:" "  - \"${glob}\"" "---"
+            fi
+            ;;
+        cursor)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "description: ${name} rules" "globs: \"${glob}\"" "alwaysApply: false" "---"
+            else
+                printf '%s\n' "---" "description: ${name} rules" "alwaysApply: true" "---"
+            fi
+            ;;
+        copilot)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "applyTo: \"${glob}\"" "---"
+            else
+                printf '%s\n' "---" "applyTo: \"**\"" "---"
+            fi
+            ;;
+    esac
+}
+
+# rule_dest <tool> <name>
+rule_dest() {
+    case "$1" in
+        claude) echo "$OUTPUT_PATH/.claude/rules/${2}.md" ;;
+        cursor) echo "$OUTPUT_PATH/.cursor/rules/${2}.mdc" ;;
+        copilot) echo "$OUTPUT_PATH/.github/instructions/${2}.instructions.md" ;;
+    esac
+}
+
+# sync_scoped_rules <preview|apply>
+# Writes Claude, Cursor, and Copilot rule files for the selected modules.
+# A file without the generated sentinel is left in place.
+sync_scoped_rules() {
+    local mode="$1"
+    local name body rule_mode glob tool dest front tmp
+    while read -r name body rule_mode glob; do
+        [[ -n "$name" ]] || continue
+        for tool in claude cursor copilot; do
+            dest=$(rule_dest "$tool" "$name")
+            if [[ -e "$dest" ]] && ! rule_owned "$dest"; then
+                if [[ "$mode" == "preview" ]]; then
+                    echo "  would leave ${dest#"$OUTPUT_PATH"/} (hand-written)"
+                else
+                    echo "  left ${dest#"$OUTPUT_PATH"/} (hand-written)"
+                fi
+                continue
+            fi
+            front=$(rule_frontmatter "$tool" "$rule_mode" "$glob" "$name")
+            if [[ "$mode" == "preview" ]]; then
+                tmp=$(mktemp)
+                render_rule "$tmp" "$front" "$body"
+                if [[ -f "$dest" ]] && cmp -s "$tmp" "$dest"; then
+                    echo "  unchanged ${dest#"$OUTPUT_PATH"/}"
+                elif [[ -f "$dest" ]]; then
+                    echo "  would update ${dest#"$OUTPUT_PATH"/}"
+                else
+                    echo "  would write ${dest#"$OUTPUT_PATH"/}"
+                fi
+                rm -f "$tmp"
+            else
+                render_rule "$dest" "$front" "$body"
+                echo "  wrote ${dest#"$OUTPUT_PATH"/}"
+            fi
+        done
+    done < <(each_scoped_rule)
+}
+
+# superpowers_block
+# The opt-in bootstrap. It is written after the framework end marker so a
+# later upgrade does not restore it.
+# Arguments: none
+# Returns: The block via stdout
+superpowers_block() {
+    cat << 'EOF'
+
+### Optional: Superpowers integration
+
+Two parallel, mutually exclusive skill ecosystems exist. At the **START of every conversation**, detect which THIS machine uses and bootstrap accordingly:
+
+- **superpowers-acme**: No bootstrap required (skills are pre-deployed as symlinks).
+- **superpowers-plus**: Run the js bootstrap:
+  ```bash
+  node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+  ```
+
+This loads available skills into the environment. To load a specific skill manually (plus only):
+```bash
+node ~/.codex/superpowers-augment/superpowers-augment.js use-skill <name>
+```
+EOF
+}
+
+# place_superpowers_block <file>
+# Inserts the bootstrap immediately after the framework end marker when the
+# text below that marker does not already contain the bootstrap command.
+# Arguments:
+#   $1 - AGENTS.md path
+# Returns: 0
+place_superpowers_block() {
+    local file="$1"
+    if awk -v mark="$MARKER_END" '
+        index($0, mark) { seen = 1; next }
+        seen && index($0, "superpowers-augment.js bootstrap") { found = 1 }
+        END { exit !found }
+    ' "$file"; then
+        return 0
+    fi
+    local tmp block
+    tmp=$(mktemp)
+    block=$(mktemp)
+    superpowers_block > "$block"
+    MARK="$MARKER_END" BLOCK="$block" awk '
+        { print }
+        !done && index($0, ENVIRON["MARK"]) {
+            while ((getline line < ENVIRON["BLOCK"]) > 0) print line
+            done = 1
+        }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+    rm -f "$block"
+}
+
+# generate_progressive()
+# Generates a progressive-loading AGENTS.md (~60-80 lines).
+# Multi-language projects get gates per language unless that pushes the file past
+# MAX_PROGRESSIVE_LINES; then only the first language's gates are shown and the
+# rest are named.
+# Arguments: none (uses globals)
+# Returns: Complete AGENTS.md content via stdout
+generate_progressive() {
+    local tmp_dir lines
+    tmp_dir=$(mktemp -d)
+    generate_progressive_body "per-language" > "$tmp_dir/agents.md"
+    lines=$(wc -l < "$tmp_dir/agents.md" | tr -d ' ')
+    if [[ "$lines" -gt "$MAX_PROGRESSIVE_LINES" ]]; then
+        generate_progressive_body "first"
+    else
+        cat "$tmp_dir/agents.md"
+    fi
+    rm -rf "$tmp_dir"
+}
+
+# generate_progressive_body <gate_style>
+# Uses on-demand module loading from .golden-agents/modules/ in the consumer repo.
+# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
+# Arguments:
+#   $1 - "per-language" or "first" (multi-language gate layout)
+# Returns: Complete AGENTS.md content via stdout
+generate_progressive_body() {
+    local gate_style="$1"
+    local today modules_line
+    [[ -n "${GATE_NOTE_FILE:-}" ]] && : > "$GATE_NOTE_FILE"
+    today=$(date +%Y-%m-%d)
+    modules_line=$(modules_record)
+
+    IFS=',' read -ra lang_array <<< "$LANGUAGES"
+
+    cat << HEADER
+# AI Agent Guidelines - $PROJECT_NAME
+
+> **Generated by**: [golden-agents](https://github.com/bordenet/golden-agents) v${FRAMEWORK_VERSION} (progressive)
+<!-- golden-agents:stamp version=${FRAMEWORK_VERSION} updated=${today} -->
+${modules_line}
+> **Languages**: $LANGUAGES
+> **Type**: ${PROJECT_TYPE:-general}
+
+Minimal core with on-demand module loading. Modules: \`.golden-agents/modules/\`
+
+HEADER
+
+    # Output self-manage bootstrap block
+    generate_self_manage_block
+
+    cat << FRAMEWORK_START
+
+$MARKER_START
+
+---
+
+## Quality Gates
+
+FRAMEWORK_START
+
+    if [[ ${#lang_array[@]} -eq 1 ]]; then
+        echo "Before a commit:"
+        emit_lang_gates "${lang_array[0]}" || note_unset_gate "${lang_array[0]}"
+    elif [[ "$gate_style" == "first" ]]; then
+        local others="${LANGUAGES#*,}"
+        echo "Before a commit (gates shown for ${lang_array[0]}; add equivalents for ${others//,/, }):"
+        emit_lang_gates "${lang_array[0]}" || note_unset_gate "${lang_array[0]}"
+    else
