@@ -36,7 +36,7 @@ teardown() {
 
 @test "Makefile fills only the commands package.json did not define" {
     printf '%s\n' '{"scripts":{"test":"vitest"}}' > "$TEST_DIR/package.json"
-    printf '%s\n' 'test: deps' '\tgo test ./...' 'lint:' '\tgolangci-lint run' > "$TEST_DIR/Makefile"
+    printf '%s\n' 'test: deps' '	go test ./...' 'lint:' '	golangci-lint run' > "$TEST_DIR/Makefile"
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `npm run test` (package.json)'
@@ -45,7 +45,7 @@ teardown() {
 }
 
 @test "justfile and pyproject and a workflow step supply commands in order" {
-    printf '%s\n' 'build:' '\tgo build ./...' > "$TEST_DIR/justfile"
+    printf '%s\n' 'build:' '	go build ./...' > "$TEST_DIR/justfile"
     printf '%s\n' '[project.scripts]' 'lint = "ruff check ."' 'test = "pkg.mod:main"' > "$TEST_DIR/pyproject.toml"
     mkdir -p "$TEST_DIR/.github/workflows"
     printf '%s\n' 'jobs:' '  check:' '    steps:' '      - name: test' '        run: uv run pytest' \
@@ -141,7 +141,7 @@ EOF
 
 <!-- GOLDEN:framework:end -->
 EOF
-    printf '%s\n' 'test:' '\ttrue' > "$TEST_DIR/Makefile"
+    printf '%s\n' 'test:' '	true' > "$TEST_DIR/Makefile"
     run "$GENERATE_SCRIPT" --upgrade --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     [[ "$output" == *'3. **Test**: `make test` (Makefile)'* ]]
