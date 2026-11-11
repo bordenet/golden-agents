@@ -1,1 +1,2 @@
-PLACEHOLDER_DO_NOT_APPLY
+#!/usr/bin/env bash
+# restored in the following full write
