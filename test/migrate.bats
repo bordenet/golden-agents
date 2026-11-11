@@ -164,3 +164,70 @@ EOF
     [ ! -f "$TEST_DIR/AGENTS.md" ]
 }
 
+
+# Test 12: A single legacy Agents.md is collected once.
+# On case-insensitive volumes (macOS default) AGENTS.md and Agents.md name one
+# file; on case-sensitive volumes this test passes trivially.
+@test "migrate collects a single Agents.md once" {
+    printf '# Legacy guide\nUNIQUE_LEGACY_LINE\n' > "$TEST_DIR/Agents.md"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ "$(grep -c UNIQUE_LEGACY_LINE "$TEST_DIR/MIGRATION-PROMPT.md")" -eq 1 ]
+    local found
+    found=$(echo "$output" | grep 'Found existing guidance')
+    [ "$(echo "$found" | grep -o 'no markers' | wc -l | tr -d ' ')" -eq 1 ]
+}
+
+# Test 13: Plain run lists a single AGENTS.md once
+@test "plain run blocked by AGENTS.md lists it once" {
+    create_agents_without_markers "$TEST_DIR"
+
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [ "$(echo "$output" | grep -ci 'agents\.md (existing')" -eq 1 ]
+}
+
+# Test 14: Prompt text has no literal backslash-backtick
+@test "migration prompt has no literal backslash-backtick" {
+    create_realistic_claude_md "$TEST_DIR"
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    run grep -n '\\`' "$TEST_DIR/MIGRATION-PROMPT.md"
+    [ "$status" -ne 0 ]
+}
+
+# Test 15: Embedded content with fences does not close the outer fence
+@test "migration prompt fence is longer than any backtick run in content" {
+    cat > "$TEST_DIR/CLAUDE.md" << 'EOF2'
+# Guide
+```bash
+npm test
+```
+````text
+nested four
+````
+UNIQUE_AFTER_FENCES
+EOF2
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    local prompt="$TEST_DIR/MIGRATION-PROMPT.md"
+    # Opening fence is five backticks; the matching close comes after the content
+    local open close marker
+    open=$(grep -n '^`````markdown$' "$prompt" | cut -d: -f1)
+    marker=$(grep -n 'UNIQUE_AFTER_FENCES' "$prompt" | cut -d: -f1)
+    close=$(grep -n '^`````$' "$prompt" | cut -d: -f1)
+    [ -n "$open" ]
+    [ -n "$marker" ]
+    [ -n "$close" ]
+    [ "$open" -lt "$marker" ]
+    [ "$marker" -lt "$close" ]
+}
+
+# Test 16: Content without fences keeps a three-backtick fence
+@test "migration prompt uses a three-backtick fence for plain content" {
+    printf '# Guide\nNo code blocks here, only `inline` code.\n' > "$TEST_DIR/CLAUDE.md"
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -qx '```markdown' "$TEST_DIR/MIGRATION-PROMPT.md"
+}
