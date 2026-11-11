@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Detected quality gates** - Before using a template command, generation
+  reads `package.json` scripts, `Makefile` and `justfile` targets,
+  `pyproject.toml` `[project.scripts]`, then GitHub Actions step names.
+  Only the names `lint`, `test`, `build`, and `coverage` match. A match
+  is written with the file it came from. Anything else keeps the template
+  command prefixed with `UNVERIFIED: confirm`.
 - **Size and self-maintenance** - Generation and upgrade print a token
   estimate (file bytes divided by 4). `--help` names 200 lines as the soft
   ceiling for the always-loaded file and keeps the 250-line lock. The
