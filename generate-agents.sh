@@ -26,6 +26,7 @@ REPO_URL="https://github.com/bordenet/golden-agents.git"
 LANGUAGES=""
 PROJECT_TYPE=""
 OUTPUT_PATH="."
+PATH_GIVEN=false
 PROJECT_NAME=""
 # Mode is progressive by default
 FULL=false        # Legacy mode, deprecated
@@ -41,6 +42,11 @@ DEDUPE=false
 MARKER_START="<!-- GOLDEN:framework:start -->"
 MARKER_END="<!-- GOLDEN:framework:end -->"
 FRAMEWORK_VERSION="1.4.0"
+# Line limit for AGENTS.md and each .ai-guidance/*.md. templates/core/invariants.md and
+# templates/modular-migration-prompt.md state it literally; test/thresholds.bats keeps them in sync.
+MAX_GUIDANCE_LINES=250
+# Line budget for a freshly generated progressive AGENTS.md (test/size-limits.bats)
+MAX_PROGRESSIVE_LINES=100
 SELF_MANAGE_START="<!-- GOLDEN:self-manage:start -->"
 # shellcheck disable=SC2034 # SELF_MANAGE_END defined for symmetry; will be used in Phase 3 bloat detection
 SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
@@ -78,7 +84,7 @@ PLATFORM SUPPORT
     Windows WSL ..... Native (run from WSL bash shell)
     Windows Native .. Requires Git Bash, Cygwin, or MSYS2
 
-    Requirements: Bash 4.0+, Git
+    Requirements: Bash 3.2+, Git
 
     NOTE: Native PowerShell/cmd.exe is NOT supported. This is a bash script.
           On Windows, use WSL (recommended), Git Bash, Cygwin, or MSYS2.
@@ -88,8 +94,10 @@ OPTIONS
     --type=TYPE         Project type (genesis-tools, cli-tools, web-apps, mobile-apps)
     --path=PATH         Output directory (default: current directory)
     --name=NAME         Project name for header (default: directory name)
+                        Value options also accept a space: --path ./my-project
     --progressive       Generate minimal core (~60 lines) with on-demand loading (default)
-    --sync              Update local templates from GitHub
+    --sync              Update local templates from GitHub (git fetch, fast-forward
+                        only; refuses on uncommitted changes or local commits)
     --dry-run           Print what would be generated without writing
     --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
     --adopt             Adopt existing AGENTS.md (backs up, appends, creates ADOPT-PROMPT.md)
@@ -112,12 +120,22 @@ MIGRATION (First-time adoption)
     When existing guidance files are detected (CLAUDE.md, AGENTS.md with content),
     generation is blocked to prevent data loss. Use --migrate to:
 
-    1. Generate the framework AGENTS.md
-    2. Create MIGRATION-PROMPT.md with your existing content
-    3. Add MIGRATION-PROMPT.md to .gitignore
+    1. Back up existing CLAUDE.md, AGENTS.md and other non-generated redirects
+       to <file>.<YYYYmmdd-HHMMSS>.bak (not gitignored)
+    2. Generate the framework AGENTS.md
+    3. Create MIGRATION-PROMPT.md with your existing content
+    4. Add MIGRATION-PROMPT.md to .gitignore
 
     Then paste MIGRATION-PROMPT.md content into your AI assistant to complete migration.
     Delete MIGRATION-PROMPT.md after migration is complete.
+
+WRITE SAFETY
+    Redirect files written by the generator end with the line
+    <!-- golden-agents:generated -->. Redirects without it (other than exact
+    1.4.x stubs) hold your content. Any existing AGENTS.md also counts.
+    - Plain generation: refuses, lists each blocking file, writes nothing, exits 1
+    - --adopt / --migrate: copies each blocking redirect to
+      <file>.<YYYYmmdd-HHMMSS>.bak first, then proceeds
 
 UPGRADE SAFETY
     - Without --apply: shows diff of what would change (safe)
@@ -195,21 +213,30 @@ version() {
 }
 
 # sync_templates()
-# Updates local templates by pulling from the GitHub repository.
+# Updates local templates from origin/main with a fast-forward only merge.
+# Never rebases or merges local history, and refuses when tracked files are modified.
 # Requires the script directory to be a git repository.
 # Arguments: none
-# Returns: 0 on success, 1 if not a git repo
+# Returns: 0 on success; exits 1 if not a git repo, dirty, or diverged
 sync_templates() {
     echo "[INFO] Syncing templates from GitHub..."
 
-    if [[ -d "$SCRIPT_DIR/.git" ]]; then
-        cd "$SCRIPT_DIR"
-        git pull --rebase origin main
-        echo "[OK] Templates updated"
-    else
+    if [[ ! -d "$SCRIPT_DIR/.git" ]]; then
         echo "[WARN] Not a git repo. Re-clone from: $REPO_URL"
         exit 1
     fi
+    if [[ -n "$(git -C "$SCRIPT_DIR" status --porcelain --untracked-files=no)" ]]; then
+        echo "[ERROR] $SCRIPT_DIR has uncommitted changes; refusing to sync." >&2
+        echo "  Commit or stash them, then rerun --sync." >&2
+        exit 1
+    fi
+    git -C "$SCRIPT_DIR" fetch origin main
+    if ! git -C "$SCRIPT_DIR" merge --ff-only FETCH_HEAD; then
+        echo "[ERROR] Local history differs from origin/main and cannot fast-forward." >&2
+        echo "  Nothing was changed. Reconcile $SCRIPT_DIR by hand." >&2
+        exit 1
+    fi
+    echo "[OK] Templates updated"
 }
 
 # resolve_language_alias <alias>
@@ -254,12 +281,160 @@ resolve_languages() {
     echo "$resolved"
 }
 
-# Minimum bytes to consider a file as having substantial content (not just a redirect)
-MIN_CONTENT_BYTES=100
+# list_templates <subdir>
+# Lists template names (file names without .md) in templates/<subdir>.
+# Arguments:
+#   $1 - Subdirectory of templates/ (languages, project-types)
+# Returns: Comma-separated names via stdout
+list_templates() {
+    local f names=""
+    for f in "$TEMPLATES_DIR/$1"/*.md; do
+        [[ -e "$f" ]] || continue
+        f=$(basename "$f" .md)
+        names="${names:+$names, }$f"
+    done
+    echo "$names"
+}
+
+# is_template <subdir> <name>
+# Arguments:
+#   $1 - Subdirectory of templates/
+#   $2 - Template name to check
+# Returns: 0 if templates/<subdir>/<name>.md exists and name is a plain token
+is_template() {
+    case "$2" in
+        "" | *[!a-z0-9-]*) return 1 ;;
+    esac
+    [[ -f "$TEMPLATES_DIR/$1/$2.md" ]]
+}
+
+# Redirect files carrying this line were written by the generator and may be overwritten.
+GENERATED_SENTINEL="<!-- golden-agents:generated -->"
+
+# Redirect files the generator owns, relative to the output path.
+REDIRECT_FILES="CLAUDE.md CODEX.md AGENT.md GEMINI.md COPILOT.md .github/copilot-instructions.md"
+
+# redirect_title <relpath>
+# Returns: Markdown title for a redirect file via stdout
+redirect_title() {
+    case "$1" in
+        CLAUDE.md) echo "Claude Code Instructions" ;;
+        CODEX.md) echo "OpenAI Codex CLI Instructions" ;;
+        AGENT.md) echo "Amp by Sourcegraph Instructions" ;;
+        GEMINI.md) echo "Google Gemini Code Assist Instructions" ;;
+        COPILOT.md) echo "GitHub Copilot Instructions" ;;
+        .github/copilot-instructions.md) echo "GitHub Copilot Custom Instructions" ;;
+    esac
+}
+
+# redirect_body <relpath> <agents_name>
+# Prints a redirect body without the sentinel. With agents_name "AGENTS.md" or
+# "Agents.md" this is byte-identical to the stubs 1.4.x wrote.
+# Arguments:
+#   $1 - Redirect file path relative to the output path
+#   $2 - Name of the AGENTS file the redirect links to
+# Returns: Redirect body via stdout
+redirect_body() {
+    local rel="$1"
+    local agents="$2"
+    if [[ "$rel" == ".github/copilot-instructions.md" ]]; then
+        cat << EOF
+# $(redirect_title "$rel")
+
+See **[../$agents](../$agents)** for all AI guidance.
+
+## Summary
+
+This project uses the Golden Agents Framework for AI coding assistant guidance.
+All instructions are consolidated in $agents at the project root.
+EOF
+    else
+        cat << EOF
+# $(redirect_title "$rel")
+
+See **[$agents](./$agents)** for all AI guidance.
+EOF
+    fi
+}
+
+# is_generated_redirect <file> <relpath>
+# A redirect is generated if it carries the sentinel line or is byte-identical
+# to a 1.4.x stub (either AGENTS.md spelling).
+# Arguments:
+#   $1 - Path to an existing file
+#   $2 - Redirect file path relative to the output path
+# Returns: 0 if generated, 1 otherwise
+is_generated_redirect() {
+    local file="$1"
+    local rel="$2"
+    if grep -qxF "$GENERATED_SENTINEL" "$file"; then
+        return 0
+    fi
+    if cmp -s "$file" <(redirect_body "$rel" "AGENTS.md"); then
+        return 0
+    fi
+    if cmp -s "$file" <(redirect_body "$rel" "Agents.md"); then
+        return 0
+    fi
+    return 1
+}
+
+# find_blocking_redirects <path>
+# Lists redirect files that exist and hold non-generated content.
+# Arguments:
+#   $1 - Directory path to check
+# Returns: Newline-separated relative paths via stdout, or empty string
+find_blocking_redirects() {
+    local path="$1"
+    local rel
+    for rel in $REDIRECT_FILES; do
+        if [[ -f "$path/$rel" ]] && ! is_generated_redirect "$path/$rel" "$rel"; then
+            echo "$rel"
+        fi
+    done
+}
+
+# backup_file <file>
+# Copies a file to <file>.<YYYYmmdd-HHMMSS>.bak, adding -1, -2 on collision.
+# Arguments:
+#   $1 - Path to the file to back up
+# Returns: 0 on success
+backup_file() {
+    local src="$1"
+    local stamp dest
+    local n=0
+    stamp=$(date +%Y%m%d-%H%M%S)
+    dest="$src.$stamp.bak"
+    while [[ -e "$dest" ]]; do
+        n=$((n + 1))
+        dest="$src.$stamp-$n.bak"
+    done
+    cp -p "$src" "$dest"
+    echo "[OK] Backed up: $dest"
+}
+
+# gitignore_add <dir> <entry>
+# Appends entry to <dir>/.gitignore on its own line, creating the file if needed.
+# Skips the append when the entry already appears in the file.
+# Arguments:
+#   $1 - Directory containing .gitignore
+#   $2 - Entry to add
+# Returns: 0 if added, 1 if already present
+gitignore_add() {
+    local file="$1/.gitignore"
+    local entry="$2"
+    if [[ -f "$file" ]] && grep -qF "$entry" "$file"; then
+        return 1
+    fi
+    if [[ -s "$file" && -n "$(tail -c 1 "$file")" ]]; then
+        printf '\n' >> "$file"
+    fi
+    printf '%s\n' "$entry" >> "$file"
+}
 
 # check_existing_guidance <path>
 # Checks for existing guidance files that would be overwritten.
-# Detects CLAUDE.md, Agents.md, and AGENTS.md with substantial content.
+# Detects non-generated CLAUDE.md, and Agents.md and AGENTS.md without markers.
 # Arguments:
 #   $1 - Directory path to check
 # Returns: Space-separated list of found files with sizes via stdout, or empty string
@@ -267,17 +442,15 @@ check_existing_guidance() {
     local path="$1"
     local found_files=""
 
-    # Check CLAUDE.md (if >100 bytes, it's not just a redirect)
-    if [[ -f "$path/CLAUDE.md" ]]; then
+    if [[ -f "$path/CLAUDE.md" ]] && ! is_generated_redirect "$path/CLAUDE.md" "CLAUDE.md"; then
         local size
         size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
-        if [[ "$size" -gt "$MIN_CONTENT_BYTES" ]]; then
-            found_files="CLAUDE.md ($size bytes)"
-        fi
+        found_files="CLAUDE.md ($size bytes)"
     fi
 
-    # Check Agents.md without markers
-    if [[ -f "$path/Agents.md" ]]; then
+    # Check Agents.md without markers (skip when it is the same file as AGENTS.md,
+    # as on case-insensitive filesystems)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]]; then
         if ! grep -q "$MARKER_START" "$path/Agents.md"; then
             local size
             size=$(wc -c < "$path/Agents.md" | tr -d ' ')
@@ -310,17 +483,14 @@ generate_migration_prompt() {
     local source_file=""
 
     # Collect existing content from CLAUDE.md
-    if [[ -f "$path/CLAUDE.md" ]]; then
-        local size
-        size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
-        if [[ "$size" -gt "$MIN_CONTENT_BYTES" ]]; then
-            source_file="CLAUDE.md"
-            existing_content=$(cat "$path/CLAUDE.md")
-        fi
+    if [[ -f "$path/CLAUDE.md" ]] && ! is_generated_redirect "$path/CLAUDE.md" "CLAUDE.md"; then
+        source_file="CLAUDE.md"
+        existing_content=$(cat "$path/CLAUDE.md")
     fi
 
-    # Collect from Agents.md without markers
-    if [[ -f "$path/Agents.md" ]] && ! grep -q "$MARKER_START" "$path/Agents.md"; then
+    # Collect from Agents.md without markers (once, if it is the same file as AGENTS.md)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]] \
+        && ! grep -q "$MARKER_START" "$path/Agents.md"; then
         local size
         size=$(wc -c < "$path/Agents.md" | tr -d ' ')
         source_file="${source_file:+$source_file + }Agents.md"
@@ -379,24 +549,33 @@ You are helping migrate project-specific AI guidance into the golden-agents fram
 | Complex (many integrations, strict domain rules) | **50-100 lines** |
 
 **If your project exceeds 100 lines** of genuinely project-specific content:
-1. Create a \`.ai-guidance/\` directory in your repo
-2. Split content into topic-specific modules (e.g., \`mobile-builds.md\`, \`security.md\`)
+1. Create a `.ai-guidance/` directory in your repo
+2. Split content into topic-specific modules (e.g., `mobile-builds.md`, `security.md`)
 3. Add a loading table to AGENTS.md referencing when to load each module
-4. Keep AGENTS.md under 150 lines with quick reference + loading instructions
-
-## Source Files
 PROMPT_EOF
+    echo "4. Keep AGENTS.md under $MAX_GUIDANCE_LINES lines with quick reference + loading instructions"
+    echo ""
+    echo "## Source Files"
     echo ""
     echo "Migrated from: $source_file"
     local source_lines
     source_lines=$(echo "$existing_content" | wc -l | tr -d ' ')
     echo "Original size: $source_lines lines"
     echo ""
+    # The fence must be longer than any backtick run in the content, or an
+    # embedded code block closes it early
+    local longest_run fence=""
+    longest_run=$(printf '%s\n' "$existing_content" | awk '
+        { s = $0; while (match(s, /`+/)) { if (RLENGTH > m) m = RLENGTH; s = substr(s, RSTART + RLENGTH) } }
+        END { print m + 0 }')
+    while [[ ${#fence} -lt 3 || ${#fence} -le $longest_run ]]; do
+        fence="${fence}\`"
+    done
     echo "## Existing Content"
     echo ""
-    echo '```markdown'
+    echo "${fence}markdown"
     echo "$existing_content"
-    echo '```'
+    echo "$fence"
     echo ""
     echo "## Report Metrics"
     echo ""
@@ -422,12 +601,23 @@ PROMPT_EOF
     echo "5. Commit the changes"
 }
 
-# Parse arguments
-for arg in "$@"; do
+# Parse arguments (value options accept --opt=value and --opt value)
+while [[ $# -gt 0 ]]; do
+    arg="$1"
+    case $arg in
+        --language|--type|--path|--name)
+            if [[ $# -lt 2 || "$2" == --* ]]; then
+                echo "Error: $arg requires a value" >&2
+                exit 1
+            fi
+            arg="$arg=$2"
+            shift
+            ;;
+    esac
     case $arg in
         --language=*) LANGUAGES="${arg#*=}" ;;
         --type=*) PROJECT_TYPE="${arg#*=}" ;;
-        --path=*) OUTPUT_PATH="${arg#*=}" ;;
+        --path=*) OUTPUT_PATH="${arg#*=}"; PATH_GIVEN=true ;;
         --name=*) PROJECT_NAME="${arg#*=}" ;;
         --progressive) ;; # Already the default, flag accepted for clarity
         --full)
@@ -446,6 +636,7 @@ for arg in "$@"; do
         -v|--version) version; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
     esac
+    shift
 done
 
 # Validate --apply requires --upgrade
@@ -465,6 +656,24 @@ if [[ "$SYNC" == "true" ]]; then
     exit 0
 fi
 
+# Validate --language and --type against templates/
+if [[ -n "$LANGUAGES" ]]; then
+    IFS=',' read -ra requested_langs <<< "$LANGUAGES"
+    for lang in "${requested_langs[@]}"; do
+        if ! is_template languages "$lang"; then
+            echo "[ERROR] Unknown language: $lang" >&2
+            echo "  Valid languages: $(list_templates languages)" >&2
+            echo "  Aliases are listed under LANGUAGE ALIASES in --help." >&2
+            exit 1
+        fi
+    done
+fi
+if [[ -n "$PROJECT_TYPE" ]] && ! is_template project-types "$PROJECT_TYPE"; then
+    echo "[ERROR] Unknown project type: $PROJECT_TYPE" >&2
+    echo "  Valid types: $(list_templates project-types)" >&2
+    exit 1
+fi
+
 # Validate --adopt requires --language
 if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
     echo "Error: --adopt requires --language" >&2
@@ -472,7 +681,7 @@ if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
 fi
 
 # Validate --dedupe requires --path
-if [[ "$DEDUPE" == "true" && "$OUTPUT_PATH" == "." ]]; then
+if [[ "$DEDUPE" == "true" && "$PATH_GIVEN" != "true" ]]; then
     echo "Error: --dedupe requires --path" >&2
     exit 1
 fi
@@ -498,11 +707,35 @@ if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
     exit 1
 fi
 
+# Redirect files with non-generated content; backed up in --adopt/--migrate, block plain runs
+BLOCKING_REDIRECTS=$(find_blocking_redirects "$OUTPUT_PATH")
+
 # Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dedupe or --dry-run is used)
+# A blocked plain run writes nothing at all.
 if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DEDUPE" != "true" && "$DRY_RUN" != "true" ]]; then
-    existing=$(check_existing_guidance "$OUTPUT_PATH")
-    if [[ -n "$existing" ]]; then
-        echo "[ERROR] Found existing guidance files: $existing" >&2
+    blocking=""
+    for name in AGENTS.md Agents.md; do
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
+        if [[ -f "$OUTPUT_PATH/$name" ]]; then
+            if grep -q "$MARKER_START" "$OUTPUT_PATH/$name"; then
+                blocking="${blocking}  $name (existing file with markers; use --upgrade)
+"
+            else
+                blocking="${blocking}  $name (existing file without markers; use --adopt or --migrate)
+"
+            fi
+        fi
+    done
+    for rel in $BLOCKING_REDIRECTS; do
+        blocking="${blocking}  $rel (non-generated content)
+"
+    done
+    if [[ -n "$blocking" ]]; then
+        echo "[ERROR] Found existing guidance files. No files were written." >&2
+        echo "" >&2
+        printf '%s' "$blocking" >&2
         echo "" >&2
         echo "  These files contain project-specific content that would be lost." >&2
         echo "  Use --migrate to safely incorporate this content into the new AGENTS.md." >&2
@@ -539,18 +772,28 @@ if [[ "$MIGRATE" == "true" ]]; then
             echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
 
             # Add to .gitignore
-            if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-                if ! grep -q "MIGRATION-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                    echo "MIGRATION-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
-                fi
-            else
-                echo "MIGRATION-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
-            fi
+            gitignore_add "$OUTPUT_PATH" "MIGRATION-PROMPT.md" || true
             echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
         fi
     else
         echo "[INFO] No existing guidance files found. Running normal generation."
     fi
+
+    # Normal generation below replaces AGENTS.md, so back up any existing one
+    # (with or without markers). Both names may be one file on case-insensitive volumes.
+    for name in AGENTS.md Agents.md; do
+        if [[ ! -f "$OUTPUT_PATH/$name" ]]; then
+            continue
+        fi
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "[DRY RUN] Would back up $name to $name.<timestamp>.bak"
+        else
+            backup_file "$OUTPUT_PATH/$name"
+        fi
+    done
 
     # Continue with normal generation (framework AGENTS.md)
     # Fall through to normal generation below
@@ -612,16 +855,8 @@ if [[ "$ADOPT" == "true" ]]; then
         fi
 
         # Add to .gitignore
-        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-            if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
-            fi
-            if ! grep -q "AGENTS.md.original" "$OUTPUT_PATH/.gitignore"; then
-                echo "AGENTS.md.original" >> "$OUTPUT_PATH/.gitignore"
-            fi
-        else
-            printf "ADOPT-PROMPT.md\nAGENTS.md.original\n" > "$OUTPUT_PATH/.gitignore"
-        fi
+        gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md" || true
+        gitignore_add "$OUTPUT_PATH" "AGENTS.md.original" || true
         echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
     fi
 
@@ -652,6 +887,13 @@ if [[ "$DEDUPE" == "true" ]]; then
     if ! grep -q "$MARKER_START" "$existing_agents_file"; then
         echo "[ERROR] $(basename "$existing_agents_file") does not have framework markers" >&2
         echo "  Use --adopt instead for files created without golden-agents." >&2
+        exit 1
+    fi
+
+    if ! grep -qF "$MARKER_END" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") has $MARKER_START but no $MARKER_END" >&2
+        echo "  Restore the end marker after the framework section, then rerun --dedupe." >&2
+        echo "  No files were changed." >&2
         exit 1
     fi
 
@@ -693,12 +935,11 @@ if [[ "$DEDUPE" == "true" ]]; then
 
         # Add to .gitignore if not already there
         if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
-            if ! grep -q "ADOPT-PROMPT.md" "$OUTPUT_PATH/.gitignore"; then
-                echo "ADOPT-PROMPT.md" >> "$OUTPUT_PATH/.gitignore"
+            if gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"; then
                 echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
             fi
         else
-            echo "ADOPT-PROMPT.md" > "$OUTPUT_PATH/.gitignore"
+            gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"
             echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
         fi
     fi
@@ -749,21 +990,15 @@ get_lang_commands() {
     esac
 }
 
-# generate_progressive()
-# Generates a progressive-loading AGENTS.md (~60-80 lines).
-# Uses on-demand module loading from $HOME/.golden-agents/templates/.
-# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
-# Arguments: none (uses globals)
-# Returns: Complete AGENTS.md content via stdout
-generate_progressive() {
-    local today
-    today=$(date +%Y-%m-%d)
-    local golden_agents_path="\$HOME/.golden-agents"
-
-    IFS=',' read -ra lang_array <<< "$LANGUAGES"
-    local first_lang="${lang_array[0]}"
-    local lint_cmd build_cmd test_cmd coverage
-
+# emit_lang_gates <language> [indent]
+# Prints the numbered lint/build/test/coverage gate list for one language.
+# Arguments:
+#   $1 - Canonical language name
+#   $2 - (optional) Prefix for each line, for nesting under a label
+# Returns: Gate list via stdout
+emit_lang_gates() {
+    local indent="${2:-}"
+    local line lint_cmd="" build_cmd="" test_cmd="" coverage=""
     while IFS= read -r line; do
         case "$line" in
             LINT:*) lint_cmd="${line#LINT:}" ;;
@@ -771,13 +1006,54 @@ generate_progressive() {
             TEST:*) test_cmd="${line#TEST:}" ;;
             COV:*) coverage="${line#COV:}" ;;
         esac
-    done < <(get_lang_commands "$first_lang")
+    done < <(get_lang_commands "$1")
+    echo "${indent}1. **Lint**: \`$lint_cmd\`"
+    echo "${indent}2. **Build**: \`$build_cmd\`"
+    echo "${indent}3. **Test**: \`$test_cmd\`"
+    if [[ "$coverage" != "N/A" ]]; then
+        echo "${indent}4. **Coverage**: Minimum ${coverage}%"
+    fi
+}
+
+# generate_progressive()
+# Generates a progressive-loading AGENTS.md (~60-80 lines).
+# Multi-language projects get gates per language unless that pushes the file past
+# MAX_PROGRESSIVE_LINES; then only the first language's gates are shown and the
+# rest are named.
+# Arguments: none (uses globals)
+# Returns: Complete AGENTS.md content via stdout
+generate_progressive() {
+    local tmp_dir lines
+    tmp_dir=$(mktemp -d)
+    generate_progressive_body "per-language" > "$tmp_dir/agents.md"
+    lines=$(wc -l < "$tmp_dir/agents.md" | tr -d ' ')
+    if [[ "$lines" -gt "$MAX_PROGRESSIVE_LINES" ]]; then
+        generate_progressive_body "first"
+    else
+        cat "$tmp_dir/agents.md"
+    fi
+    rm -rf "$tmp_dir"
+}
+
+# generate_progressive_body <gate_style>
+# Uses on-demand module loading from $HOME/.golden-agents/templates/.
+# Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
+# Arguments:
+#   $1 - "per-language" or "first" (multi-language gate layout)
+# Returns: Complete AGENTS.md content via stdout
+generate_progressive_body() {
+    local gate_style="$1"
+    local today
+    today=$(date +%Y-%m-%d)
+    local golden_agents_path="\$HOME/.golden-agents"
+
+    IFS=',' read -ra lang_array <<< "$LANGUAGES"
 
     cat << HEADER
 # AI Agent Guidelines - $PROJECT_NAME
 
 > **Generated by**: [golden-agents](https://github.com/bordenet/golden-agents) v${FRAMEWORK_VERSION} (progressive)
-> **Last Updated**: $today
+<!-- golden-agents:stamp version=${FRAMEWORK_VERSION} updated=${today} -->
 > **Languages**: $LANGUAGES
 > **Type**: ${PROJECT_TYPE:-general}
 
@@ -796,11 +1072,24 @@ $MARKER_START
 
 ## Quality Gates (MANDATORY)
 
-Before ANY commit:
-1. **Lint**: \`$lint_cmd\`
-2. **Build**: \`$build_cmd\`
-3. **Test**: \`$test_cmd\`
-4. **Coverage**: Minimum ${coverage}%
+FRAMEWORK_START
+
+    if [[ ${#lang_array[@]} -eq 1 ]]; then
+        echo "Before ANY commit:"
+        emit_lang_gates "${lang_array[0]}"
+    elif [[ "$gate_style" == "first" ]]; then
+        local others="${LANGUAGES#*,}"
+        echo "Before ANY commit (gates shown for ${lang_array[0]}; add equivalents for ${others//,/, }):"
+        emit_lang_gates "${lang_array[0]}"
+    else
+        echo "Before ANY commit, run the gates for each language you changed:"
+        for lang in "${lang_array[@]}"; do
+            echo "- **$lang**"
+            emit_lang_gates "$lang" "  "
+        done
+    fi
+
+    cat << FRAMEWORK_REST
 
 **Order matters.** Lint → Build → Test. Never skip steps.
 
@@ -822,7 +1111,7 @@ Before ANY commit:
 **STOP and load the relevant module BEFORE these actions:**
 
 ### Language Modules (🔴 Required)
-FRAMEWORK_START
+FRAMEWORK_REST
 
     # Generate language loading instructions with specific triggers
     for lang in "${lang_array[@]}"; do
@@ -895,7 +1184,7 @@ generate_full() {
 # AI Agent Guidelines - $PROJECT_NAME
 
 > **Generated by**: [golden-agents](https://github.com/bordenet/golden-agents) v${FRAMEWORK_VERSION}
-> **Last Updated**: $today
+<!-- golden-agents:stamp version=${FRAMEWORK_VERSION} updated=${today} -->
 > **Languages**: $LANGUAGES
 > **Type**: ${PROJECT_TYPE:-general}
 
@@ -1001,11 +1290,22 @@ generate_self_manage_block() {
 ## ⚠️ Before ANY Task
 1. Load `.ai-guidance/invariants.md` — contains critical rules
 2. After editing ANY guidance file, check: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
-   - `AGENTS.md` >150 lines → refactor into `.ai-guidance/`
-   - Any `.ai-guidance/*.md` >250 lines → split into sub-directory
+SELF_MANAGE
+    printf "   - \`AGENTS.md\` >%s lines → refactor into \`.ai-guidance/\`\n" "$MAX_GUIDANCE_LINES"
+    printf "   - Any \`.ai-guidance/*.md\` >%s lines → split into sub-directory\n" "$MAX_GUIDANCE_LINES"
+    cat << 'SELF_MANAGE'
 <!-- GOLDEN:self-manage:end -->
 
 SELF_MANAGE
+}
+
+# sed_regex_escape <string>
+# Escapes BRE metacharacters and "/" so the string matches literally in a sed address.
+# Arguments:
+#   $1 - Literal string
+# Returns: Escaped string via stdout
+sed_regex_escape() {
+    printf '%s' "$1" | sed 's/[][\\/.^$*]/\\&/g'
 }
 
 # upgrade_agents_md()
@@ -1050,10 +1350,13 @@ upgrade_agents_md() {
         exit 1
     fi
 
-    # Extract config from existing file header
+    # Extract config from the generated header lines ("> **Languages**: ..." / "> **Type**: ...")
     local existing_langs existing_type
-    existing_langs=$(grep "Languages" "$existing_file" | head -1 | sed 's/.*: //' || echo "")
-    existing_type=$(grep "Type" "$existing_file" | head -1 | sed 's/.*: //' || echo "general")
+    existing_langs=$(awk 'sub(/^> \*\*Languages\*\*: /, "") { print; exit }' "$existing_file")
+    existing_type=$(awk 'sub(/^> \*\*Type\*\*: /, "") { print; exit }' "$existing_file")
+    if [[ -z "$existing_type" ]]; then
+        existing_type="general"
+    fi
 
     # Use existing config if not overridden by flags
     if [[ -z "$LANGUAGES" ]]; then
@@ -1075,34 +1378,53 @@ upgrade_agents_md() {
         exit 1
     fi
 
-    # Extract preserved content (before start marker and after end marker)
-    local before_marker after_marker
-    before_marker=$(sed -n "1,/$MARKER_START/p" "$existing_file" | sed '$ d')
-    after_marker=$(sed -n "/$MARKER_END/,\$p" "$existing_file" | sed '1 d')
+    # Assemble the upgraded file by streaming. Command substitution would strip
+    # trailing newlines, so user bytes outside the markers never pass through a variable.
+    local start_line end_line start_re end_re tmp_dir
+    start_line=$(MARK="$MARKER_START" awk 'index($0, ENVIRON["MARK"]) { print NR; exit }' "$existing_file")
+    end_line=$(MARK="$MARKER_END" awk 'index($0, ENVIRON["MARK"]) { print NR; exit }' "$existing_file")
+    start_re=$(sed_regex_escape "$MARKER_START")
+    end_re=$(sed_regex_escape "$MARKER_END")
+    tmp_dir=$(mktemp -d)
+    generate_self_manage_block > "$tmp_dir/self-manage.full"
+    SM_END="$SELF_MANAGE_END" awk '{ print } index($0, ENVIRON["SM_END"]) { exit }' \
+        "$tmp_dir/self-manage.full" > "$tmp_dir/self-manage"
+    {
+        # Before the start marker: replace the self-manage block in place, or
+        # inject it right before the marker if missing
+        SM_START="$SELF_MANAGE_START" SM_END="$SELF_MANAGE_END" BLOCK="$tmp_dir/self-manage" \
+            awk -v last="$((start_line - 1))" '
+            NR > last { exit }
+            !done && index($0, ENVIRON["SM_START"]) {
+                while ((getline line < ENVIRON["BLOCK"]) > 0) print line
+                skipping = 1
+                done = 1
+            }
+            skipping { if (index($0, ENVIRON["SM_END"])) skipping = 0; next }
+            { print }
+            END { if (!done) while ((getline line < ENVIRON["BLOCK"]) > 0) print line }
+            ' "$existing_file"
+        $generator | sed -n "/$start_re/,/$end_re/p"
+        tail -n +"$((end_line + 1))" "$existing_file"
+    } > "$tmp_dir/upgraded"
 
-    # Handle self-manage block: inject if missing, or replace if outdated
-    if ! grep -q "$SELF_MANAGE_START" "$existing_file"; then
-        # No self-manage block - inject it
-        before_marker="${before_marker}
-$(generate_self_manage_block)"
-    else
-        # Self-manage block exists - replace it with the latest version
-        # Remove the old self-manage block from before_marker
-        before_marker=$(echo "$before_marker" | sed "/$SELF_MANAGE_START/,/$SELF_MANAGE_END/d")
-        # Add the new self-manage block
-        before_marker="${before_marker}
-$(generate_self_manage_block)"
+    # The stamp sits in the preserved header. Keep its date and version when
+    # the framework block is unchanged; otherwise bump both.
+    sed -n "/$start_re/,/$end_re/p" "$existing_file" > "$tmp_dir/old-fw"
+    sed -n "/$start_re/,/$end_re/p" "$tmp_dir/upgraded" > "$tmp_dir/new-fw"
+    if ! cmp -s "$tmp_dir/old-fw" "$tmp_dir/new-fw"; then
+        local today
+        today=$(date +%Y-%m-%d)
+        VER="$FRAMEWORK_VERSION" TODAY="$today" MARK="$MARKER_START" awk '
+            index($0, ENVIRON["MARK"]) { seen = 1 }
+            !seen && index($0, "<!-- golden-agents:stamp ") == 1 {
+                printf "<!-- golden-agents:stamp version=%s updated=%s -->\n", ENVIRON["VER"], ENVIRON["TODAY"]
+                next
+            }
+            { print }
+        ' "$tmp_dir/upgraded" > "$tmp_dir/upgraded.stamp"
+        mv "$tmp_dir/upgraded.stamp" "$tmp_dir/upgraded"
     fi
-
-    # Generate new framework content
-    local new_framework
-    new_framework=$($generator | sed -n "/$MARKER_START/,/$MARKER_END/p")
-
-    # Assemble upgraded file
-    local upgraded_content
-    upgraded_content="${before_marker}
-${new_framework}
-${after_marker}"
 
     # Show diff or apply
     if [[ "$APPLY" != "true" ]]; then
@@ -1112,7 +1434,8 @@ ${after_marker}"
         echo "Type: ${PROJECT_TYPE:-general}"
         echo ""
         echo "--- Changes ---"
-        diff -u "$existing_file" <(echo "$upgraded_content") || true
+        diff -u "$existing_file" "$tmp_dir/upgraded" || true
+        rm -rf "$tmp_dir"
         echo ""
         echo "[INFO] This is a preview. No changes made."
         echo "  To apply: generate-agents.sh --upgrade --apply --path=$OUTPUT_PATH"
@@ -1123,7 +1446,8 @@ ${after_marker}"
         echo "[OK] Backup created: $backup_file"
 
         # Write upgraded content
-        echo "$upgraded_content" > "$existing_file"
+        cat "$tmp_dir/upgraded" > "$existing_file"
+        rm -rf "$tmp_dir"
         echo "[OK] Upgraded: $existing_file"
         echo "  Framework: v${FRAMEWORK_VERSION}"
         echo "  Lines: $(wc -l < "$existing_file")"
@@ -1131,12 +1455,15 @@ ${after_marker}"
         echo "  Project-specific content preserved."
         echo "  Backup: $backup_file"
 
+        # The self-manage block tells agents to load this file
+        ensure_invariants "$OUTPUT_PATH"
+
         # Check for bloat and trigger modular migration if needed
         local line_count
         line_count=$(wc -l < "$existing_file" | tr -d ' ')
-        if [[ "$line_count" -gt 150 ]]; then
+        if [[ "$line_count" -gt "$MAX_GUIDANCE_LINES" ]]; then
             echo ""
-            echo "[WARN] AGENTS.md exceeds 150 lines ($line_count lines)"
+            echo "[WARN] AGENTS.md exceeds $MAX_GUIDANCE_LINES lines ($line_count lines)"
             echo "  Creating modular migration prompt..."
             create_modular_migration_prompt "$OUTPUT_PATH"
         fi
@@ -1158,15 +1485,25 @@ create_modular_migration_prompt() {
 
         # Add to .gitignore if it exists
         if [[ -f "$dir/.gitignore" ]]; then
-            if ! grep -q "MODULAR-MIGRATION-PROMPT.md" "$dir/.gitignore"; then
-                echo "MODULAR-MIGRATION-PROMPT.md" >> "$dir/.gitignore"
-            fi
+            gitignore_add "$dir" "MODULAR-MIGRATION-PROMPT.md" || true
         fi
     fi
 
-    # Create .ai-guidance directory with invariants.md
-    mkdir -p "$dir/.ai-guidance"
-    if [[ -f "$TEMPLATES_DIR/core/invariants.md" ]]; then
+    ensure_invariants "$dir"
+}
+
+# ensure_invariants <dir>
+# Creates <dir>/.ai-guidance/invariants.md from the template when absent.
+# Files in .ai-guidance/ belong to the project once they exist and are never overwritten.
+# Arguments:
+#   $1 - Project directory
+# Returns: 0
+ensure_invariants() {
+    local dir="$1"
+    if [[ -e "$dir/.ai-guidance/invariants.md" ]]; then
+        echo "[OK] Kept existing: $dir/.ai-guidance/invariants.md"
+    elif [[ -f "$TEMPLATES_DIR/core/invariants.md" ]]; then
+        mkdir -p "$dir/.ai-guidance"
         cp "$TEMPLATES_DIR/core/invariants.md" "$dir/.ai-guidance/invariants.md"
         echo "[OK] Created: $dir/.ai-guidance/invariants.md"
     fi
@@ -1188,22 +1525,21 @@ if [[ "$UPGRADE" == "true" ]]; then
     exit 0
 fi
 
-# create_redirect <filepath> <title>
-# Creates a redirect file that points to AGENTS.md.
+# create_redirect <relpath>
+# Creates a sentinel-marked redirect file that points to AGENTS.md.
 # Used for AI assistant-specific files (CLAUDE.md, CODEX.md, etc.).
+# Callers must check find_blocking_redirects first.
 # Arguments:
-#   $1 - Full path to the redirect file to create
-#   $2 - Title for the markdown header
+#   $1 - Redirect file path relative to OUTPUT_PATH
 # Returns: 0 on success
 # Side effects: Creates/overwrites the specified file
 create_redirect() {
-    local path="$1"
-    local title="$2"
-    cat > "$path" << EOF
-# $title
-
-See **[AGENTS.md](./AGENTS.md)** for all AI guidance.
-EOF
+    local rel="$1"
+    mkdir -p "$(dirname "$OUTPUT_PATH/$rel")"
+    {
+        redirect_body "$rel" "AGENTS.md"
+        echo "$GENERATED_SENTINEL"
+    } > "$OUTPUT_PATH/$rel"
 }
 
 # Output (new file generation)
@@ -1219,9 +1555,21 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "  GEMINI.md        → Google Gemini Code Assist"
     echo "  COPILOT.md       → GitHub Copilot"
     echo "  .github/copilot-instructions.md → GitHub Copilot (custom instructions)"
+    if [[ "$ADOPT" == "true" || "$MIGRATE" == "true" ]]; then
+        for rel in $BLOCKING_REDIRECTS; do
+            echo "[DRY RUN] Would back up non-generated $rel to $rel.<timestamp>.bak"
+        done
+    fi
+    if [[ ! -e "$OUTPUT_PATH/.ai-guidance/invariants.md" ]]; then
+        echo "[DRY RUN] Would create: .ai-guidance/invariants.md"
+    fi
     echo ""
 else
     mkdir -p "$OUTPUT_PATH"
+    # Only --adopt/--migrate reach here with blockers; plain runs exited earlier
+    for rel in $BLOCKING_REDIRECTS; do
+        backup_file "$OUTPUT_PATH/$rel"
+    done
     output_file="$OUTPUT_PATH/AGENTS.md"
     $generator > "$output_file"
 
@@ -1259,24 +1607,9 @@ ADOPT_SECTION
     echo ""
     echo "Creating redirect files for AI assistants..."
 
-    create_redirect "$OUTPUT_PATH/CLAUDE.md" "Claude Code Instructions"
-    create_redirect "$OUTPUT_PATH/CODEX.md" "OpenAI Codex CLI Instructions"
-    create_redirect "$OUTPUT_PATH/AGENT.md" "Amp by Sourcegraph Instructions"
-    create_redirect "$OUTPUT_PATH/GEMINI.md" "Google Gemini Code Assist Instructions"
-    create_redirect "$OUTPUT_PATH/COPILOT.md" "GitHub Copilot Instructions"
-
-    # Create GitHub Copilot custom instructions file
-    mkdir -p "$OUTPUT_PATH/.github"
-    cat > "$OUTPUT_PATH/.github/copilot-instructions.md" << EOF
-# GitHub Copilot Custom Instructions
-
-See **[../AGENTS.md](../AGENTS.md)** for all AI guidance.
-
-## Summary
-
-This project uses the Golden Agents Framework for AI coding assistant guidance.
-All instructions are consolidated in AGENTS.md at the project root.
-EOF
+    for rel in $REDIRECT_FILES; do
+        create_redirect "$rel"
+    done
 
     echo "  ✓ CLAUDE.md        (Claude Code)"
     echo "  ✓ CODEX.md         (OpenAI Codex CLI)"
@@ -1284,5 +1617,8 @@ EOF
     echo "  ✓ GEMINI.md        (Google Gemini)"
     echo "  ✓ COPILOT.md       (GitHub Copilot)"
     echo "  ✓ .github/copilot-instructions.md (GitHub Copilot custom)"
+
+    # The self-manage block tells agents to load this file
+    ensure_invariants "$OUTPUT_PATH"
 fi
 
