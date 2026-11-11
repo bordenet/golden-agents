@@ -19,5 +19,5 @@ load 'test_helper'
         "$SCRIPT_DIR/docs/UPGRADE-GUIDE.md"
     ! grep -q 'are not implemented' "$SCRIPT_DIR/docs/UPGRADE-GUIDE.md"
     ! grep -q 'no behavior change' "$SCRIPT_DIR/docs/SUMMARY.md"
-    grep -q 'The score sheet has no model run.' "$SCRIPT_DIR/docs/SUMMARY.md"
+    grep -q 'The Cursor column of the score sheet has one run.' "$SCRIPT_DIR/docs/SUMMARY.md"
 }

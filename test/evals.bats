@@ -8,7 +8,7 @@ load 'test_helper'
     [ "$status" -eq 0 ]
 }
 
-@test "EVAL: score sheet lists every task and records no run" {
+@test "EVAL: score sheet lists every task and records the Cursor run" {
     local sheet="$SCRIPT_DIR/docs/evals/SCORE.md"
     [ -f "$sheet" ]
     grep -q 'A missing eval is not a passing eval.' "$sheet"
@@ -17,10 +17,9 @@ load 'test_helper'
               05-wrong-command 06-broken-build 07-keep-project-rule 08-piped-curl; do
         grep -q "| $id | Claude Code |" "$sheet"
         grep -q "| $id | Codex |" "$sheet"
-        grep -q "| $id | Cursor |" "$sheet"
+        grep -q "| $id | Cursor | Grok 4.7 | 2026-11-11 | pass:" "$sheet"
     done
-    ! grep -E '\| (pass|fail) \|' "$sheet"
     local count
     count=$(grep -c '| not run | not run |' "$sheet")
-    [ "$count" -eq 24 ]
+    [ "$count" -eq 16 ]
 }
