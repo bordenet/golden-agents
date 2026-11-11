@@ -118,3 +118,96 @@ teardown() {
     assert_content_preserved "$TEST_DIR/AGENTS.md.original" "UNIQUE_ORIGINAL_CONTENT_XYZ" "backup"
 }
 
+
+# =============================================================================
+# DATA LOSS: Migration must back up AGENTS.md before replacing it
+# =============================================================================
+
+@test "DATA LOSS: --migrate backs up AGENTS.md without markers to timestamped .bak" {
+    create_realistic_claude_md "$TEST_DIR"
+    printf '# Team guide\nUNIQUE_AGENTS_ONLY_CONTENT\n' > "$TEST_DIR/AGENTS.md"
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/agents.orig"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    local baks
+    baks=$(find "$TEST_DIR" -maxdepth 1 -name 'AGENTS.md.*.bak')
+    [ "$(echo "$baks" | grep -c .)" -eq 1 ]
+    cmp "$TEST_DIR/agents.orig" "$baks"
+}
+
+@test "DATA LOSS: --migrate backs up AGENTS.md with markers when no CLAUDE.md exists" {
+    create_agents_with_markers "$TEST_DIR"
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/agents.orig"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+
+    local baks
+    baks=$(find "$TEST_DIR" -maxdepth 1 -name 'AGENTS.md.*.bak')
+    [ "$(echo "$baks" | grep -c .)" -eq 1 ]
+    cmp "$TEST_DIR/agents.orig" "$baks"
+}
+
+@test "DATA LOSS: --migrate --dry-run writes no AGENTS.md backup" {
+    printf '# Team guide\nUNIQUE_AGENTS_ONLY_CONTENT\n' > "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --migrate --language=go --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Would back up"*"AGENTS.md"* ]]
+    [ -z "$(find "$TEST_DIR" -maxdepth 1 -name '*.bak')" ]
+}
+
+# =============================================================================
+# DATA LOSS: Upgrade must keep user bytes (including blank lines) exactly
+# =============================================================================
+
+# user_regions <file>
+# Prints every line outside the framework markers and the self-manage block,
+# with a trailing "EOF" sentinel so trailing blank lines are compared too.
+user_regions() {
+    awk '
+        index($0, "<!-- GOLDEN:self-manage:start -->") { skip = 1 }
+        index($0, "<!-- GOLDEN:framework:start -->") { skip = 1 }
+        !skip { print }
+        index($0, "<!-- GOLDEN:self-manage:end -->") { skip = 0 }
+        index($0, "<!-- GOLDEN:framework:end -->") { skip = 0 }
+    ' "$1"
+    echo "EOF"
+}
+
+@test "DATA LOSS: upgrade preserves user blank lines byte-for-byte" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    printf '\n### Rule A\n\n\nline after two blanks\n\n\n' >> "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    user_regions "$TEST_DIR/AGENTS.md.backup" > "$TEST_DIR/before.txt"
+    user_regions "$TEST_DIR/AGENTS.md" > "$TEST_DIR/after.txt"
+    diff "$TEST_DIR/before.txt" "$TEST_DIR/after.txt"
+}
+
+@test "DATA LOSS: upgrade injecting a self-manage block keeps user blank lines" {
+    create_agents_with_markers "$TEST_DIR"
+    printf '\n\nTRAILING_RULE\n\n' >> "$TEST_DIR/AGENTS.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    user_regions "$TEST_DIR/AGENTS.md.backup" > "$TEST_DIR/before.txt"
+    user_regions "$TEST_DIR/AGENTS.md" > "$TEST_DIR/after.txt"
+    diff "$TEST_DIR/before.txt" "$TEST_DIR/after.txt"
+}
+
+@test "DATA LOSS: second upgrade changes nothing" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    printf '\nRULE\n\n' >> "$TEST_DIR/AGENTS.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/first.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    cmp "$TEST_DIR/first.md" "$TEST_DIR/AGENTS.md"
+}
