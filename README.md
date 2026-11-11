@@ -74,17 +74,18 @@ my-project/
 ├── AGENTS.md                    # ≤250 lines, self-managing
 ├── CLAUDE.md                    # @AGENTS.md
 ├── GEMINI.md                    # @AGENTS.md
+├── .golden-agents/modules/      # Copies of the modules this project selected
+│   ├── go.md
+│   └── testing.md
 └── .ai-guidance/                # Auto-created when needed
-    ├── invariants.md            # Self-management rules (always loaded)
-    ├── testing.md               # On-demand topic file
-    └── deployment.md            # On-demand topic file
+    └── invariants.md            # Self-management rules (always loaded)
 ```
 
-Detailed templates stay in `~/.golden-agents/templates/`. Your project gets small trigger files:
+Triggers point at the copies in the project:
 
 ```markdown
-🔴 BEFORE writing `.go` files → Load `~/.golden-agents/templates/languages/go.md`
-🔴 WHEN tests fail → Load `~/.golden-agents/templates/workflows/testing.md`
+🔴 BEFORE writing `.go` files → Read `.golden-agents/modules/go.md`
+🔴 WHEN tests fail → Read `.golden-agents/modules/testing.md`
 ```
 
 ---
