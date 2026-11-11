@@ -1,0 +1,10 @@
+---
+description: GitHub operations from a cloud agent container
+alwaysApply: true
+---
+
+Read `.ai-guidance/github-ops.md` before any GitHub commit, branch change, or pull request.
+
+The agent container is not the user's machine. `gh` and `git push` to github.com are unauthenticated there. The container browser is a different Chrome profile from the user's Safari or Mac Chrome. Do not drive it to administer the repo.
+
+Use `gh`, `git`, or the GitHub API from an authenticated client. The GitHub connection inside the container can commit file contents. It cannot delete git refs, and workflow-file writes return 403 without the workflow scope. `gh api --method DELETE` from a terminal must pass `--input /dev/null` or it opens `$EDITOR`. HTTP 422 on that delete means the ref is already gone. Never delete `main`.
