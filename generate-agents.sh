@@ -1034,9 +1034,9 @@ if [[ "$DEDUPE" == "true" ]]; then
     fi
 
     echo ""
-    echo "═════════════════════════════════════════════════════════════════"
+    echo "═══════════════════════════════════════════════════════════════"
     echo "                    NEXT STEPS"
-    echo "═════════════════════════════════════════════════════════════════"
+    echo "═══════════════════════════════════════════════════════════════"
     echo ""
     echo "  1. Open ADOPT-PROMPT.md in your AI assistant"
     echo "  2. Paste the contents of AGENTS.md after the prompt"
@@ -1047,7 +1047,7 @@ if [[ "$DEDUPE" == "true" ]]; then
     echo ""
     echo "  Target: Reduce project-specific section from $project_lines to <100 lines"
     echo ""
-    echo "═════════════════════════════════════════════════════════════════"
+    echo "═══════════════════════════════════════════════════════════════"
 
     exit 0
 fi
