@@ -79,6 +79,14 @@ DESCRIPTION
     When upgrading existing files, only framework sections (between markers) are
     replaced. Project-specific content is preserved.
 
+SIZE
+    MAX_GUIDANCE_LINES stays 250. That is the lock this script enforces.
+    200 lines is the soft ceiling for the always-loaded file. It is guidance
+    for authors, not a second limit in this script. Overflow belongs in
+    scoped rules, not in a longer AGENTS.md.
+    Generation prints a token estimate (file bytes divided by 4, rounded up).
+    Token counts vary by tokenizer. The line count is the check tests use.
+
 PLATFORM SUPPORT
     Linux ........... Native (works out of the box)
     macOS ........... Native (works out of the box)
@@ -1678,8 +1686,36 @@ $MARKER_END
 FOOTER
 }
 
+# estimate_tokens <file>
+# Prints a token estimate: file bytes divided by 4, rounded up.
+# This is not a model tokenizer. The line count is the reproducible check.
+# Arguments:
+#   $1 - File path
+# Returns: The estimate on stdout
+estimate_tokens() {
+    local bytes
+    bytes=$(wc -c < "$1" | tr -d ' ')
+    echo $(( (bytes + 3) / 4 ))
+}
+
+# report_size <file> [indent]
+# Prints the line count and the token estimate.
+# Arguments:
+#   $1 - File path
+#   $2 - Optional prefix for each line
+# Returns: 0
+report_size() {
+    local file="$1"
+    local indent="${2:-}"
+    local lines tokens
+    lines=$(wc -l < "$file" | tr -d ' ')
+    tokens=$(estimate_tokens "$file")
+    echo "${indent}Lines: $lines"
+    echo "${indent}Tokens (estimate): $tokens"
+}
+
 # generate_self_manage_block()
-# Generates the 5-line self-management bootstrap block.
+# Generates the self-management bootstrap block.
 # This block is injected BEFORE the framework start marker.
 # Arguments: none
 # Returns: Bootstrap block content via stdout
@@ -1693,6 +1729,7 @@ SELF_MANAGE
     printf "   - \`AGENTS.md\` >%s lines → refactor into \`.ai-guidance/\`\n" "$MAX_GUIDANCE_LINES"
     printf "   - Any \`.ai-guidance/*.md\` >%s lines → split into sub-directory\n" "$MAX_GUIDANCE_LINES"
     cat << 'SELF_MANAGE'
+3. Over the limit, draft a diff. Do not apply it. A human merges it.
 <!-- GOLDEN:self-manage:end -->
 
 SELF_MANAGE
@@ -1871,7 +1908,7 @@ upgrade_agents_md() {
         rm -rf "$tmp_dir"
         echo "[OK] Upgraded: $existing_file"
         echo "  Framework: v${FRAMEWORK_VERSION}"
-        echo "  Lines: $(wc -l < "$existing_file")"
+        report_size "$existing_file" "  "
         echo ""
         echo "  Project-specific content preserved."
         echo "  Backup: $backup_file"
@@ -2014,7 +2051,7 @@ ADOPT_SECTION
     fi
 
     echo "Generated ($mode_label): $output_file"
-    echo "Lines: $(wc -l < "$output_file")"
+    report_size "$output_file"
 
     echo ""
     echo "Writing @AGENTS.md imports..."
