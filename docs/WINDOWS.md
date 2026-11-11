@@ -44,6 +44,6 @@ Install [MSYS2](https://www.msys2.org/) or [Cygwin](https://www.cygwin.com/), th
 
 ## Requirements
 
-- Bash 4.0+
+- Bash 3.2+
 - Git
 
