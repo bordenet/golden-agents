@@ -30,6 +30,7 @@ PATH_GIVEN=false
 PROJECT_NAME=""
 # Mode is progressive by default
 FULL=false        # Legacy mode, deprecated
+SUPERPOWERS=false # Bootstrap block is off unless --superpowers is passed
 DRY_RUN=false
 SYNC=false
 UPGRADE=false
@@ -96,6 +97,10 @@ OPTIONS
     --name=NAME         Project name for header (default: directory name)
                         Value options also accept a space: --path ./my-project
     --progressive       Generate minimal core (~60 lines) with on-demand loading (default)
+    --superpowers       Write the superpowers bootstrap after the framework end
+                        marker. It is omitted by default. Upgrade does not put it
+                        back inside the framework. An existing bootstrap below
+                        the end marker is left as it is.
     --sync              Update local templates from GitHub (git fetch, fast-forward
                         only; refuses on uncommitted changes or local commits)
     --dry-run           Print what would be generated without writing
@@ -718,6 +723,7 @@ while [[ $# -gt 0 ]]; do
         --path=*) OUTPUT_PATH="${arg#*=}"; PATH_GIVEN=true ;;
         --name=*) PROJECT_NAME="${arg#*=}" ;;
         --progressive) ;; # Already the default, flag accepted for clarity
+        --superpowers) SUPERPOWERS=true ;;
         --full)
             FULL=true
             echo "[DEPRECATED] --full mode generates 800+ line files that AI assistants cannot follow." >&2
@@ -1363,6 +1369,61 @@ sync_scoped_rules() {
     done < <(each_scoped_rule)
 }
 
+# superpowers_block
+# The opt-in bootstrap. It is written after the framework end marker so a
+# later upgrade does not restore it.
+# Arguments: none
+# Returns: The block via stdout
+superpowers_block() {
+    cat << 'EOF'
+
+### Optional: Superpowers integration
+
+Two parallel, mutually exclusive skill ecosystems exist. At the **START of every conversation**, detect which THIS machine uses and bootstrap accordingly:
+
+- **superpowers-acme**: No bootstrap required (skills are pre-deployed as symlinks).
+- **superpowers-plus**: Run the js bootstrap:
+  ```bash
+  node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
+  ```
+
+This loads available skills into the environment. To load a specific skill manually (plus only):
+```bash
+node ~/.codex/superpowers-augment/superpowers-augment.js use-skill <name>
+```
+EOF
+}
+
+# place_superpowers_block <file>
+# Inserts the bootstrap immediately after the framework end marker when the
+# text below that marker does not already contain the bootstrap command.
+# Arguments:
+#   $1 - AGENTS.md path
+# Returns: 0
+place_superpowers_block() {
+    local file="$1"
+    if awk -v mark="$MARKER_END" '
+        index($0, mark) { seen = 1; next }
+        seen && index($0, "superpowers-augment.js bootstrap") { found = 1 }
+        END { exit !found }
+    ' "$file"; then
+        return 0
+    fi
+    local tmp block
+    tmp=$(mktemp)
+    block=$(mktemp)
+    superpowers_block > "$block"
+    MARK="$MARKER_END" BLOCK="$block" awk '
+        { print }
+        !done && index($0, ENVIRON["MARK"]) {
+            while ((getline line < ENVIRON["BLOCK"]) > 0) print line
+            done = 1
+        }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+    rm -f "$block"
+}
+
 # generate_progressive()
 # Generates a progressive-loading AGENTS.md (~60-80 lines).
 # Multi-language projects get gates per language unless that pushes the file past
@@ -1491,22 +1552,12 @@ MIDDLE
     fi
 
     cat << FOOTER
-### Optional: Superpowers integration
-
-Two parallel, mutually exclusive skill ecosystems exist. At the **START of every conversation**, detect which THIS machine uses and bootstrap accordingly:
-
-- **superpowers-acme**: No bootstrap required (skills are pre-deployed as symlinks).
-- **superpowers-plus**: Run the js bootstrap:
-  \`\`\`bash
-  node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap
-  \`\`\`
-
-This loads available skills into the environment. To load a specific skill manually (plus only):
-\`\`\`bash
-node ~/.codex/superpowers-augment/superpowers-augment.js use-skill <name>
-\`\`\`
-
 $MARKER_END
+FOOTER
+    if [[ "$SUPERPOWERS" == "true" ]]; then
+        superpowers_block
+    fi
+    cat << 'PROJECT'
 
 ---
 
@@ -1514,7 +1565,7 @@ $MARKER_END
 
 <!-- Add project-specific guidance below this line -->
 
-FOOTER
+PROJECT
 }
 
 # generate_full()
@@ -1780,6 +1831,10 @@ upgrade_agents_md() {
         mv "$tmp_dir/upgraded.modules" "$tmp_dir/upgraded"
     else
         apply_modules_comment "$tmp_dir/upgraded"
+    fi
+
+    if [[ "$SUPERPOWERS" == "true" ]]; then
+        place_superpowers_block "$tmp_dir/upgraded"
     fi
 
     # Show diff or apply
