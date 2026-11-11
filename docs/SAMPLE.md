@@ -45,18 +45,18 @@ This is the key part. The AI sees specific triggers that tell it **when** to loa
 **STOP and load the relevant module BEFORE these actions:**
 
 ### Language Modules (🔴 Required)
-- 🔴 **BEFORE writing ANY `.go` file**: Read `$HOME/.golden-agents/templates/languages/go.md`
-- 🔴 **BEFORE writing ANY `.sh` file or bash code block**: Read `$HOME/.golden-agents/templates/languages/shell.md`
+- 🔴 **BEFORE writing ANY `.go` file**: Read `.golden-agents/modules/go.md`
+- 🔴 **BEFORE writing ANY `.sh` file or bash code block**: Read `.golden-agents/modules/shell.md`
 
 ### Workflow Modules (🔴 Required)
-- 🔴 **BEFORE any commit, PR, push, or merge**: Read `$HOME/.golden-agents/templates/workflows/security.md`
-- 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read `$HOME/.golden-agents/templates/workflows/testing.md`
-- 🔴 **WHEN build fails OR lint errors appear**: Read `$HOME/.golden-agents/templates/workflows/build-hygiene.md`
-- 🟡 **BEFORE deploying to any environment**: Read `$HOME/.golden-agents/templates/workflows/deployment.md`
-- 🟡 **WHEN conversation exceeds 50 exchanges**: Read `$HOME/.golden-agents/templates/workflows/context-management.md`
+- 🔴 **BEFORE any commit, PR, push, or merge**: Read `.golden-agents/modules/security.md`
+- 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read `.golden-agents/modules/testing.md`
+- 🔴 **WHEN build fails OR lint errors appear**: Read `.golden-agents/modules/build-hygiene.md`
+- 🟡 **BEFORE deploying to any environment**: Read `.golden-agents/modules/deployment.md`
+- 🟡 **WHEN conversation exceeds 50 exchanges**: Read `.golden-agents/modules/context-management.md`
 
 ### Project type guidance:
-- Read `$HOME/.golden-agents/templates/project-types/cli-tools.md`
+- Read `.golden-agents/modules/cli-tools.md`
 ````
 
 ### Why These Triggers Work
