@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Size and self-maintenance** - Generation and upgrade print a token
+  estimate (file bytes divided by 4). `--help` names 200 lines as the soft
+  ceiling for the always-loaded file and keeps the 250-line lock. The
+  self-manage block tells the agent to draft a diff and wait for a human
+  to merge it.
 - **Superpowers is opt-in** - The bootstrap command is omitted unless the run
   passes `--superpowers`. The block is written after the framework end
   marker, so a later upgrade does not put it back. A bootstrap already
@@ -329,4 +334,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Project detection (auto-detect language from files)
 - [ ] Template inheritance system
 - [ ] VS Code extension integration
-
