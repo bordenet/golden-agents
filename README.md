@@ -144,7 +144,7 @@ Update templates: `~/.golden-agents/generate-agents.sh --sync`
 
 ## Requirements
 
-- Bash 4.0+
+- Bash 3.2+
 - Git
 - Linux, macOS, or Windows (WSL/Git Bash)
 
