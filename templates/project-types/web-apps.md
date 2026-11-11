@@ -46,7 +46,7 @@ async function copyToClipboard(text) {
 
 ## Dark Mode Requirements
 
-**MANDATORY**: All web interfaces must support dark mode.
+Support dark mode.
 
 ```css
 /* System preference detection */
