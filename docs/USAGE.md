@@ -49,7 +49,7 @@ If you prefer CLI control, see the command reference below.
 | Your Situation | Command | What Happens |
 |----------------|---------|--------------|
 | **No AGENTS.md file** (or <10 lines) | `--language=X --path=Y` | Generates new file with framework |
-| **Existing CLAUDE.md, GEMINI.md, CODEX.md** | `--migrate --path=Y` | Creates migration prompt, preserves originals |
+| **Existing CLAUDE.md, GEMINI.md, CODEX.md** | `--migrate --path=Y` | Creates migration prompt, backs up originals, writes `@AGENTS.md` imports |
 | **Existing AGENTS.md WITHOUT markers** | `--adopt --language=X --path=Y` | Backs up original, generates framework, appends content |
 | **Existing AGENTS.md WITH markers (outdated)** | `--upgrade --path=Y` | Preview changes (dry-run), then `--apply` to update |
 | **Existing AGENTS.md WITH markers (bloated)** | `--dedupe --path=Y` | Creates deduplication prompt if >100 lines |
@@ -71,7 +71,7 @@ If you prefer CLI control, see the command reference below.
 - **Always preview first:** Use `--dry-run` for new files, `--upgrade` (without `--apply`) for upgrades
 - **Backups are automatic:** `--adopt` creates `.original`, `--upgrade --apply` creates `.backup`
 - **Dedupe never modifies:** It only creates a prompt file; YOU apply the changes after review
-- **Originals preserved:** `--migrate` keeps your CLAUDE.md/GEMINI.md files intact
+- **Originals backed up:** `--migrate` copies a hand-written CLAUDE.md or GEMINI.md to a timestamped `.bak`, then writes `@AGENTS.md`
 
 ## Usage Examples
 
