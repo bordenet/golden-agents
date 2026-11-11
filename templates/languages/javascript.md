@@ -45,7 +45,7 @@ export default [
     }
   },
   {
-    // CRITICAL: Use **/ prefix for nested directories
+    // Use a **/ prefix so nested directories match
     ignores: ['**/node_modules/**', '**/dist/**', '**/build/**']
   }
 ];
@@ -91,9 +91,9 @@ NEVER defer linting fixes. Fix them before committing.
 
 > Source: genesis-tools AGENTS.md
 
-### 🚨 Stillborn Apps Prevention
+### Click handlers
 
-**All clickable elements MUST have working event handlers.**
+Give each clickable element a working event handler.
 
 ```javascript
 // ✅ CORRECT - event handler attached
