@@ -18,9 +18,9 @@ Before committing, verify:
 
 1. **VERIFY STYLE_GUIDE.md compliance** - DO THIS FIRST
 2. **Lint the code** - No errors allowed
-3. **Test the code** - MANDATORY, all tests pass
+3. **Test the code** - Do not claim done when tests were not run.
 4. **Validate the code** - Type checking where applicable
-5. **Verify variable exports** - CRITICAL FOR LIBRARIES
+5. **Verify variable exports** - Check exports when the project is a library.
 6. **Handle edge cases** - Empty inputs, missing files
 7. **Error handling** - All errors caught and handled
 8. **Input validation** - All user inputs validated
@@ -57,11 +57,11 @@ For new features, follow TDD:
 
 ---
 
-## 🚨 CLI Integration Testing - QUALITY GATE
+## CLI integration tests
 
 > Source: codebase-reviewer AGENTS.md
 
-CLI tools MUST have integration tests that verify:
+CLI tools need integration tests that verify:
 
 | Aspect | Test Requirement |
 |--------|------------------|
