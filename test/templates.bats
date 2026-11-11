@@ -48,7 +48,7 @@ teardown() {
 
 # Test 5: Full mode includes superpowers content
 @test "full mode includes superpowers content" {
-    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    run "$GENERATE_SCRIPT" --full --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
     # Full mode should contain superpowers integration
@@ -89,4 +89,3 @@ teardown() {
         [[ "$output" == *"Warning"* ]] || [[ "$output" == *"template"* ]] || [[ "$output" == *"type"* ]]
     fi
 }
-
