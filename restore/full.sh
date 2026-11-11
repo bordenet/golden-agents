@@ -861,8 +861,10 @@ fi
 
 # Handle migrate mode - generate migration prompt if needed
 if [[ "$MIGRATE" == "true" ]]; then
+    # Check if there's content to migrate
     existing=$(check_existing_guidance "$OUTPUT_PATH")
     if [[ -n "$existing" ]]; then
+        # Extract filename and count lines
         source_file=$(echo "$existing" | cut -d' ' -f1)
         source_lines=$(wc -l < "$OUTPUT_PATH/$source_file" | tr -d ' ')
 
@@ -876,10 +878,12 @@ if [[ "$MIGRATE" == "true" ]]; then
             mkdir -p "$OUTPUT_PATH"
             echo "[INFO] Generating migration prompt..."
 
+            # Generate the migration prompt
             generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
             echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
             echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
 
+            # Add to .gitignore
             gitignore_add "$OUTPUT_PATH" "MIGRATION-PROMPT.md" || true
             echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
         fi
@@ -887,6 +891,8 @@ if [[ "$MIGRATE" == "true" ]]; then
         echo "[INFO] No existing guidance files found. Running normal generation."
     fi
 
+    # Normal generation below replaces AGENTS.md, so back up any existing one
+    # (with or without markers). Both names may be one file on case-insensitive volumes.
     for name in AGENTS.md Agents.md; do
         if [[ ! -f "$OUTPUT_PATH/$name" ]]; then
             continue
@@ -900,4 +906,300 @@ if [[ "$MIGRATE" == "true" ]]; then
             backup_file "$OUTPUT_PATH/$name"
         fi
     done
+
+    # Continue with normal generation (framework AGENTS.md)
+    # Fall through to normal generation below
 fi
+
+# Handle adopt mode - bring existing AGENTS.md into framework
+if [[ "$ADOPT" == "true" ]]; then
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy) without markers
+    existing_agents_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/Agents.md"
+    fi
+
+    if [[ -z "$existing_agents_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at $OUTPUT_PATH" >&2
+        echo "  --adopt requires an existing AGENTS.md file to adopt." >&2
+        exit 1
+    fi
+
+    if grep -q "$MARKER_START" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") already has framework markers" >&2
+        echo "  Use --upgrade instead to update framework sections." >&2
+        exit 1
+    fi
+
+    echo "[INFO] Adopting existing $(basename "$existing_agents_file") into golden-agents framework..."
+
+    # Store original content (read-only; safe to do even in dry-run)
+    original_content=$(cat "$existing_agents_file")
+    original_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would back up original: $OUTPUT_PATH/AGENTS.md.original"
+        if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+            echo "[DRY RUN] Would remove legacy file: $existing_agents_file"
+        fi
+        echo "[DRY RUN] Would create: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[DRY RUN] Would add ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
+    else
+        mkdir -p "$OUTPUT_PATH"
+
+        # Backup original
+        cp "$existing_agents_file" "$OUTPUT_PATH/AGENTS.md.original"
+        echo "[OK] Backed up original: $OUTPUT_PATH/AGENTS.md.original"
+
+        # Remove old file if it was lowercase (will be replaced with AGENTS.md)
+        if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+            rm "$existing_agents_file"
+        fi
+
+        # Copy ADOPT-PROMPT.md template
+        if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+            cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+            echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        else
+            echo "[WARN] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+        fi
+
+        # Add to .gitignore
+        gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md" || true
+        gitignore_add "$OUTPUT_PATH" "AGENTS.md.original" || true
+        echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
+    fi
+
+    # Generate framework content, then append original
+    # We'll set a flag to append after generation
+    ADOPT_ORIGINAL_CONTENT="$original_content"
+    ADOPT_ORIGINAL_LINES="$original_lines"
+
+    # Fall through to normal generation, which will append the original content
+fi
+
+# Handle dedupe mode - generate deduplication prompt for files WITH markers
+if [[ "$DEDUPE" == "true" ]]; then
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy) WITH markers
+    existing_agents_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/Agents.md"
+    fi
+
+    if [[ -z "$existing_agents_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at $OUTPUT_PATH" >&2
+        echo "  --dedupe requires an existing AGENTS.md file with framework markers." >&2
+        exit 1
+    fi
+
+    if ! grep -q "$MARKER_START" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") does not have framework markers" >&2
+        echo "  Use --adopt instead for files created without golden-agents." >&2
+        exit 1
+    fi
+
+    if ! grep -qF "$MARKER_END" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") has $MARKER_START but no $MARKER_END" >&2
+        echo "  Restore the end marker after the framework section, then rerun --dedupe." >&2
+        echo "  No files were changed." >&2
+        exit 1
+    fi
+
+    # Count lines in project-specific section (after MARKER_END)
+    marker_end_line=$(grep -n "$MARKER_END" "$existing_agents_file" | head -1 | cut -d: -f1)
+    total_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')
+    project_lines=$((total_lines - marker_end_line))
+
+    echo "[INFO] Analyzing $(basename "$existing_agents_file") for deduplication..."
+    echo "  Total lines: $total_lines"
+    echo "  Framework section ends at line: $marker_end_line"
+    echo "  Project-specific section: $project_lines lines"
+    echo ""
+
+    if [[ $project_lines -le 100 ]]; then
+        echo "[OK] Project-specific section is already within target (<100 lines)"
+        echo "  No deduplication needed."
+        exit 0
+    fi
+
+    echo "[WARN] Project-specific section exceeds target (>100 lines)"
+    echo "  Target for complex projects: 50-100 lines"
+    echo "  Current: $project_lines lines"
+    echo ""
+
+    # ADOPT-PROMPT.md template is required regardless of dry-run (read-only check)
+    if [[ ! -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+        echo "[ERROR] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+        exit 1
+    fi
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would create: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[DRY RUN] Would add ADOPT-PROMPT.md to .gitignore"
+    else
+        # Copy ADOPT-PROMPT.md template (same prompt works for dedupe)
+        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+
+        # Add to .gitignore if not already there
+        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+            if gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"; then
+                echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
+            fi
+        else
+            gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"
+            echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
+        fi
+    fi
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "                    NEXT STEPS"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+    echo "  1. Open ADOPT-PROMPT.md in your AI assistant"
+    echo "  2. Paste the contents of AGENTS.md after the prompt"
+    echo "  3. The AI will propose aggressive deduplication"
+    echo "  4. Review and approve the proposed changes"
+    echo "  5. Apply the minimal result to AGENTS.md"
+    echo "  6. Delete ADOPT-PROMPT.md and commit"
+    echo ""
+    echo "  Target: Reduce project-specific section from $project_lines to <100 lines"
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+
+    exit 0
+fi
+
+# Set project name from directory if not specified
+if [[ -z "$PROJECT_NAME" ]]; then
+    PROJECT_NAME=$(basename "$(cd "$OUTPUT_PATH" 2>/dev/null && pwd)" 2>/dev/null || echo "Project")
+fi
+
+# get_lang_commands <language>
+# Returns language-specific lint, build, test commands and coverage target.
+# Output format: newline-separated KEY:VALUE pairs
+#   LINT:<command>   - Linting command
+#   BUILD:<command>  - Build/compile command
+#   TEST:<command>   - Test command
+#   COV:<percent>    - Coverage target percentage (or "N/A")
+# Arguments:
+#   $1 - Canonical language name (go, python, javascript, dart-flutter, shell)
+# Returns: Key:value pairs via stdout, one per line
+get_lang_commands() {
+    local lang="$1"
+    case "$lang" in
+        go) echo "LINT:golangci-lint run ./..."; echo "BUILD:go build ./..."; echo "TEST:go test -race -coverprofile=coverage.out ./..."; echo "COV:80" ;;
+        python) echo "LINT:pylint --fail-under=9.5 ."; echo "BUILD:mypy ."; echo "TEST:pytest --cov=. --cov-report=term-missing"; echo "COV:80" ;;
+        javascript) echo "LINT:npm run lint"; echo "BUILD:npm run build"; echo "TEST:npm test"; echo "COV:70" ;;
+        dart-flutter) echo "LINT:flutter analyze"; echo "BUILD:flutter build"; echo "TEST:flutter test --coverage"; echo "COV:70" ;;
+        shell) echo "LINT:shellcheck *.sh"; echo "BUILD:bash -n *.sh"; echo "TEST:bats test/"; echo "COV:N/A" ;;
+        *) echo "LINT:# lint"; echo "BUILD:# build"; echo "TEST:# test"; echo "COV:70" ;;
+    esac
+}
+
+# ensure_detected_gates
+# Reads the project once for exact lint, test, build, and coverage commands.
+# Order: package.json scripts, Makefile, justfile, pyproject.toml
+# [project.scripts], then GitHub Actions step names. The first match wins.
+# A missing python3 leaves every gate on the template fallback.
+# Reads from global: OUTPUT_PATH
+# Arguments: none
+# Returns: 0. Sets DET_LINT, DET_BUILD, DET_TEST, DET_COV and *_SRC.
+ensure_detected_gates() {
+    if [[ "${GATES_DETECTED:-}" == "1" ]]; then
+        return 0
+    fi
+    GATES_DETECTED=1
+    DET_LINT="" DET_BUILD="" DET_TEST="" DET_COV=""
+    DET_LINT_SRC="" DET_BUILD_SRC="" DET_TEST_SRC="" DET_COV_SRC=""
+    if ! command -v python3 >/dev/null 2>&1; then
+        return 0
+    fi
+    local line name cmd src
+    while IFS=$'\t' read -r name cmd src; do
+        [[ -n "$name" && -n "$cmd" && -n "$src" ]] || continue
+        case "$name" in
+            lint) [[ -z "$DET_LINT" ]] && { DET_LINT="$cmd"; DET_LINT_SRC="$src"; } ;;
+            build) [[ -z "$DET_BUILD" ]] && { DET_BUILD="$cmd"; DET_BUILD_SRC="$src"; } ;;
+            test) [[ -z "$DET_TEST" ]] && { DET_TEST="$cmd"; DET_TEST_SRC="$src"; } ;;
+            coverage) [[ -z "$DET_COV" ]] && { DET_COV="$cmd"; DET_COV_SRC="$src"; } ;;
+        esac
+    done < <(ROOT="$OUTPUT_PATH" python3 - << 'PY'
+import json, os, pathlib, re, sys
+root = pathlib.Path(os.environ.get("ROOT", "."))
+names = ("lint", "test", "build", "coverage")
+found = {}
+
+def add(name, cmd, src):
+    if name in names and name not in found and cmd.strip():
+        found[name] = (cmd.strip(), src)
+
+pkg = root / "package.json"
+if pkg.is_file():
+    try:
+        data = json.loads(pkg.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    scripts = data.get("scripts") if isinstance(data, dict) else None
+    if isinstance(scripts, dict):
+        for name in names:
+            if isinstance(scripts.get(name), str) and scripts[name].strip():
+                add(name, "npm run " + name, "package.json")
+
+def make_targets(path, runner):
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = re.match(r"^(lint|test|build|coverage):([^:]|$)", raw)
+        if match:
+            add(match.group(1), runner + " " + match.group(1), path.name)
+
+for makefile in ("Makefile", "makefile", "GNUmakefile"):
+    make_targets(root / makefile, "make")
+for just in ("justfile", "Justfile", ".justfile"):
+    make_targets(root / just, "just")
+
+pyproject = root / "pyproject.toml"
+if pyproject.is_file():
+    section = None
+    entry = re.compile(r"^[\w.]+:[\w.]+$")
+    for raw in pyproject.read_text(encoding="utf-8", errors="replace").splitlines():
+        header = re.match(r"^\[([^]]+)\]\s*$", raw)
+        if header:
+            section = header.group(1)
+            continue
+        if section != "project.scripts":
+            continue
+        item = re.match(r'^(lint|test|build|coverage)\s*=\s*"(.*)"\s*$', raw)
+        if item and not entry.match(item.group(2)):
+            add(item.group(1), item.group(2), "pyproject.toml")
+
+workflows = root / ".github" / "workflows"
+if workflows.is_dir():
+    for path in sorted(workflows.glob("*.yml")) + sorted(workflows.glob("*.yaml")):
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        rel = ".github/workflows/" + path.name
+        for index, raw in enumerate(lines):
+            step = re.match(r"\s*-\s*name:\s*['\"]?(lint|test|build|coverage)['\"]?\s*$", raw)
+            if not step:
+                continue
+            for nxt in lines[index + 1:index + 8]:
+                if re.match(r"\s*-\s*name:", nxt):
+                    break
+                run = re.match(r"\s*run:\s*['\"]?(.+?)['\"]?\s*$", nxt)
+                if run and not run.group(1).startswith("|"):
+                    add(step.group(1), run.group(1), rel)
+                    break
+
+for name in names:
+    if name in found:
+        cmd, src = found[name]
+        sys.stdout.write(name + "\t" + cmd + "\t" + src + "\n")
+PY
+    )
+}
