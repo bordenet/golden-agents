@@ -11,7 +11,7 @@
 
 AI guidance files (`CLAUDE.md`, `AGENTS.md`) accumulate rules over time. Past a certain size, AI assistants start ignoring instructions buried deep in the file.
 
-Golden Agents embeds a self-management protocol into generated files. When a file exceeds 250 lines, the AI extracts content to topic-specific modules—no human intervention required.
+Golden Agents embeds a self-management protocol into generated files. When a file exceeds 250 lines, the assistant drafts a diff that extracts content to topic-specific modules. A human merges that diff.
 
 ---
 
@@ -42,17 +42,16 @@ Every generated `AGENTS.md` includes a **self-management protocol**:
 After ANY edit to this file or .ai-guidance/*.md, verify:
 1. `wc -l AGENTS.md` — if >250 lines → extract content to .ai-guidance/
 2. `wc -l .ai-guidance/*.md` — if any file >250 lines → split into sub-directory
+3. Over the limit, draft a diff. Do not apply it. A human merges it.
 <!-- GOLDEN:self-manage:end -->
 ```
 
-When thresholds are exceeded, the AI:
+When thresholds are exceeded, the assistant:
 
 1. **Detects the problem** — Line count check after every edit
-2. **Extracts content** — Moves bloated sections to `.ai-guidance/` topic files
-3. **Updates references** — Adds loading triggers so nothing is lost
-4. **Verifies the result** — Confirms all content preserved, thresholds met
-
-The AI maintains its own instructions without manual intervention.
+2. **Drafts a diff** — Moves bloated sections to `.ai-guidance/` topic files
+3. **Stops** — A human reviews and merges the diff
+4. **After the merge** — The result keeps every rule and meets the limit
 
 ---
 
@@ -63,7 +62,7 @@ The AI maintains its own instructions without manual intervention.
 | `AGENTS.md` | 250 lines | Extract to `.ai-guidance/*.md` |
 | `.ai-guidance/*.md` | 250 lines | Split into sub-directory |
 
-These limits keep files within the effective working range for Claude, Augment, and similar assistants.
+250 lines is the lock this script enforces. 200 lines is the soft ceiling for the always-loaded file. That figure is guidance for authors. Overflow belongs in scoped rules, not in a longer `AGENTS.md`.
 
 ---
 
@@ -108,9 +107,9 @@ This injects the self-management protocol into existing files. For files exceedi
 
 | Without Self-Maintenance | With Self-Maintenance |
 |--------------------------|----------------------|
-| 500+ line files accumulate | Auto-splits at 250 lines |
+| 500+ line files accumulate | A drafted split at 250 lines, merged by a human |
 | AI ignores rules buried deep | All rules stay accessible |
-| Manual cleanup required | Zero human intervention |
+| An assistant rewrites the rules | The assistant drafts; a human merges |
 | Context window overflow | Stays within limits |
 
 ---
