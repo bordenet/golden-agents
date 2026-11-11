@@ -130,11 +130,14 @@ teardown() {
     grep -A1 -x 'Before a commit:' "$TEST_DIR/AGENTS.md" | grep -q '^1\. \*\*Lint\*\*: `golangci-lint run ./...`$'
 }
 
-# Test 13: Too many languages for per-language gates falls back to naming them
-@test "generation names uncovered languages when per-language gates exceed the line budget" {
+# Test 13: Five languages plus a project type fit, so every language keeps its gates.
+# The generator still collapses to the first language when the file would pass
+# MAX_PROGRESSIVE_LINES. This set no longer crosses that line.
+@test "five languages and a project type list every language's gates" {
     run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter --type=cli-tools --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    assert_file_contains "$TEST_DIR/AGENTS.md" 'gates shown for go; add equivalents for python, javascript, shell, dart-flutter'
+    assert_file_contains "$TEST_DIR/AGENTS.md" '^- \*\*dart-flutter\*\*$'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'gates shown for go'
     assert_progressive_size "$TEST_DIR/AGENTS.md"
 }
 
