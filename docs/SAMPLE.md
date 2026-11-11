@@ -31,7 +31,7 @@ AI loads: templates/languages/shell.md [100 lines, just-in-time]
 | File | Purpose |
 |------|---------|
 | `AGENTS.md` | Primary guidance (~60 lines) |
-| `CLAUDE.md`, `CODEX.md`, etc. | Redirects for different AI assistants |
+| `CLAUDE.md`, `GEMINI.md` | `@AGENTS.md` imports |
 
 ---
 
