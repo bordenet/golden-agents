@@ -1,6 +1,6 @@
 # Design v2
 
-Status: proposal. Sections A-I are not implemented.
+Status: section A is implemented. Sections B-I are not.
 No template wording changes are made by this document.
 Consumer upgrade steps for the bugfix stack are in `docs/UPGRADE-GUIDE.md`.
 
