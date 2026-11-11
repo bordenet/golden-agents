@@ -5,8 +5,9 @@ golden-agents 1.4.x before this fix stack. Example consumer:
 https://github.com/bordenet/superpowers-plus/
 
 This guide matches the generator on `main` after items 1-21 and design v2
-sections A-H. Section I is the eval fixture. Its score sheet has no model
-run. The commit `26d0b82` does not have the safe-write, backup, or stamp
+sections A-H. Section I is the eval fixture. Claude Code and Codex have no
+score. The Cursor column has one run, and the two columns of that run match.
+The commit `26d0b82` does not have the safe-write, backup, or stamp
 behavior described here.
 
 Do not assume templates or the script live at `$HOME/.golden-agents`. Run
@@ -172,12 +173,17 @@ removes the block from the framework region and does not put it back.
 
 Gate detection matches only the exact names `lint`, `test`, `build`, and
 `coverage`. A step named `Run BATS tests` or `Run ShellCheck` does not match.
-An unmatched gate keeps the template command and is prefixed with
-`UNVERIFIED: confirm`.
+On a new file, an unmatched gate keeps the template command and is prefixed
+with `UNVERIFIED: confirm`. On upgrade, a command already in the quality-gate
+block is kept when it is that language's template command, or when it matches
+no selected language's template. A language with neither a detected command
+nor an existing command is omitted, and the preview lists it under
+`Gates left unset`.
 
-Section I is `evals/fixture/` plus `docs/evals/SCORE.md`. Every cell is
-`not run`. Do not fill a score. A missing eval is not a pass, and the sheet
-is not evidence that the generated files change agent behavior.
+Section I is `evals/fixture/` plus `docs/evals/SCORE.md`. Claude Code and
+Codex are `not run`. The Cursor column records one run. A missing eval is
+not a pass. That one run does not show the generated files changing the
+result.
 
 Do not run this generator against the golden-agents checkout in order to
 refresh this repo's own `AGENTS.md`. That file is the operator manual. It has
