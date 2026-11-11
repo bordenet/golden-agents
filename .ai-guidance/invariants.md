@@ -2,6 +2,10 @@
 
 > **Load at START of every conversation.**
 
+## GitHub from a container
+
+Before any GitHub commit, branch change, or pull request, read `.ai-guidance/github-ops.md`. The container is not the user's machine. Do not drive its browser. `gh api --method DELETE` from a terminal requires `--input /dev/null`.
+
 ## Self-Management Protocol
 
 After editing ANY guidance file, run: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/null`
@@ -34,4 +38,3 @@ After editing ANY guidance file, run: `wc -l AGENTS.md .ai-guidance/*.md 2>/dev/
 4. Verify: each file ≤250 lines
 
 **Recovery:** If verification fails, restore from `/tmp/original.md`
-
