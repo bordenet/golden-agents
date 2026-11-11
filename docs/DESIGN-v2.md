@@ -1,6 +1,6 @@
 # Design v2
 
-Status: sections A-H are implemented. Section I has the fixture and an empty score sheet. No model run is recorded.
+Status: sections A-H are implemented. Section I has one Cursor run. Claude Code and Codex are not run.
 No template wording changes are made by this document.
 Consumer upgrade steps for the bugfix stack are in `docs/UPGRADE-GUIDE.md`.
 
@@ -233,13 +233,16 @@ Tradeoff: detection will misread a script that is not the real test. The
 still a defect, so detection stays conservative: exact script names `lint`,
 `test`, `build`, and `coverage` only.
 
-Migration: upgrade regenerates the framework block, so the gates change
-there. Project-specific gates below the end marker stay. The first upgrade
-after this lands should be reviewed because commands change.
+Migration: upgrade regenerates the framework block. A command already in
+that block is kept when detection finds nothing and the command is that
+language's template, or when it matches no selected template. A language
+with no command is left unset and named in the preview. Project-specific
+gates below the end marker stay. Review the first upgrade because the
+surrounding gate wording still changes.
 
 ## I. Evidence
 
-Nothing in this repo shows that the generated file changes agent behavior.
+One Cursor run is recorded in `docs/evals/SCORE.md`. On that run the with-guidance and without-guidance results match. Claude Code and Codex are not run. That is not evidence that the generated file changes agent behavior.
 
 Proposal: add a fixture repo and 5 to 10 fixed tasks (one lint failure, one
 failing test, one secret in a diff, one file over the size cap, one wrong
@@ -255,7 +258,7 @@ Migration: none. This does not change consumer files.
 ## Shipped
 
 Sections A-H are in `generate-agents.sh` on `main`. Section I is the fixture
-and `docs/evals/SCORE.md`, which has no model run. Consumer steps are
+and `docs/evals/SCORE.md`. The Cursor column has one run. Consumer steps are
 `docs/UPGRADE-GUIDE.md`. The summary of items 1-21 is `docs/SUMMARY.md`.
 The work is already on `main`. There is no stacked branch left to push.
 
