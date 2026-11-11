@@ -51,7 +51,7 @@ function Convert-ToWslPath {
     if (-not $WindowsPath) { return $null }
     # C:\Users\foo -> /mnt/c/Users/foo
     $drive = $WindowsPath.Substring(0, 1).ToLower()
-    $rest = $WindowsPath.Substring(2).Replace('\\', '/')
+    $rest = $WindowsPath.Substring(2).Replace('\', '/')
     return "/mnt/$drive$rest"
 }
 
@@ -131,7 +131,7 @@ if ($wslAvailable) {
 if ($gitBashPath) {
     Write-Host "[INFO] Running via Git Bash..." -ForegroundColor Cyan
     # Quote each argument to preserve commas and special characters
-    $quotedArgs = $Arguments | ForEach-Object { "'$($_ -replace "'", "'\\''")'" }
+    $quotedArgs = $Arguments | ForEach-Object { "'$($_ -replace "'", "'\''")'" }
     $argString = $quotedArgs -join ' '
     & $gitBashPath -c "cd '$ScriptDir' && ./generate-agents.sh $argString"
     exit $LASTEXITCODE
