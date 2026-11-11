@@ -1141,7 +1141,7 @@ each_selected_module() {
             echo "${lang} languages/${lang}.md"
         fi
     done
-    for wf in security testing build-hygiene deployment context-management; do
+    for wf in security testing build-hygiene deployment; do
         echo "${wf} workflows/${wf}.md"
     done
     if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
@@ -1229,6 +1229,140 @@ apply_modules_comment() {
     mv "$tmp" "$file"
 }
 
+# rule_glob <language>
+# Path glob for a language module. Empty for an unknown language.
+rule_glob() {
+    case "$1" in
+        go) echo '**/*.go' ;;
+        python) echo '**/*.py' ;;
+        javascript) echo '**/*.{js,ts,jsx,tsx}' ;;
+        shell) echo '**/*.sh' ;;
+        dart-flutter) echo '**/*.dart' ;;
+        *) echo '' ;;
+    esac
+}
+
+# rule_owned <file>
+# A rule file is ours when it is missing or carries the generated sentinel.
+# A hand-written file is left alone.
+rule_owned() {
+    local file="$1"
+    [[ ! -e "$file" ]] && return 0
+    grep -qxF "$GENERATED_SENTINEL" "$file"
+}
+
+# render_rule <dest> <frontmatter> <body>
+# Frontmatter may be empty. The sentinel is the last line.
+render_rule() {
+    local dest="$1" front="$2" body="$3"
+    mkdir -p "$(dirname "$dest")"
+    {
+        if [[ -n "$front" ]]; then
+            printf '%s\n' "$front"
+            echo
+        fi
+        cat "$body"
+        echo
+        echo "$GENERATED_SENTINEL"
+    } > "$dest"
+}
+
+# each_scoped_rule
+# Lines of "<name> <body-path> <mode> <glob>".
+# mode is "always" or "scoped". Invariants and security always load.
+# A language rule is scoped to that language's files.
+# A project type applies to the whole project.
+each_scoped_rule() {
+    local lang glob rel
+    echo "invariants $TEMPLATES_DIR/core/invariants.md always"
+    echo "security $TEMPLATES_DIR/workflows/security.md always"
+    local IFS=','
+    for lang in $LANGUAGES; do
+        rel="$TEMPLATES_DIR/languages/${lang}.md"
+        glob=$(rule_glob "$lang")
+        if [[ -f "$rel" && -n "$glob" ]]; then
+            echo "${lang} ${rel} scoped ${glob}"
+        fi
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} $TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md always"
+    fi
+}
+
+# rule_frontmatter <tool> <mode> <glob> <name>
+# tool is claude, cursor, or copilot.
+rule_frontmatter() {
+    local tool="$1" mode="$2" glob="$3" name="$4"
+    case "$tool" in
+        claude)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "paths:" "  - \"${glob}\"" "---"
+            fi
+            ;;
+        cursor)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "description: ${name} rules" "globs: \"${glob}\"" "alwaysApply: false" "---"
+            else
+                printf '%s\n' "---" "description: ${name} rules" "alwaysApply: true" "---"
+            fi
+            ;;
+        copilot)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "applyTo: \"${glob}\"" "---"
+            else
+                printf '%s\n' "---" "applyTo: \"**\"" "---"
+            fi
+            ;;
+    esac
+}
+
+# rule_dest <tool> <name>
+rule_dest() {
+    case "$1" in
+        claude) echo "$OUTPUT_PATH/.claude/rules/${2}.md" ;;
+        cursor) echo "$OUTPUT_PATH/.cursor/rules/${2}.mdc" ;;
+        copilot) echo "$OUTPUT_PATH/.github/instructions/${2}.instructions.md" ;;
+    esac
+}
+
+# sync_scoped_rules <preview|apply>
+# Writes Claude, Cursor, and Copilot rule files for the selected modules.
+# A file without the generated sentinel is left in place.
+sync_scoped_rules() {
+    local mode="$1"
+    local name body rule_mode glob tool dest front tmp
+    while read -r name body rule_mode glob; do
+        [[ -n "$name" ]] || continue
+        for tool in claude cursor copilot; do
+            dest=$(rule_dest "$tool" "$name")
+            if [[ -e "$dest" ]] && ! rule_owned "$dest"; then
+                if [[ "$mode" == "preview" ]]; then
+                    echo "  would leave ${dest#"$OUTPUT_PATH"/} (hand-written)"
+                else
+                    echo "  left ${dest#"$OUTPUT_PATH"/} (hand-written)"
+                fi
+                continue
+            fi
+            front=$(rule_frontmatter "$tool" "$rule_mode" "$glob" "$name")
+            if [[ "$mode" == "preview" ]]; then
+                tmp=$(mktemp)
+                render_rule "$tmp" "$front" "$body"
+                if [[ -f "$dest" ]] && cmp -s "$tmp" "$dest"; then
+                    echo "  unchanged ${dest#"$OUTPUT_PATH"/}"
+                elif [[ -f "$dest" ]]; then
+                    echo "  would update ${dest#"$OUTPUT_PATH"/}"
+                else
+                    echo "  would write ${dest#"$OUTPUT_PATH"/}"
+                fi
+                rm -f "$tmp"
+            else
+                render_rule "$dest" "$front" "$body"
+                echo "  wrote ${dest#"$OUTPUT_PATH"/}"
+            fi
+        done
+    done < <(each_scoped_rule)
+}
+
 # generate_progressive()
 # Generates a progressive-loading AGENTS.md (~60-80 lines).
 # Multi-language projects get gates per language unless that pushes the file past
@@ -1285,19 +1419,19 @@ $MARKER_START
 
 ---
 
-## Quality Gates (MANDATORY)
+## Quality Gates
 
 FRAMEWORK_START
 
     if [[ ${#lang_array[@]} -eq 1 ]]; then
-        echo "Before ANY commit:"
+        echo "Before a commit:"
         emit_lang_gates "${lang_array[0]}"
     elif [[ "$gate_style" == "first" ]]; then
         local others="${LANGUAGES#*,}"
-        echo "Before ANY commit (gates shown for ${lang_array[0]}; add equivalents for ${others//,/, }):"
+        echo "Before a commit (gates shown for ${lang_array[0]}; add equivalents for ${others//,/, }):"
         emit_lang_gates "${lang_array[0]}"
     else
-        echo "Before ANY commit, run the gates for each language you changed:"
+        echo "Before a commit, run the gates for each language you changed:"
         for lang in "${lang_array[@]}"; do
             echo "- **$lang**"
             emit_lang_gates "$lang" "  "
@@ -1306,7 +1440,7 @@ FRAMEWORK_START
 
     cat << FRAMEWORK_REST
 
-**Order matters.** Lint → Build → Test. Never skip steps.
+Lint, then build, then test. Run the same commands in CI or a hook.
 
 ---
 
@@ -1347,7 +1481,6 @@ FRAMEWORK_REST
 - 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read \`.golden-agents/modules/testing.md\`
 - 🔴 **WHEN build fails OR lint errors appear**: Read \`.golden-agents/modules/build-hygiene.md\`
 - 🟡 **BEFORE deploying to any environment**: Read \`.golden-agents/modules/deployment.md\`
-- 🟡 **WHEN conversation exceeds 50 exchanges**: Read \`.golden-agents/modules/context-management.md\`
 
 MIDDLE
 
@@ -1665,6 +1798,8 @@ upgrade_agents_md() {
             echo ""
             echo "--- Modules ---"
             preview_modules
+            echo "--- Rules ---"
+            sync_scoped_rules preview
         fi
         rm -rf "$tmp_dir"
         echo ""
@@ -1691,6 +1826,7 @@ upgrade_agents_md() {
         sync_redirects apply-backup
         if [[ "$FULL" != "true" ]]; then
             write_selected_modules
+            sync_scoped_rules apply
         fi
 
         # Check for bloat and trigger modular migration if needed
@@ -1782,6 +1918,8 @@ if [[ "$DRY_RUN" == "true" ]]; then
     if [[ "$FULL" != "true" ]]; then
         echo "=== Would copy modules into .golden-agents/modules/ ==="
         preview_modules
+        echo "=== Would write scoped rules ==="
+        sync_scoped_rules preview
     fi
     echo ""
 else
@@ -1841,6 +1979,8 @@ ADOPT_SECTION
         echo ""
         echo "Copying selected modules..."
         write_selected_modules
+        echo "Writing scoped rules..."
+        sync_scoped_rules apply
     fi
 fi
 
