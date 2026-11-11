@@ -12,20 +12,11 @@ There are two distinct components:
 2. **Your AI coding assistant** — Reads those files and acts on them. **Will modify your project files.**
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                         THE FULL PICTURE                             │
-└────────────────────────────────────────────────────────────────────┘
-
-    generate-agents.sh              AGENTS.md              Your AI Assistant
-    ┌─────────────────┐           ┌─────────────┐       ┌─────────────────┐
-    │ Creates text     │ ────────▶ │ Instructions │ ────▶ │ MODIFIES YOUR    │
-    │ files only       │           │ for AI       │       │ PROJECT FILES    │
-    └─────────────────┘           └─────────────┘       └─────────────────┘
-           │                              │                        │
-           ▼                              ▼                        ▼
-    ✅ Safe, auditable            📄 Plain text             ⚠️ Real changes
-    ✅ No side effects            📄 No executable code     ⚠️ Writes code
-    ✅ Runs once, exits           📄 Just guidelines        ⚠️ Runs commands
+generate-agents.sh          AGENTS.md              Your AI assistant
+Creates text files    ->    Instructions for AI -> Modifies project files
+Safe, auditable             Plain text             Real changes
+No side effects             No executable code     Writes code
+Runs once, exits            Just guidelines        Runs commands
 ```
 
 **Be clear about this:** When you tell your AI assistant to "set up golden-agents and apply it," the AI will:
@@ -99,23 +90,11 @@ When you open a project in an AI-enabled editor:
 4. **The AI modifies your files** based on your requests + the guidance
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                    HOW AI ASSISTANTS USE AGENTS.MD                  │
-└────────────────────────────────────────────────────────────────────┘
-
-    ┌─────────────┐     reads      ┌─────────────┐
-    │ AI Assistant │ ◀──────────── │ AGENTS.md    │
-    │ (Claude,     │                │ (text file)  │
-    │  Copilot)    │                └─────────────┘
-    └─────────────┘
-           │
-           │ writes code, runs commands
-           ▼
-    ┌─────────────┐
-    │ Your Project │
-    │ (files get   │
-    │  modified)   │
-    └─────────────┘
+AI assistant (Claude, Copilot)  reads  AGENTS.md (text file)
+        |
+        writes code, runs commands
+        v
+Your project files get modified
 ```
 
 **Important:** The AI assistant will modify your project files. That's the point. The `AGENTS.md` file just influences *how* it does so (coding style, quality gates, etc.).
