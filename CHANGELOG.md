@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Superpowers is opt-in** - The bootstrap command is omitted unless the run
+  passes `--superpowers`. The block is written after the framework end
+  marker, so a later upgrade does not put it back. A bootstrap already
+  present below that marker is left in place.
 - **Quieter templates** - Strong wording stays on the security priority, the
   invariants size cap, the adopt-prompt marker check, the testing "done"
   gate, and one `go build` line. Each of those lines says why. Anti-slop,
