@@ -979,3 +979,98 @@ if [[ "$ADOPT" == "true" ]]; then
 
     # Fall through to normal generation, which will append the original content
 fi
+
+# Handle dedupe mode - generate deduplication prompt for files WITH markers
+if [[ "$DEDUPE" == "true" ]]; then
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy) WITH markers
+    existing_agents_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/Agents.md"
+    fi
+
+    if [[ -z "$existing_agents_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at $OUTPUT_PATH" >&2
+        echo "  --dedupe requires an existing AGENTS.md file with framework markers." >&2
+        exit 1
+    fi
+
+    if ! grep -q "$MARKER_START" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") does not have framework markers" >&2
+        echo "  Use --adopt instead for files created without golden-agents." >&2
+        exit 1
+    fi
+
+    if ! grep -qF "$MARKER_END" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") has $MARKER_START but no $MARKER_END" >&2
+        echo "  Restore the end marker after the framework section, then rerun --dedupe." >&2
+        echo "  No files were changed." >&2
+        exit 1
+    fi
+
+    # Count lines in project-specific section (after MARKER_END)
+    marker_end_line=$(grep -n "$MARKER_END" "$existing_agents_file" | head -1 | cut -d: -f1)
+    total_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')
+    project_lines=$((total_lines - marker_end_line))
+
+    echo "[INFO] Analyzing $(basename "$existing_agents_file") for deduplication..."
+    echo "  Total lines: $total_lines"
+    echo "  Framework section ends at line: $marker_end_line"
+    echo "  Project-specific section: $project_lines lines"
+    echo ""
+
+    if [[ $project_lines -le 100 ]]; then
+        echo "[OK] Project-specific section is already within target (<100 lines)"
+        echo "  No deduplication needed."
+        exit 0
+    fi
+
+    echo "[WARN] Project-specific section exceeds target (>100 lines)"
+    echo "  Target for complex projects: 50-100 lines"
+    echo "  Current: $project_lines lines"
+    echo ""
+
+    # ADOPT-PROMPT.md template is required regardless of dry-run (read-only check)
+    if [[ ! -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+        echo "[ERROR] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+        exit 1
+    fi
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would create: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[DRY RUN] Would add ADOPT-PROMPT.md to .gitignore"
+    else
+        # Copy ADOPT-PROMPT.md template (same prompt works for dedupe)
+        cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+
+        # Add to .gitignore if not already there
+        if [[ -f "$OUTPUT_PATH/.gitignore" ]]; then
+            if gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"; then
+                echo "[OK] Added ADOPT-PROMPT.md to .gitignore"
+            fi
+        else
+            gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md"
+            echo "[OK] Created .gitignore with ADOPT-PROMPT.md"
+        fi
+    fi
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "                    NEXT STEPS"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+    echo "  1. Open ADOPT-PROMPT.md in your AI assistant"
+    echo "  2. Paste the contents of AGENTS.md after the prompt"
+    echo "  3. The AI will propose aggressive deduplication"
+    echo "  4. Review and approve the proposed changes"
+    echo "  5. Apply the minimal result to AGENTS.md"
+    echo "  6. Delete ADOPT-PROMPT.md and commit"
+    echo ""
+    echo "  Target: Reduce project-specific section from $project_lines to <100 lines"
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+
+    exit 0
+fi
