@@ -203,6 +203,10 @@ See `templates/core/superpowers.md` for the module loading pattern.
 
 ## When Developing THIS Framework
 
+### GitHub from a cloud agent
+
+Read `.ai-guidance/github-ops.md` before any commit, branch change, or pull request on this repo. The agent container has no `gh` login and no browser session. Use `gh`, `git`, or the GitHub API from a machine that is already authenticated. Do not drive the container browser. `gh api --method DELETE` from a terminal must pass `--input /dev/null`.
+
 ### Quality Gates
 
 ```bash
