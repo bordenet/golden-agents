@@ -542,3 +542,41 @@ gitignore_add() {
     fi
     printf '%s\n' "$entry" >> "$file"
 }
+
+# check_existing_guidance <path>
+# Checks for existing guidance files that would be overwritten.
+# Detects non-generated CLAUDE.md, and Agents.md and AGENTS.md without markers.
+# Arguments:
+#   $1 - Directory path to check
+# Returns: Space-separated list of found files with sizes via stdout, or empty string
+check_existing_guidance() {
+    local path="$1"
+    local found_files=""
+
+    if [[ -f "$path/CLAUDE.md" ]] && ! is_generated_redirect "$path/CLAUDE.md" "CLAUDE.md"; then
+        local size
+        size=$(wc -c < "$path/CLAUDE.md" | tr -d ' ')
+        found_files="CLAUDE.md ($size bytes)"
+    fi
+
+    # Check Agents.md without markers (skip when it is the same file as AGENTS.md,
+    # as on case-insensitive filesystems)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]]; then
+        if ! grep -q "$MARKER_START" "$path/Agents.md"; then
+            local size
+            size=$(wc -c < "$path/Agents.md" | tr -d ' ')
+            found_files="${found_files:+$found_files, }Agents.md ($size bytes, no markers)"
+        fi
+    fi
+
+    # Check AGENTS.md (case variation)
+    if [[ -f "$path/AGENTS.md" ]]; then
+        if ! grep -q "$MARKER_START" "$path/AGENTS.md"; then
+            local size
+            size=$(wc -c < "$path/AGENTS.md" | tr -d ' ')
+            found_files="${found_files:+$found_files, }AGENTS.md ($size bytes, no markers)"
+        fi
+    fi
+
+    echo "$found_files"
+}
