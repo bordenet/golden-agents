@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Eval fixture** - `evals/fixture/` holds eight fixed tasks: a lint failure,
+  a failing test, a secret in a diff, a file over the 250-line cap, a wrong
+  test command, a broken build, a project rule that must survive, and a
+  piped curl. `docs/evals/SCORE.md` is the score sheet. Every cell says
+  `not run`. A missing run is not a pass.
 - **Detected quality gates** - Before using a template command, generation
   reads `package.json` scripts, `Makefile` and `justfile` targets,
   `pyproject.toml` `[project.scripts]`, then GitHub Actions step names.

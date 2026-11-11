@@ -1,6 +1,6 @@
 # Design v2
 
-Status: sections A-H are implemented. Section I is not.
+Status: sections A-H are implemented. Section I has the fixture and an empty score sheet. No model run is recorded.
 No template wording changes are made by this document.
 Consumer upgrade steps for the bugfix stack are in `docs/UPGRADE-GUIDE.md`.
 
