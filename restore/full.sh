@@ -910,3 +910,72 @@ if [[ "$MIGRATE" == "true" ]]; then
     # Continue with normal generation (framework AGENTS.md)
     # Fall through to normal generation below
 fi
+
+# Handle adopt mode - bring existing AGENTS.md into framework
+if [[ "$ADOPT" == "true" ]]; then
+    # Check for existing AGENTS.md (preferred) or Agents.md (legacy) without markers
+    existing_agents_file=""
+    if [[ -f "$OUTPUT_PATH/AGENTS.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/AGENTS.md"
+    elif [[ -f "$OUTPUT_PATH/Agents.md" ]]; then
+        existing_agents_file="$OUTPUT_PATH/Agents.md"
+    fi
+
+    if [[ -z "$existing_agents_file" ]]; then
+        echo "[ERROR] No AGENTS.md found at $OUTPUT_PATH" >&2
+        echo "  --adopt requires an existing AGENTS.md file to adopt." >&2
+        exit 1
+    fi
+
+    if grep -q "$MARKER_START" "$existing_agents_file"; then
+        echo "[ERROR] $(basename "$existing_agents_file") already has framework markers" >&2
+        echo "  Use --upgrade instead to update framework sections." >&2
+        exit 1
+    fi
+
+    echo "[INFO] Adopting existing $(basename "$existing_agents_file") into golden-agents framework..."
+
+    # Store original content (read-only; safe to do even in dry-run)
+    original_content=$(cat "$existing_agents_file")
+    original_lines=$(wc -l < "$existing_agents_file" | tr -d ' ')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[DRY RUN] Would back up original: $OUTPUT_PATH/AGENTS.md.original"
+        if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+            echo "[DRY RUN] Would remove legacy file: $existing_agents_file"
+        fi
+        echo "[DRY RUN] Would create: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        echo "[DRY RUN] Would add ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
+    else
+        mkdir -p "$OUTPUT_PATH"
+
+        # Backup original
+        cp "$existing_agents_file" "$OUTPUT_PATH/AGENTS.md.original"
+        echo "[OK] Backed up original: $OUTPUT_PATH/AGENTS.md.original"
+
+        # Remove old file if it was lowercase (will be replaced with AGENTS.md)
+        if [[ "$existing_agents_file" == "$OUTPUT_PATH/Agents.md" ]]; then
+            rm "$existing_agents_file"
+        fi
+
+        # Copy ADOPT-PROMPT.md template
+        if [[ -f "$TEMPLATES_DIR/adopt-prompt.md" ]]; then
+            cp "$TEMPLATES_DIR/adopt-prompt.md" "$OUTPUT_PATH/ADOPT-PROMPT.md"
+            echo "[OK] Created: $OUTPUT_PATH/ADOPT-PROMPT.md"
+        else
+            echo "[WARN] Template not found: $TEMPLATES_DIR/adopt-prompt.md" >&2
+        fi
+
+        # Add to .gitignore
+        gitignore_add "$OUTPUT_PATH" "ADOPT-PROMPT.md" || true
+        gitignore_add "$OUTPUT_PATH" "AGENTS.md.original" || true
+        echo "[OK] Added ADOPT-PROMPT.md and AGENTS.md.original to .gitignore"
+    fi
+
+    # Generate framework content, then append original
+    # We'll set a flag to append after generation
+    ADOPT_ORIGINAL_CONTENT="$original_content"
+    ADOPT_ORIGINAL_LINES="$original_lines"
+
+    # Fall through to normal generation, which will append the original content
+fi
