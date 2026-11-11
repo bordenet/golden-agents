@@ -102,9 +102,17 @@ EOF
 @test "SAFE WRITE: generated redirects carry the sentinel line" {
     run_generator --language=go --path="$REPO"
     [ "$status" -eq 0 ]
-    for f in CLAUDE.md CODEX.md AGENT.md GEMINI.md COPILOT.md .github/copilot-instructions.md; do
+    for f in CLAUDE.md GEMINI.md .github/copilot-instructions.md; do
         grep -qxF "<!-- golden-agents:generated -->" "$REPO/$f" || return 1
     done
+    [ ! -e "$REPO/CODEX.md" ]
+    [ ! -e "$REPO/AGENT.md" ]
+    [ ! -e "$REPO/COPILOT.md" ]
+    grep -qxF '@AGENTS.md' "$REPO/CLAUDE.md"
+    grep -qxF '@AGENTS.md' "$REPO/GEMINI.md"
+    grep -qxF '@../AGENTS.md' "$REPO/.github/copilot-instructions.md"
+    run grep -q 'See \*\*' "$REPO/CLAUDE.md"
+    [ "$status" -ne 0 ]
 }
 
 @test "SAFE WRITE: sentinel-marked redirects are overwritten" {
@@ -129,8 +137,13 @@ EOF
 
     run_generator --language=go --path="$REPO"
     [ "$status" -eq 0 ]
+    grep -qxF '@AGENTS.md' "$REPO/GEMINI.md"
     grep -qxF "<!-- golden-agents:generated -->" "$REPO/GEMINI.md"
-    grep -qxF "<!-- golden-agents:generated -->" "$REPO/.github/copilot-instructions.md"
+    grep -qxF '@../AGENTS.md' "$REPO/.github/copilot-instructions.md"
+    [ ! -e "$REPO/CODEX.md" ]
+    [ ! -e "$REPO/AGENT.md" ]
+    [ ! -e "$REPO/COPILOT.md" ]
+    [ -f "$REPO/CODEX.md.$FIXED_STAMP.bak" ]
 }
 
 @test "SAFE WRITE: --migrate backs up real redirect files to timestamped .bak" {
