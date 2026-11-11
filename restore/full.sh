@@ -580,3 +580,134 @@ check_existing_guidance() {
 
     echo "$found_files"
 }
+
+# generate_migration_prompt <path>
+# Generates a markdown prompt file for LLM-assisted migration.
+# Collects content from existing CLAUDE.md, Agents.md, and AGENTS.md files.
+# Outputs a structured prompt with instructions for deduplication.
+# Arguments:
+#   $1 - Directory path containing existing guidance files
+# Returns: Migration prompt markdown via stdout
+generate_migration_prompt() {
+    local path="$1"
+    local existing_content=""
+    local source_file=""
+
+    # Collect existing content from CLAUDE.md
+    if [[ -f "$path/CLAUDE.md" ]] && ! is_generated_redirect "$path/CLAUDE.md" "CLAUDE.md"; then
+        source_file="CLAUDE.md"
+        existing_content=$(cat "$path/CLAUDE.md")
+    fi
+
+    # Collect from Agents.md without markers (once, if it is the same file as AGENTS.md)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]] \
+        && ! grep -q "$MARKER_START" "$path/Agents.md"; then
+        local size
+        size=$(wc -c < "$path/Agents.md" | tr -d ' ')
+        source_file="${source_file:+$source_file + }Agents.md"
+        if [[ -n "$existing_content" ]]; then
+            existing_content="$existing_content
+
+---
+
+$(cat "$path/Agents.md")"
+        else
+            existing_content=$(cat "$path/Agents.md")
+        fi
+    fi
+
+    # Collect from AGENTS.md without markers
+    if [[ -f "$path/AGENTS.md" ]] && ! grep -q "$MARKER_START" "$path/AGENTS.md"; then
+        local size
+        size=$(wc -c < "$path/AGENTS.md" | tr -d ' ')
+        source_file="${source_file:+$source_file + }AGENTS.md"
+        if [[ -n "$existing_content" ]]; then
+            existing_content="$existing_content
+
+---
+
+$(cat "$path/AGENTS.md")"
+        else
+            existing_content=$(cat "$path/AGENTS.md")
+        fi
+    fi
+
+    cat << 'PROMPT_EOF'
+# Golden Agents Migration Prompt
+
+> **DELETE THIS FILE** after completing the migration.
+
+You are helping migrate project-specific AI guidance into the golden-agents framework.
+
+## Instructions
+
+1. Read the **Existing Content** below (from the old guidance files)
+2. Read the **New Framework** in `AGENTS.md` (already generated)
+3. Apply the **10-word test** to each piece of content:
+   - Can you express this in under 10 words with specific names/paths/commands?
+   - YES → Keep it (project-specific)
+   - NO → Skip it (framework already covers it)
+4. Add ONLY project-specific content to `AGENTS.md` after `<!-- GOLDEN:framework:end -->`
+5. **DO NOT** duplicate content already in the framework (quality gates, anti-slop, etc.)
+6. **DO NOT** lose any genuinely project-specific information
+
+## Target Sizes
+
+| Project Complexity | Target Size |
+|-------------------|-------------|
+| Simple (single language, standard tooling) | **0-20 lines** |
+| Moderate (multi-language, some custom workflows) | **20-50 lines** |
+| Complex (many integrations, strict domain rules) | **50-100 lines** |
+
+**If your project exceeds 100 lines** of genuinely project-specific content:
+1. Create a `.ai-guidance/` directory in your repo
+2. Split content into topic-specific modules (e.g., `mobile-builds.md`, `security.md`)
+3. Add a loading table to AGENTS.md referencing when to load each module
+PROMPT_EOF
+    echo "4. Keep AGENTS.md under $MAX_GUIDANCE_LINES lines with quick reference + loading instructions"
+    echo ""
+    echo "## Source Files"
+    echo ""
+    echo "Migrated from: $source_file"
+    local source_lines
+    source_lines=$(echo "$existing_content" | wc -l | tr -d ' ')
+    echo "Original size: $source_lines lines"
+    echo ""
+    # The fence must be longer than any backtick run in the content, or an
+    # embedded code block closes it early
+    local longest_run fence=""
+    longest_run=$(printf '%s\n' "$existing_content" | awk '
+        { s = $0; while (match(s, /`+/)) { if (RLENGTH > m) m = RLENGTH; s = substr(s, RSTART + RLENGTH) } }
+        END { print m + 0 }')
+    while [[ ${#fence} -lt 3 || ${#fence} -le $longest_run ]]; do
+        fence="${fence}\`"
+    done
+    echo "## Existing Content"
+    echo ""
+    echo "${fence}markdown"
+    echo "$existing_content"
+    echo "$fence"
+    echo ""
+    echo "## Report Metrics"
+    echo ""
+    echo "After adding project-specific content to AGENTS.md, report:"
+    echo ""
+    echo '```'
+    echo "MIGRATION SUMMARY"
+    echo "━━━━━━━━━━━━━━━━━"
+    echo "Original guidance file: $source_lines lines"
+    echo "Project-specific content added: ~[Y] lines"
+    echo "Reduction: [Z]%"
+    echo ""
+    echo "Kept [M] project-specific items (paths, commands, policies, domain rules)"
+    echo "Skipped [N] generic items (covered by framework)"
+    echo '```'
+    echo ""
+    echo "## Next Steps"
+    echo ""
+    echo "1. Open \`AGENTS.md\` and find the \`<!-- GOLDEN:framework:end -->\` marker"
+    echo "2. Add your project-specific content after that marker"
+    echo "3. Report the metrics above"
+    echo "4. Delete this \`MIGRATION-PROMPT.md\` file"
+    echo "5. Commit the changes"
+}
