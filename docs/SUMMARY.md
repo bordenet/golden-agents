@@ -4,7 +4,7 @@
 to `generate-agents.sh`. Item 16: the wrapper converts WSL paths only for
 `--path=X`, not for the space form `--path X`. That is a note, not a code change.
 
-Pull request numbers are filled in when the branches are pushed.
+The stack is on `main`. The Branch column names the fix branch for each item.
 
 | Item | Status | Test | Branch | ps1 |
 |------|--------|------|--------|-----|
