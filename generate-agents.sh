@@ -129,6 +129,15 @@ MIGRATION (First-time adoption)
     Then paste MIGRATION-PROMPT.md content into your AI assistant to complete migration.
     Delete MIGRATION-PROMPT.md after migration is complete.
 
+MODULES
+    Progressive mode copies the selected language module, the project-type
+    module, and the workflow modules named by the triggers into
+    .golden-agents/modules/. The triggers read those relative paths.
+    A <!-- golden-agents:modules ... --> comment next to the stamp records
+    the sha256 of each copied file. --sync updates this checkout only.
+    A consumer project changes when you run --upgrade --apply. The preview
+    shows hash differences and writes nothing.
+
 WRITE SAFETY
     CLAUDE.md, GEMINI.md, and .github/copilot-instructions.md are one-line
     @AGENTS.md imports and end with <!-- golden-agents:generated -->.
@@ -1104,6 +1113,122 @@ emit_lang_gates() {
     fi
 }
 
+# file_sha256 <file>
+# Prints the sha256 hex digest of a file.
+# Arguments:
+#   $1 - Path to a file
+# Returns: Digest via stdout
+file_sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{ print $1 }'
+    else
+        shasum -a 256 "$1" | awk '{ print $1 }'
+    fi
+}
+
+# each_selected_module
+# Lists the modules progressive mode copies into the consumer repo.
+# Languages come from --language. The project type comes from --type.
+# The five workflow modules are the ones the trigger block names.
+# Reads from global: LANGUAGES, PROJECT_TYPE, TEMPLATES_DIR
+# Arguments: none
+# Returns: Lines of "<name> <template-path-relative-to-templates>" via stdout
+each_selected_module() {
+    local lang wf
+    local IFS=','
+    for lang in $LANGUAGES; do
+        if [[ -f "$TEMPLATES_DIR/languages/${lang}.md" ]]; then
+            echo "${lang} languages/${lang}.md"
+        fi
+    done
+    for wf in security testing build-hygiene deployment context-management; do
+        echo "${wf} workflows/${wf}.md"
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} project-types/${PROJECT_TYPE}.md"
+    fi
+}
+
+# modules_record
+# One comment recording the sha256 of every selected module.
+# Arguments: none
+# Returns: The comment via stdout
+modules_record() {
+    local name rel hash line=""
+    while read -r name rel; do
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        line="${line:+$line }${name}=${hash}"
+    done < <(each_selected_module)
+    echo "<!-- golden-agents:modules ${line} -->"
+}
+
+# preview_modules
+# Prints what --upgrade or --dry-run would do to .golden-agents/modules.
+# Writes nothing.
+# Arguments: none
+# Returns: 0
+preview_modules() {
+    local name rel dest have hash
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        if [[ ! -f "$dest" ]]; then
+            echo "  would write .golden-agents/modules/${name}.md"
+        else
+            have=$(file_sha256 "$dest")
+            if [[ "$have" == "$hash" ]]; then
+                echo "  unchanged .golden-agents/modules/${name}.md"
+            else
+                echo "  would update .golden-agents/modules/${name}.md"
+                echo "    have     $have"
+                echo "    template $hash"
+            fi
+        fi
+    done < <(each_selected_module)
+}
+
+# write_selected_modules
+# Copies selected templates into OUTPUT_PATH/.golden-agents/modules/.
+# Arguments: none
+# Returns: 0
+write_selected_modules() {
+    local name rel dest
+    mkdir -p "$OUTPUT_PATH/.golden-agents/modules"
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        cp "$TEMPLATES_DIR/$rel" "$dest"
+        echo "  wrote .golden-agents/modules/${name}.md"
+    done < <(each_selected_module)
+}
+
+# apply_modules_comment <file>
+# Inserts or replaces the modules comment. A stamp line keeps it on the next
+# line. A file with no stamp gets it immediately before the framework marker.
+# Arguments:
+#   $1 - AGENTS.md path
+# Returns: 0
+apply_modules_comment() {
+    local file="$1"
+    local desired tmp
+    desired=$(modules_record)
+    tmp=$(mktemp)
+    MARK="$MARKER_START" DESIRED="$desired" awk '
+        index($0, "<!-- golden-agents:modules ") == 1 { next }
+        !inserted && index($0, "<!-- golden-agents:stamp ") == 1 {
+            print
+            print ENVIRON["DESIRED"]
+            inserted = 1
+            next
+        }
+        !inserted && index($0, ENVIRON["MARK"]) {
+            print ENVIRON["DESIRED"]
+            inserted = 1
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
 # generate_progressive()
 # Generates a progressive-loading AGENTS.md (~60-80 lines).
 # Multi-language projects get gates per language unless that pushes the file past
@@ -1125,16 +1250,16 @@ generate_progressive() {
 }
 
 # generate_progressive_body <gate_style>
-# Uses on-demand module loading from $HOME/.golden-agents/templates/.
+# Uses on-demand module loading from .golden-agents/modules/ in the consumer repo.
 # Reads from global: LANGUAGES, PROJECT_TYPE, PROJECT_NAME, FRAMEWORK_VERSION
 # Arguments:
 #   $1 - "per-language" or "first" (multi-language gate layout)
 # Returns: Complete AGENTS.md content via stdout
 generate_progressive_body() {
     local gate_style="$1"
-    local today
+    local today modules_line
     today=$(date +%Y-%m-%d)
-    local golden_agents_path="\$HOME/.golden-agents"
+    modules_line=$(modules_record)
 
     IFS=',' read -ra lang_array <<< "$LANGUAGES"
 
@@ -1143,10 +1268,11 @@ generate_progressive_body() {
 
 > **Generated by**: [golden-agents](https://github.com/bordenet/golden-agents) v${FRAMEWORK_VERSION} (progressive)
 <!-- golden-agents:stamp version=${FRAMEWORK_VERSION} updated=${today} -->
+${modules_line}
 > **Languages**: $LANGUAGES
 > **Type**: ${PROJECT_TYPE:-general}
 
-Minimal core with on-demand module loading. Templates at: \`$golden_agents_path/templates/\`
+Minimal core with on-demand module loading. Modules: \`.golden-agents/modules/\`
 
 HEADER
 
@@ -1205,29 +1331,29 @@ FRAMEWORK_REST
     # Generate language loading instructions with specific triggers
     for lang in "${lang_array[@]}"; do
         case "$lang" in
-            go) echo "- 🔴 **BEFORE writing ANY \`.go\` file**: Read \`$golden_agents_path/templates/languages/go.md\`" ;;
-            python) echo "- 🔴 **BEFORE writing ANY \`.py\` file**: Read \`$golden_agents_path/templates/languages/python.md\`" ;;
-            javascript) echo "- 🔴 **BEFORE writing ANY \`.js\`, \`.ts\`, \`.jsx\`, \`.tsx\` file**: Read \`$golden_agents_path/templates/languages/javascript.md\`" ;;
-            shell) echo "- 🔴 **BEFORE writing ANY \`.sh\` file or bash code block**: Read \`$golden_agents_path/templates/languages/shell.md\`" ;;
-            dart-flutter) echo "- 🔴 **BEFORE writing ANY \`.dart\` file**: Read \`$golden_agents_path/templates/languages/dart-flutter.md\`" ;;
-            *) echo "- 🔴 **BEFORE writing $lang code**: Read \`$golden_agents_path/templates/languages/${lang}.md\`" ;;
+            go) echo "- 🔴 **BEFORE writing ANY \`.go\` file**: Read \`.golden-agents/modules/go.md\`" ;;
+            python) echo "- 🔴 **BEFORE writing ANY \`.py\` file**: Read \`.golden-agents/modules/python.md\`" ;;
+            javascript) echo "- 🔴 **BEFORE writing ANY \`.js\`, \`.ts\`, \`.jsx\`, \`.tsx\` file**: Read \`.golden-agents/modules/javascript.md\`" ;;
+            shell) echo "- 🔴 **BEFORE writing ANY \`.sh\` file or bash code block**: Read \`.golden-agents/modules/shell.md\`" ;;
+            dart-flutter) echo "- 🔴 **BEFORE writing ANY \`.dart\` file**: Read \`.golden-agents/modules/dart-flutter.md\`" ;;
+            *) echo "- 🔴 **BEFORE writing $lang code**: Read \`.golden-agents/modules/${lang}.md\`" ;;
         esac
     done
 
     cat << MIDDLE
 
 ### Workflow Modules (🔴 Required)
-- 🔴 **BEFORE any commit, PR, push, or merge**: Read \`$golden_agents_path/templates/workflows/security.md\`
-- 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read \`$golden_agents_path/templates/workflows/testing.md\`
-- 🔴 **WHEN build fails OR lint errors appear**: Read \`$golden_agents_path/templates/workflows/build-hygiene.md\`
-- 🟡 **BEFORE deploying to any environment**: Read \`$golden_agents_path/templates/workflows/deployment.md\`
-- 🟡 **WHEN conversation exceeds 50 exchanges**: Read \`$golden_agents_path/templates/workflows/context-management.md\`
+- 🔴 **BEFORE any commit, PR, push, or merge**: Read \`.golden-agents/modules/security.md\`
+- 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read \`.golden-agents/modules/testing.md\`
+- 🔴 **WHEN build fails OR lint errors appear**: Read \`.golden-agents/modules/build-hygiene.md\`
+- 🟡 **BEFORE deploying to any environment**: Read \`.golden-agents/modules/deployment.md\`
+- 🟡 **WHEN conversation exceeds 50 exchanges**: Read \`.golden-agents/modules/context-management.md\`
 
 MIDDLE
 
     if [[ -n "$PROJECT_TYPE" ]]; then
         echo "### Project type guidance:"
-        echo "- Read \`$golden_agents_path/templates/project-types/${PROJECT_TYPE}.md\`"
+        echo "- Read \`.golden-agents/modules/${PROJECT_TYPE}.md\`"
         echo ""
     fi
 
@@ -1515,6 +1641,14 @@ upgrade_agents_md() {
         mv "$tmp_dir/upgraded.stamp" "$tmp_dir/upgraded"
     fi
 
+    # The modules comment lives in the preserved header, next to the stamp.
+    if [[ "$FULL" == "true" ]]; then
+        awk 'index($0, "<!-- golden-agents:modules ") != 1' "$tmp_dir/upgraded" > "$tmp_dir/upgraded.modules"
+        mv "$tmp_dir/upgraded.modules" "$tmp_dir/upgraded"
+    else
+        apply_modules_comment "$tmp_dir/upgraded"
+    fi
+
     # Show diff or apply
     if [[ "$APPLY" != "true" ]]; then
         echo "=== UPGRADE PREVIEW (dry-run) ==="
@@ -1527,6 +1661,11 @@ upgrade_agents_md() {
         echo ""
         echo "--- Redirects ---"
         sync_redirects preview
+        if [[ "$FULL" != "true" ]]; then
+            echo ""
+            echo "--- Modules ---"
+            preview_modules
+        fi
         rm -rf "$tmp_dir"
         echo ""
         echo "[INFO] This is a preview. No changes made."
@@ -1550,6 +1689,9 @@ upgrade_agents_md() {
         # The self-manage block tells agents to load this file
         ensure_invariants "$OUTPUT_PATH"
         sync_redirects apply-backup
+        if [[ "$FULL" != "true" ]]; then
+            write_selected_modules
+        fi
 
         # Check for bloat and trigger modular migration if needed
         local line_count
@@ -1637,6 +1779,10 @@ if [[ "$DRY_RUN" == "true" ]]; then
     if [[ ! -e "$OUTPUT_PATH/.ai-guidance/invariants.md" ]]; then
         echo "[DRY RUN] Would create: .ai-guidance/invariants.md"
     fi
+    if [[ "$FULL" != "true" ]]; then
+        echo "=== Would copy modules into .golden-agents/modules/ ==="
+        preview_modules
+    fi
     echo ""
 else
     mkdir -p "$OUTPUT_PATH"
@@ -1691,5 +1837,10 @@ ADOPT_SECTION
 
     # The self-manage block tells agents to load this file
     ensure_invariants "$OUTPUT_PATH"
+    if [[ "$FULL" != "true" ]]; then
+        echo ""
+        echo "Copying selected modules..."
+        write_selected_modules
+    fi
 fi
 
