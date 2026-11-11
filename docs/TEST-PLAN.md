@@ -4,27 +4,23 @@ Golden Agents is tested on every commit. Here's what we verify.
 
 ---
 
-## Test Summary
+## What the suite covers
 
-| Category | Tests | What We Verify |
-|----------|-------|----------------|
-| **Data Safety** | 6 | Your existing content is never lost during migrations or upgrades |
-| **Size Limits** | 7 | Generated files stay under 100 lines (usable by AI assistants) |
-| **End-to-End Scenarios** | 5 | Complete workflows work from start to finish |
-| **Argument Parsing** | 17 | CLI flags work correctly, errors are clear |
-| **Mode Detection** | 7 | Correct mode chosen based on existing files |
-| **Migrations** | 10 | CLAUDE.md/GEMINI.md content preserved |
-| **Adoptions** | 12 | Existing AGENTS.md content preserved |
-| **Upgrades** | 10 | Framework updates don't lose project rules |
-| **Deduplication** | 12 | Bloated project sections handled correctly |
-| **Generation** | 10 | Core output generation works correctly |
-| **Templates** | 8 | Template files are valid and accessible |
-| **Sync** | 2 | Template updates from GitHub work |
-| **Edge Cases** | 6 | Unicode, spaces in paths, special characters |
-| **Self-Management** | 12 | Bootstrap block, bloat detection, modular migration |
-| **Windows** | 15 | PowerShell wrapper works correctly |
+Counts are not listed here. Run the suite to see the current total.
 
-**Total: 143 tests** (128 BATS + 15 Pester)
+- Data safety: existing content is not lost during migrations or upgrades
+- Size limits: generated progressive files stay under 100 lines
+- End-to-end scenarios: workflows from start to finish
+- Argument parsing: flags and errors
+- Mode detection: mode follows the files already present
+- Migrations and adoptions: existing guidance is preserved
+- Upgrades: framework updates keep project rules
+- Deduplication: bloated project sections
+- Generation and templates: output and template files
+- Sync: template updates from GitHub
+- Edge cases: unicode, spaces in paths, special characters
+- Self-management: bootstrap block, bloat detection, modular migration
+- Windows: PowerShell wrapper
 
 ---
 
