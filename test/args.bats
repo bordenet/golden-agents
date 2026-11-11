@@ -173,7 +173,7 @@ teardown() {
     run "$GENERATE_SCRIPT" --language go --type cli-tools --path "$TEST_DIR" --name SpaceForm
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/AGENTS.md" "^# AI Agent Guidelines - SpaceForm$"
-    assert_file_contains "$TEST_DIR/AGENTS.md" "project-types/cli-tools.md"
+    assert_file_contains "$TEST_DIR/AGENTS.md" ".golden-agents/modules/cli-tools.md"
 }
 
 @test "space form --path is honored by --dedupe" {
