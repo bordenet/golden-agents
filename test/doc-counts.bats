@@ -13,3 +13,11 @@ load 'test_helper'
     done
     [ "$hit" -eq 0 ]
 }
+
+@test "upgrade guide does not call design v2 unimplemented" {
+    grep -q 'Sections A-H of `docs/DESIGN-v2.md` are in this generator.' \
+        "$SCRIPT_DIR/docs/UPGRADE-GUIDE.md"
+    ! grep -q 'are not implemented' "$SCRIPT_DIR/docs/UPGRADE-GUIDE.md"
+    ! grep -q 'no behavior change' "$SCRIPT_DIR/docs/SUMMARY.md"
+    grep -q 'The score sheet has no model run.' "$SCRIPT_DIR/docs/SUMMARY.md"
+}

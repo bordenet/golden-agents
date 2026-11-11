@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Upgrade guide matches the generator** - `docs/UPGRADE-GUIDE.md` no longer
+  says design v2 is unimplemented. It names what `--upgrade --apply` writes,
+  and it says not to run that upgrade against this repo's own `AGENTS.md`.
+  `docs/SUMMARY.md` item 20 points at the section tests. The score sheet is
+  unchanged and still says `not run`.
 - **Eval fixture** - `evals/fixture/` holds eight fixed tasks: a lint failure,
   a failing test, a secret in a diff, a file over the 250-line cap, a wrong
   test command, a broken build, a project rule that must survive, and a

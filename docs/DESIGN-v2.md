@@ -154,18 +154,21 @@ CLI siren heading, and "CRITICAL FOR LIBRARIES". Those are conventions, not
 invariants.
 
 Tradeoff: quieter files are easier to follow and easier to ignore. The
-inventory above is the proposed line. Implementation waits for review, and it
-edits `templates/` only after that review.
+inventory above is the line that shipped. The template edits are in the tree.
 
 Migration: template edits ship inside the framework block on the next upgrade.
 Consumers do not merge template prose by hand.
 
 ## E. Superpowers block
 
-Every generated file tells the agent to run
+Shipped: the bootstrap is omitted unless the run passes `--superpowers`,
+and then it is written after the end marker. Upgrade does not put it back
+inside the framework. The paragraphs below describe the problem this removed.
+
+Every generated file used to tell the agent to run
 `node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap`. Most
-machines do not have that script. The block is inside the framework markers,
-so a consumer cannot remove it without the next upgrade putting it back.
+machines do not have that script. The block was inside the framework markers,
+so a consumer could not remove it without the next upgrade putting it back.
 
 Proposal: default off. Add `--superpowers` to place the block outside the
 framework markers, after the end marker, so project owners can delete it and
@@ -249,14 +252,12 @@ and name the model. A missing eval is not a passing eval.
 
 Migration: none. This does not change consumer files.
 
-## What waits for approval
+## Shipped
 
-After this document is accepted:
-
-- `docs/UPGRADE-GUIDE.md` for pre-fix 1.4.x consumers
-- A summary table of items 1-19 (status, test, branch, whether `ps1` changed)
-- One diff against `main`, then a push of the stacked branches and pull
-  requests
+Sections A-H are in `generate-agents.sh` on `main`. Section I is the fixture
+and `docs/evals/SCORE.md`, which has no model run. Consumer steps are
+`docs/UPGRADE-GUIDE.md`. The summary of items 1-21 is `docs/SUMMARY.md`.
+The work is already on `main`. There is no stacked branch left to push.
 
 `generate-agents.ps1` is a wrapper. Items 18-20 do not change it. It has no
 separate defect. It delegates to `generate-agents.sh`. Item 16 still notes
