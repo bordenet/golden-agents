@@ -108,3 +108,49 @@ teardown() {
     assert_file_contains "$TEST_DIR/AGENTS.md" "javascript"
 }
 
+
+# Test 11: Multi-language projects get gates for every language
+@test "multi-language generation emits labeled gates for each language" {
+    run "$GENERATE_SCRIPT" --language=go,python,javascript --type=cli-tools --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    local f="$TEST_DIR/AGENTS.md"
+    assert_file_contains "$f" '^- \*\*go\*\*$'
+    assert_file_contains "$f" '^- \*\*python\*\*$'
+    assert_file_contains "$f" '^- \*\*javascript\*\*$'
+    assert_file_contains "$f" 'golangci-lint run'
+    assert_file_contains "$f" 'pylint --fail-under'
+    assert_file_contains "$f" 'npm run lint'
+    assert_progressive_size "$f"
+}
+
+# Test 12: Single-language gate format is unchanged
+@test "single-language generation keeps the unlabeled gate list" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -A1 -x 'Before ANY commit:' "$TEST_DIR/AGENTS.md" | grep -q '^1\. \*\*Lint\*\*: `golangci-lint run ./...`$'
+}
+
+# Test 13: Too many languages for per-language gates falls back to naming them
+@test "generation names uncovered languages when per-language gates exceed the line budget" {
+    run "$GENERATE_SCRIPT" --language=go,python,javascript,shell,dart-flutter --type=cli-tools --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'gates shown for go; add equivalents for python, javascript, shell, dart-flutter'
+    assert_progressive_size "$TEST_DIR/AGENTS.md"
+}
+
+# Test 14: No coverage line when the language has no coverage target
+@test "shell generation omits the coverage gate instead of printing N/A%" {
+    run "$GENERATE_SCRIPT" --language=shell --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'N/A%'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'Coverage'
+    assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `bats test/`'
+}
+
+# Test 15: Coverage line stays for languages with a target
+@test "go generation keeps the coverage gate" {
+    run "$GENERATE_SCRIPT" --language=go,shell --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'Coverage\*\*: Minimum 80%'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'N/A%'
+}
