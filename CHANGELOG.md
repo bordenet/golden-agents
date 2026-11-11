@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Quieter templates** - Strong wording stays on the security priority, the
+  invariants size cap, the adopt-prompt marker check, the testing "done"
+  gate, and one `go build` line. Each of those lines says why. Anti-slop,
+  superpowers, dark mode, the JavaScript click-handler section, the CLI
+  heading, library exports, deployment, and the duplicate build line are
+  ordinary instructions.
 - **Scoped rules** - Progressive generation writes the language module into
   `.claude/rules/`, `.cursor/rules/*.mdc`, and
   `.github/instructions/*.instructions.md`, with a path glob. Invariants,
@@ -319,3 +325,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Project detection (auto-detect language from files)
 - [ ] Template inheritance system
 - [ ] VS Code extension integration
+
