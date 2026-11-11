@@ -83,7 +83,7 @@ Confirm these exist in `AGENTS.md`:
 - `<!-- GOLDEN:framework:end -->` marker
 - Project-specific section after the end marker (may be titled `## Preserved Project Content`, `## Project-Specific Rules`, `## Project-Specific Guidelines`, or similar)
 
-If markers are missing, STOP and report.
+If markers are missing, STOP and report. Adopting without markers can overwrite project text.
 
 ### Step 2: Extract Project-Specifics
 
