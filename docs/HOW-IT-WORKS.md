@@ -12,15 +12,15 @@ There are two distinct components:
 2. **Your AI coding assistant** — Reads those files and acts on them. **Will modify your project files.**
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────────┐
 │                         THE FULL PICTURE                             │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────┘
 
     generate-agents.sh              AGENTS.md              Your AI Assistant
-    ┌──────────────────┐           ┌──────────────┐       ┌──────────────────┐
+    ┌──────────────────┐           ┌─────────────┐       ┌──────────────────┐
     │ Creates text     │ ────────▶ │ Instructions │ ────▶ │ MODIFIES YOUR    │
     │ files only       │           │ for AI       │       │ PROJECT FILES    │
-    └──────────────────┘           └──────────────┘       └──────────────────┘
+    └──────────────────┘           └─────────────┘       └──────────────────┘
            │                              │                        │
            ▼                              ▼                        ▼
     ✅ Safe, auditable            📄 Plain text             ⚠️ Real changes
@@ -46,7 +46,7 @@ This is normal and expected. That's what AI coding assistants do.
 2. **Reads template files** from `templates/` directory (plain text)
 3. **Concatenates text** based on your selections
 4. **Writes a Markdown file** (`AGENTS.md`) to your project
-5. **Optionally creates redirect files** (`CLAUDE.md`, `GEMINI.md`) that point to `AGENTS.md`
+5. **Writes import files** (`CLAUDE.md` and `GEMINI.md` are `@AGENTS.md`; Copilot's file is `@../AGENTS.md`)
 
 ### ❌ What `generate-agents.sh` DOES NOT DO
 
@@ -99,23 +99,23 @@ When you open a project in an AI-enabled editor:
 4. **The AI modifies your files** based on your requests + the guidance
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────────┐
 │                    HOW AI ASSISTANTS USE AGENTS.MD                  │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────┘
 
-    ┌──────────────┐     reads      ┌──────────────┐
-    │ AI Assistant │ ◀───────────── │ AGENTS.md    │
+    ┌─────────────┐     reads      ┌─────────────┐
+    │ AI Assistant │ ◄──────────── │ AGENTS.md    │
     │ (Claude,     │                │ (text file)  │
-    │  Copilot)    │                └──────────────┘
-    └──────────────┘
+    │  Copilot)    │                └─────────────┘
+    └─────────────┘
            │
            │ writes code, runs commands
            ▼
-    ┌──────────────┐
+    ┌─────────────┐
     │ Your Project │
     │ (files get   │
     │  modified)   │
-    └──────────────┘
+    └─────────────┘
 ```
 
 **Important:** The AI assistant will modify your project files. That's the point. The `AGENTS.md` file just influences *how* it does so (coding style, quality gates, etc.).
