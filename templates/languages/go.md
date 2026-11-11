@@ -72,9 +72,9 @@ func TestFunction(t *testing.T) {
 }
 ```
 
-## ⚠️ CRITICAL: Always Build After Lint
+## Build after lint
 
-**The linter may pass while code doesn't compile.** This is a common failure mode.
+**CRITICAL**: Run `go build` after lint. It catches compile failures that lint does not.
 
 ```bash
 # REQUIRED workflow (in this exact order)
@@ -83,7 +83,7 @@ go build ./...             # Step 2: ALWAYS compile after lint
 go test ./...              # Step 3: Run tests
 ```
 
-**Never skip `go build`.** It catches issues the linter misses.
+Lint can pass while the package still does not compile.
 
 ## Commands
 
