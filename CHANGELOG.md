@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **In-repo modules** - Progressive generation copies the selected language
+  module, the project-type module, and the workflow modules named by the
+  triggers into `.golden-agents/modules/`. Triggers read those paths.
+  `<!-- golden-agents:modules ... -->` records the sha256 of each file next
+  to the stamp. `--sync` still updates this checkout only. `--upgrade`
+  previews hash changes and `--upgrade --apply` writes them.
 - **Redirect imports** - Fresh generation and `--upgrade --apply` write `CLAUDE.md`
   and `GEMINI.md` as `@AGENTS.md`, and `.github/copilot-instructions.md` as
   `@../AGENTS.md`, each with the generated sentinel. `CODEX.md`, `AGENT.md`,
