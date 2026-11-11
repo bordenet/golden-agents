@@ -1,1 +1,230 @@
 #!/usr/bin/env bash
+#
+# generate-agents.sh - Golden Agents Framework Generator
+#
+# Generates project-specific AGENTS.md files from modular templates.
+# Supports progressive loading (~60 lines) for efficient AI context usage.
+#
+# Repository: https://github.com/bordenet/golden-agents
+# Author:     Matt J Bordenet (@bordenet)
+# License:    MIT
+#
+# Usage:
+#   ./generate-agents.sh --language=go --path=./my-project
+#   ./generate-agents.sh --upgrade --apply --path=./my-project
+#   ./generate-agents.sh --help
+#
+# See --help for full documentation.
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATES_DIR="$SCRIPT_DIR/templates"
+REPO_URL="https://github.com/bordenet/golden-agents.git"
+
+# Defaults
+LANGUAGES=""
+PROJECT_TYPE=""
+OUTPUT_PATH="."
+PATH_GIVEN=false
+PROJECT_NAME=""
+# Mode is progressive by default
+FULL=false        # Legacy mode, deprecated
+SUPERPOWERS=false # Bootstrap block is off unless --superpowers is passed
+DRY_RUN=false
+SYNC=false
+UPGRADE=false
+APPLY=false
+MIGRATE=false
+ADOPT=false
+DEDUPE=false
+
+# Markers for upgrade-safe sections
+MARKER_START="<!-- GOLDEN:framework:start -->"
+MARKER_END="<!-- GOLDEN:framework:end -->"
+FRAMEWORK_VERSION="1.4.0"
+# Line limit for AGENTS.md and each .ai-guidance/*.md. templates/core/invariants.md and
+# templates/modular-migration-prompt.md state it literally; test/thresholds.bats keeps them in sync.
+MAX_GUIDANCE_LINES=250
+# Line budget for a freshly generated progressive AGENTS.md (test/size-limits.bats)
+MAX_PROGRESSIVE_LINES=100
+SELF_MANAGE_START="<!-- GOLDEN:self-manage:start -->"
+# shellcheck disable=SC2034 # SELF_MANAGE_END defined for symmetry; will be used in Phase 3 bloat detection
+SELF_MANAGE_END="<!-- GOLDEN:self-manage:end -->"
+
+# usage()
+# Prints comprehensive help documentation to stdout.
+# Follows man page conventions (NAME, SYNOPSIS, DESCRIPTION, OPTIONS, EXAMPLES).
+# Arguments: none
+# Returns: 0
+usage() {
+    cat << 'EOF'
+NAME
+    generate-agents.sh - Generate project-specific AGENTS.md from modular templates
+
+SYNOPSIS
+    generate-agents.sh [OPTIONS]
+    generate-agents.sh --sync
+    generate-agents.sh --language=LANG [--type=TYPE] [--path=PATH] [--progressive]
+    generate-agents.sh --upgrade [--apply] --path=PATH
+    generate-agents.sh --adopt --language=LANG --path=PATH
+    generate-agents.sh --dedupe --path=PATH
+
+DESCRIPTION
+    Generates an AGENTS.md file from modular templates.
+
+    Output mode:
+    Progressive (~60 lines core with on-demand module loading from templates)
+
+    When upgrading existing files, only framework sections (between markers) are
+    replaced. Project-specific content is preserved.
+
+SIZE
+    MAX_GUIDANCE_LINES stays 250. That is the lock this script enforces.
+    200 lines is the soft ceiling for the always-loaded file. It is guidance
+    for authors, not a second limit in this script. Overflow belongs in
+    scoped rules, not in a longer AGENTS.md.
+    Generation prints a token estimate (file bytes divided by 4, rounded up).
+    Token counts vary by tokenizer. The line count is the check tests use.
+
+PLATFORM SUPPORT
+    Linux ........... Native (works out of the box)
+    macOS ........... Native (works out of the box)
+    Windows WSL ..... Native (run from WSL bash shell)
+    Windows Native .. Requires Git Bash, Cygwin, or MSYS2
+
+    Requirements: Bash 3.2+, Git
+
+    NOTE: Native PowerShell/cmd.exe is NOT supported. This is a bash script.
+          On Windows, use WSL (recommended), Git Bash, Cygwin, or MSYS2.
+
+OPTIONS
+    --language=LANG     Languages to include (comma-separated, see LANGUAGE ALIASES below)
+    --type=TYPE         Project type (genesis-tools, cli-tools, web-apps, mobile-apps)
+    --path=PATH         Output directory (default: current directory)
+    --name=NAME         Project name for header (default: directory name)
+                        Value options also accept a space: --path ./my-project
+    --progressive       Generate minimal core (~60 lines) with on-demand loading (default)
+    --superpowers       Write the superpowers bootstrap after the framework end
+                        marker. It is omitted by default. Upgrade does not put it
+                        back inside the framework. An existing bootstrap below
+                        the end marker is left as it is.
+    --sync              Update local templates from GitHub (git fetch, fast-forward
+                        only; refuses on uncommitted changes or local commits)
+    --dry-run           Print what would be generated without writing
+    --migrate           Migrate existing guidance files (creates MIGRATION-PROMPT.md)
+    --adopt             Adopt existing AGENTS.md (backs up, appends, creates ADOPT-PROMPT.md)
+    --dedupe            Deduplicate bloated project-specific section (for files WITH markers)
+    --upgrade           Upgrade existing AGENTS.md (dry-run by default, shows diff)
+    --apply             Apply upgrade changes (requires --upgrade, creates backup first)
+    -h, --help          Show this help message
+    -v, --version       Show version information
+
+LANGUAGE ALIASES
+    Canonical names and their aliases:
+
+    go ............. golang
+    javascript ..... js, node, nodejs, ts, typescript
+    python ......... py, python3
+    shell .......... bash, sh, zsh
+    dart-flutter ... flutter, dart
+
+MIGRATION (First-time adoption)
+    When existing guidance files are detected (CLAUDE.md, AGENTS.md with content),
+    generation is blocked to prevent data loss. Use --migrate to:
+
+    1. Back up existing CLAUDE.md, AGENTS.md and other non-generated redirects
+       to <file>.<YYYYmmdd-HHMMSS>.bak (not gitignored)
+    2. Generate the framework AGENTS.md
+    3. Create MIGRATION-PROMPT.md with your existing content
+    4. Add MIGRATION-PROMPT.md to .gitignore
+
+    Then paste MIGRATION-PROMPT.md content into your AI assistant to complete migration.
+    Delete MIGRATION-PROMPT.md after migration is complete.
+
+MODULES
+    Progressive mode copies the selected language module, the project-type
+    module, and the workflow modules named by the triggers into
+    .golden-agents/modules/. The triggers read those relative paths.
+    A <!-- golden-agents:modules ... --> comment next to the stamp records
+    the sha256 of each copied file. --sync updates this checkout only.
+    A consumer project changes when you run --upgrade --apply. The preview
+    shows hash differences and writes nothing.
+
+WRITE SAFETY
+    CLAUDE.md, GEMINI.md, and .github/copilot-instructions.md are one-line
+    @AGENTS.md imports and end with <!-- golden-agents:generated -->.
+    CODEX.md, AGENT.md, and COPILOT.md are not generated. A generated copy or
+    an exact 1.4.x stub of those three is removed. A hand-written copy stays.
+    Any other redirect without the sentinel (other than an exact 1.4.x stub)
+    holds your content. Any existing AGENTS.md also counts.
+    - Plain generation: refuses, lists each blocking file, writes nothing, exits 1
+    - --adopt / --migrate: copies each blocking redirect to
+      <file>.<YYYYmmdd-HHMMSS>.bak first, then proceeds
+
+UPGRADE SAFETY
+    - Without --apply: shows diff of what would change (safe)
+    - With --apply: creates .backup, then applies changes
+    - Files WITHOUT markers: REFUSES to upgrade (suggests migration)
+    - Project-specific sections (outside markers) are ALWAYS preserved
+
+ADOPTION (Existing AGENTS.md without markers)
+    Use --adopt when you have an existing AGENTS.md that wasn't created by
+    golden-agents. This mode:
+
+    1. Backs up your original AGENTS.md to AGENTS.md.original
+    2. Generates framework content with markers
+    3. Appends your original content under "## Preserved Project Content"
+    4. Creates ADOPT-PROMPT.md with aggressive deduplication instructions
+
+    The goal is MINIMAL OUTPUT. After running the deduplication prompt:
+    - Simple projects: 0-20 lines of project-specific content
+    - Moderate projects: 20-50 lines
+    - Complex projects: 50-100 lines
+
+    If your result exceeds 100 lines, you kept too much generic advice.
+
+DEDUPLICATION (Existing AGENTS.md with bloated project section)
+    Use --dedupe when you have an AGENTS.md that WAS created by golden-agents
+    but has a bloated project-specific section (>100 lines). This mode:
+
+    1. Verifies the file has framework markers
+    2. Counts project-specific lines (after the end marker)
+    3. Creates ADOPT-PROMPT.md with deduplication instructions
+    4. Does NOT modify the AGENTS.md (you apply changes after review)
+
+    This is for files that already have markers but need aggressive pruning.
+    The --adopt command is for files WITHOUT markers.
+
+EXAMPLES
+    # Generate for a Go CLI project
+    generate-agents.sh --language=go --type=cli-tools --path=./my-project
+
+    # Generate for a Python web app
+    generate-agents.sh --language=python --type=web-apps --path=./my-api
+
+    # Update templates from GitHub
+    generate-agents.sh --sync
+
+    # Migrate existing CLAUDE.md/AGENTS.md into golden-agents framework
+    generate-agents.sh --migrate --language=js,go --type=web-apps --path=./my-project
+
+    # Adopt existing AGENTS.md (backs up, appends, generates dedup prompt)
+    generate-agents.sh --adopt --language=typescript --path=./existing-project
+
+    # Deduplicate bloated project section (for files already using golden-agents)
+    generate-agents.sh --dedupe --path=./bloated-project
+
+    # Preview upgrade (safe, writes nothing)
+    generate-agents.sh --upgrade --path=./my-project
+
+    # Apply upgrade after preview
+    generate-agents.sh --upgrade --apply --path=./my-project
+
+    # Windows (Git Bash)
+    ~/.golden-agents/generate-agents.sh --language=python --path=./my-project
+
+    # Windows (WSL)
+    wsl ~/.golden-agents/generate-agents.sh --language=go --path=./my-project
+EOF
+}
