@@ -170,6 +170,28 @@ teardown() {
 }
 
 # Test 14: Self-manage block includes 250-line threshold for sub-files
+@test "self-manage block tells the agent to draft a diff for a human" {
+    run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'draft a diff'
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'Do not apply it'
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'A human merges it'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'no human intervention'
+    assert_file_contains "$TEST_DIR/.ai-guidance/invariants.md" 'Do not apply the diff'
+}
+
+@test "upgrade replaces the self-manage block and leaves project text" {
+    create_agents_with_markers "$TEST_DIR"
+    printf '\nProject rule that stays.\n' >> "$TEST_DIR/AGENTS.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'draft a diff'
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'Project rule that stays.'
+    local count
+    count=$(grep -c 'GOLDEN:self-manage:start' "$TEST_DIR/AGENTS.md")
+    [ "$count" -eq 1 ]
+}
+
 @test "self-manage block includes 250-line threshold for sub-files" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
