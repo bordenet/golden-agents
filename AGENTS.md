@@ -96,7 +96,6 @@ Before ANY commit:
 - 🔴 **WHEN tests fail OR after 2+ failed fix attempts**: Read `.golden-agents/modules/testing.md`
 - 🔴 **WHEN build fails OR lint errors appear**: Read `.golden-agents/modules/build-hygiene.md`
 - 🟡 **BEFORE deploying to any environment**: Read `.golden-agents/modules/deployment.md`
-- 🟡 **WHEN conversation exceeds 50 exchanges**: Read `.golden-agents/modules/context-management.md`
 
 ### Project type guidance:
 - Read `.golden-agents/modules/cli-tools.md`
