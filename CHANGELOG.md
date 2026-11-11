@@ -12,13 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Upgrade guide matches the generator** - `docs/UPGRADE-GUIDE.md` no longer
   says design v2 is unimplemented. It names what `--upgrade --apply` writes,
   and it says not to run that upgrade against this repo's own `AGENTS.md`.
-  `docs/SUMMARY.md` item 20 points at the section tests. The score sheet is
-  unchanged and still says `not run`.
+  `docs/SUMMARY.md` item 20 points at the section tests. The Cursor column
+  of the score sheet records one run. Claude Code and Codex stay `not run`.
 - **Eval fixture** - `evals/fixture/` holds eight fixed tasks: a lint failure,
   a failing test, a secret in a diff, a file over the 250-line cap, a wrong
   test command, a broken build, a project rule that must survive, and a
-  piped curl. `docs/evals/SCORE.md` is the score sheet. Every cell says
-  `not run`. A missing run is not a pass.
+  piped curl. `docs/evals/SCORE.md` is the score sheet. A missing run is
+  not a pass. Task 05 passes when the agent runs `make test` and does not
+  run `npm test`.
+- **Upgrade keeps a stated gate** - `--upgrade` no longer rewrites a command
+  already in the quality-gate block into `UNVERIFIED: confirm` when
+  detection finds nothing. A command is kept when it is that language's
+  template command, or when it matches no selected template. A language
+  with no command is omitted and named under `Gates left unset`. A new
+  file still marks unmatched template commands unverified.
 - **Detected quality gates** - Before using a template command, generation
   reads `package.json` scripts, `Makefile` and `justfile` targets,
   `pyproject.toml` `[project.scripts]`, then GitHub Actions step names.
