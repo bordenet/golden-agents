@@ -7,38 +7,38 @@
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────┐
 │                        SESSION START                                 │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────┐
 │  1. AI READS AGENTS.md (~60-100 lines)                              │
 │     • Workflow checklists (always active)                            │
 │     • Anti-slop rules (always active)                                │
 │     • Quality gates (quick reference)                                │
 │     • Progressive loading table with triggers                        │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────┐
 │  2. AI IDENTIFIES TASK TYPE                                          │
 │     User: "Add a pre-commit hook to run linting"                     │
 │     AI thinks: "This is shell scripting → need shell.md"             │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────┐
 │  3. AI LOADS RELEVANT MODULE                                         │
-│     `view ~/.golden-agents/templates/languages/shell.md`             │
+│     `view .golden-agents/modules/shell.md`                           │
 │     → Now has ShellCheck rules, set -euo pipefail, portability...    │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────┐
 │  4. AI EXECUTES TASK with full context                               │
 │     Follows shell conventions, handles BSD/GNU differences...        │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Module Loading Table Pattern
@@ -50,9 +50,9 @@ The key to successful progressive loading is a **clear loading table** with expl
 
 | Module | When to Load | Command |
 |--------|--------------|---------|
-| **shell.md** | 🔴 Writing bash/shell scripts | `view ~/.golden-agents/templates/languages/shell.md` |
-| **testing.md** | Writing or fixing tests | `view ~/.golden-agents/templates/workflows/testing.md` |
-| **security.md** | Before commits or PRs | `view ~/.golden-agents/templates/workflows/security.md` |
+| **shell.md** | 🔴 Writing bash/shell scripts | `view .golden-agents/modules/shell.md` |
+| **testing.md** | Writing or fixing tests | `view .golden-agents/modules/testing.md` |
+| **security.md** | Before commits or PRs | `view .golden-agents/modules/security.md` |
 ```
 
 **Critical success factors:**
@@ -74,7 +74,7 @@ your-repo/
     └── security-protocols.md           # Security requirements
 ```
 
-This mirrors how the framework uses `~/.golden-agents/templates/` for generic content, but with project-specific modules in the repo itself.
+The generator copies the modules a project selected into `.golden-agents/modules/`. Project-specific notes stay in `.ai-guidance/`.
 
 ## Why This Works
 
