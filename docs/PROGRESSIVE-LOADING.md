@@ -6,40 +6,10 @@
 
 ## How It Works
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                        SESSION START                                 │
-└────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  1. AI READS AGENTS.md (~60-100 lines)                              │
-│     • Workflow checklists (always active)                            │
-│     • Anti-slop rules (always active)                                │
-│     • Quality gates (quick reference)                                │
-│     • Progressive loading table with triggers                        │
-└────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  2. AI IDENTIFIES TASK TYPE                                          │
-│     User: "Add a pre-commit hook to run linting"                     │
-│     AI thinks: "This is shell scripting → need shell.md"             │
-└────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  3. AI LOADS RELEVANT MODULE                                         │
-│     `view .golden-agents/modules/shell.md`                           │
-│     → Now has ShellCheck rules, set -euo pipefail, portability...    │
-└────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  4. AI EXECUTES TASK with full context                               │
-│     Follows shell conventions, handles BSD/GNU differences...        │
-└────────────────────────────────────────────────────────────────────┘
-```
+1. Session start. The assistant reads `AGENTS.md` (about 60-100 lines): workflow checklists, anti-slop rules, quality gates, and the loading table.
+2. It identifies the task. "Add a pre-commit hook" is shell work, so it needs `shell.md`.
+3. It loads `.golden-agents/modules/shell.md` and picks up ShellCheck, `set -euo pipefail`, and portability rules.
+4. It does the task with that context.
 
 ## Module Loading Table Pattern
 
