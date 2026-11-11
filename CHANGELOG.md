@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Redirect imports** - Fresh generation and `--upgrade --apply` write `CLAUDE.md`
+  and `GEMINI.md` as `@AGENTS.md`, and `.github/copilot-instructions.md` as
+  `@../AGENTS.md`, each with the generated sentinel. `CODEX.md`, `AGENT.md`,
+  and `COPILOT.md` are no longer created. A generated copy or a 1.4.x stub of
+  those three is backed up and removed. A hand-written copy stays.
+- **Cloud-agent GitHub rules** - `.ai-guidance/github-ops.md` records how to change
+  this repo from a container: authenticated `gh`, `git`, or the API, never the
+  container browser. `gh api --method DELETE` must pass `--input /dev/null` or
+  it opens `$EDITOR`. HTTP 422 on that call means the ref is already gone.
+
 ### Fixed
 
 - **Redirect overwrite (data loss)** - Plain generation no longer overwrites hand-written
