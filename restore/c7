@@ -259,3 +259,4 @@ ADOPT_SECTION
         sync_scoped_rules apply
     fi
 fi
+
