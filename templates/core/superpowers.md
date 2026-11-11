@@ -1,6 +1,6 @@
 # Superpowers Integration
 
-> **Priority**: CRITICAL - Configure at session start
+> **Priority**: Configure at session start
 > **Source**: obra/superpowers, bordenet/superpowers-plus, RecipeArchive AGENTS.md
 
 ## Superpowers Bootstrap
@@ -21,13 +21,11 @@ node ~/.codex/superpowers-augment/superpowers-augment.js use-skill <name>
 
 ## The Rule
 
-**IF A SKILL APPLIES TO YOUR TASK (even 1% chance), YOU MUST INVOKE IT.**
-
-This is not optional. Skills exist to ensure quality and consistency.
+If a skill applies to the task, invoke it.
 
 ## Critical Checkpoints
 
-**STOP and verify skill applicability before these actions:**
+Check whether a skill applies before these actions:
 
 | Action | Required Check | Skill to Consider |
 |--------|----------------|-------------------|
