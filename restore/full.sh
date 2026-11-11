@@ -711,3 +711,202 @@ PROMPT_EOF
     echo "4. Delete this \`MIGRATION-PROMPT.md\` file"
     echo "5. Commit the changes"
 }
+
+# Parse arguments (value options accept --opt=value and --opt value)
+while [[ $# -gt 0 ]]; do
+    arg="$1"
+    case $arg in
+        --language|--type|--path|--name)
+            if [[ $# -lt 2 || "$2" == --* ]]; then
+                echo "Error: $arg requires a value" >&2
+                exit 1
+            fi
+            arg="$arg=$2"
+            shift
+            ;;
+    esac
+    case $arg in
+        --language=*) LANGUAGES="${arg#*=}" ;;
+        --type=*) PROJECT_TYPE="${arg#*=}" ;;
+        --path=*) OUTPUT_PATH="${arg#*=}"; PATH_GIVEN=true ;;
+        --name=*) PROJECT_NAME="${arg#*=}" ;;
+        --progressive) ;; # Already the default, flag accepted for clarity
+        --superpowers) SUPERPOWERS=true ;;
+        --full)
+            FULL=true
+            echo "[DEPRECATED] --full mode generates 800+ line files that AI assistants cannot follow." >&2
+            echo "[DEPRECATED] Use progressive mode (default) instead." >&2
+            ;;
+        --sync) SYNC=true ;;
+        --dry-run) DRY_RUN=true ;;
+        --upgrade) UPGRADE=true ;;
+        --apply) APPLY=true ;;
+        --migrate) MIGRATE=true ;;
+        --adopt) ADOPT=true ;;
+        --dedupe) DEDUPE=true ;;
+        -h|--help) usage; exit 0 ;;
+        -v|--version) version; exit 0 ;;
+        *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
+    esac
+    shift
+done
+
+# Validate --apply requires --upgrade
+if [[ "$APPLY" == "true" && "$UPGRADE" != "true" ]]; then
+    echo "Error: --apply requires --upgrade" >&2
+    exit 1
+fi
+
+# Resolve language aliases
+if [[ -n "$LANGUAGES" ]]; then
+    LANGUAGES=$(resolve_languages "$LANGUAGES")
+fi
+
+# Handle sync mode
+if [[ "$SYNC" == "true" ]]; then
+    sync_templates
+    exit 0
+fi
+
+# Validate --language and --type against templates/
+if [[ -n "$LANGUAGES" ]]; then
+    IFS=',' read -ra requested_langs <<< "$LANGUAGES"
+    for lang in "${requested_langs[@]}"; do
+        if ! is_template languages "$lang"; then
+            echo "[ERROR] Unknown language: $lang" >&2
+            echo "  Valid languages: $(list_templates languages)" >&2
+            echo "  Aliases are listed under LANGUAGE ALIASES in --help." >&2
+            exit 1
+        fi
+    done
+fi
+if [[ -n "$PROJECT_TYPE" ]] && ! is_template project-types "$PROJECT_TYPE"; then
+    echo "[ERROR] Unknown project type: $PROJECT_TYPE" >&2
+    echo "  Valid types: $(list_templates project-types)" >&2
+    exit 1
+fi
+
+# Validate --adopt requires --language
+if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
+    echo "Error: --adopt requires --language" >&2
+    exit 1
+fi
+
+# Validate --dedupe requires --path
+if [[ "$DEDUPE" == "true" && "$PATH_GIVEN" != "true" ]]; then
+    echo "Error: --dedupe requires --path" >&2
+    exit 1
+fi
+
+# Validate (skip language check for upgrade mode and dedupe mode)
+if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
+    echo "[ERROR] --language is required for new file generation" >&2
+    echo "" >&2
+    echo "Available languages:" >&2
+    echo "  go          - Go projects" >&2
+    echo "  javascript  - JavaScript/TypeScript/Node.js (aliases: js, node, ts)" >&2
+    echo "  python      - Python projects (aliases: py)" >&2
+    echo "  shell       - Shell scripts (aliases: bash, sh)" >&2
+    echo "  dart-flutter - Dart/Flutter projects (aliases: flutter, dart)" >&2
+    echo "" >&2
+    echo "Available project types:" >&2
+    echo "  cli-tools     - Command-line tools" >&2
+    echo "  web-apps      - Web applications" >&2
+    echo "  mobile-apps   - Mobile applications" >&2
+    echo "  genesis-tools - Genesis framework tools" >&2
+    echo "" >&2
+    echo "Example: generate-agents.sh --language=go,js --type=web-apps --path=./my-project" >&2
+    exit 1
+fi
+
+# Redirect files with non-generated content; backed up in --adopt/--migrate, block plain runs
+BLOCKING_REDIRECTS=$(find_blocking_redirects "$OUTPUT_PATH")
+
+# Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dedupe or --dry-run is used)
+# A blocked plain run writes nothing at all.
+if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DEDUPE" != "true" && "$DRY_RUN" != "true" ]]; then
+    blocking=""
+    for name in AGENTS.md Agents.md; do
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
+        if [[ -f "$OUTPUT_PATH/$name" ]]; then
+            if grep -q "$MARKER_START" "$OUTPUT_PATH/$name"; then
+                blocking="${blocking}  $name (existing file with markers; use --upgrade)
+"
+            else
+                blocking="${blocking}  $name (existing file without markers; use --adopt or --migrate)
+"
+            fi
+        fi
+    done
+    for rel in $BLOCKING_REDIRECTS; do
+        blocking="${blocking}  $rel (non-generated content)
+"
+    done
+    if [[ -n "$blocking" ]]; then
+        echo "[ERROR] Found existing guidance files. No files were written." >&2
+        echo "" >&2
+        printf '%s' "$blocking" >&2
+        echo "" >&2
+        echo "  These files contain project-specific content that would be lost." >&2
+        echo "  Use --migrate to safely incorporate this content into the new AGENTS.md." >&2
+        echo "  Use --adopt to bring an existing AGENTS.md into the framework." >&2
+        echo "" >&2
+        echo "  Example: generate-agents.sh --migrate --language=go --path=$OUTPUT_PATH" >&2
+        echo "  Example: generate-agents.sh --adopt --language=go --path=$OUTPUT_PATH" >&2
+        exit 1
+    fi
+fi
+
+# Handle migrate mode - generate migration prompt if needed
+if [[ "$MIGRATE" == "true" ]]; then
+    # Check if there's content to migrate
+    existing=$(check_existing_guidance "$OUTPUT_PATH")
+    if [[ -n "$existing" ]]; then
+        # Extract filename and count lines
+        source_file=$(echo "$existing" | cut -d' ' -f1)
+        source_lines=$(wc -l < "$OUTPUT_PATH/$source_file" | tr -d ' ')
+
+        echo "[INFO] Found existing guidance: $existing"
+        echo "[INFO] Source file: $source_file ($source_lines lines)"
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "[DRY RUN] Would generate migration prompt: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[DRY RUN] Would add MIGRATION-PROMPT.md to $OUTPUT_PATH/.gitignore"
+        else
+            mkdir -p "$OUTPUT_PATH"
+            echo "[INFO] Generating migration prompt..."
+
+            # Generate the migration prompt
+            generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
+
+            # Add to .gitignore
+            gitignore_add "$OUTPUT_PATH" "MIGRATION-PROMPT.md" || true
+            echo "[OK] Added MIGRATION-PROMPT.md to .gitignore"
+        fi
+    else
+        echo "[INFO] No existing guidance files found. Running normal generation."
+    fi
+
+    # Normal generation below replaces AGENTS.md, so back up any existing one
+    # (with or without markers). Both names may be one file on case-insensitive volumes.
+    for name in AGENTS.md Agents.md; do
+        if [[ ! -f "$OUTPUT_PATH/$name" ]]; then
+            continue
+        fi
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "[DRY RUN] Would back up $name to $name.<timestamp>.bak"
+        else
+            backup_file "$OUTPUT_PATH/$name"
+        fi
+    done
+
+    # Continue with normal generation (framework AGENTS.md)
+    # Fall through to normal generation below
+fi
