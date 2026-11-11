@@ -1,0 +1,288 @@
+        existing_content=$(cat "$path/CLAUDE.md")
+    fi
+
+    # Collect from Agents.md without markers (once, if it is the same file as AGENTS.md)
+    if [[ -f "$path/Agents.md" ]] && ! [[ "$path/Agents.md" -ef "$path/AGENTS.md" ]] \
+        && ! grep -q "$MARKER_START" "$path/Agents.md"; then
+        local size
+        size=$(wc -c < "$path/Agents.md" | tr -d ' ')
+        source_file="${source_file:+$source_file + }Agents.md"
+        if [[ -n "$existing_content" ]]; then
+            existing_content="$existing_content
+
+---
+
+$(cat "$path/Agents.md")"
+        else
+            existing_content=$(cat "$path/Agents.md")
+        fi
+    fi
+
+    # Collect from AGENTS.md without markers
+    if [[ -f "$path/AGENTS.md" ]] && ! grep -q "$MARKER_START" "$path/AGENTS.md"; then
+        local size
+        size=$(wc -c < "$path/AGENTS.md" | tr -d ' ')
+        source_file="${source_file:+$source_file + }AGENTS.md"
+        if [[ -n "$existing_content" ]]; then
+            existing_content="$existing_content
+
+---
+
+$(cat "$path/AGENTS.md")"
+        else
+            existing_content=$(cat "$path/AGENTS.md")
+        fi
+    fi
+
+    cat << 'PROMPT_EOF'
+# Golden Agents Migration Prompt
+
+> **DELETE THIS FILE** after completing the migration.
+
+You are helping migrate project-specific AI guidance into the golden-agents framework.
+
+## Instructions
+
+1. Read the **Existing Content** below (from the old guidance files)
+2. Read the **New Framework** in `AGENTS.md` (already generated)
+3. Apply the **10-word test** to each piece of content:
+   - Can you express this in under 10 words with specific names/paths/commands?
+   - YES → Keep it (project-specific)
+   - NO → Skip it (framework already covers it)
+4. Add ONLY project-specific content to `AGENTS.md` after `<!-- GOLDEN:framework:end -->`
+5. **DO NOT** duplicate content already in the framework (quality gates, anti-slop, etc.)
+6. **DO NOT** lose any genuinely project-specific information
+
+## Target Sizes
+
+| Project Complexity | Target Size |
+|-------------------|-------------|
+| Simple (single language, standard tooling) | **0-20 lines** |
+| Moderate (multi-language, some custom workflows) | **20-50 lines** |
+| Complex (many integrations, strict domain rules) | **50-100 lines** |
+
+**If your project exceeds 100 lines** of genuinely project-specific content:
+1. Create a `.ai-guidance/` directory in your repo
+2. Split content into topic-specific modules (e.g., `mobile-builds.md`, `security.md`)
+3. Add a loading table to AGENTS.md referencing when to load each module
+PROMPT_EOF
+    echo "4. Keep AGENTS.md under $MAX_GUIDANCE_LINES lines with quick reference + loading instructions"
+    echo ""
+    echo "## Source Files"
+    echo ""
+    echo "Migrated from: $source_file"
+    local source_lines
+    source_lines=$(echo "$existing_content" | wc -l | tr -d ' ')
+    echo "Original size: $source_lines lines"
+    echo ""
+    # The fence must be longer than any backtick run in the content, or an
+    # embedded code block closes it early
+    local longest_run fence=""
+    longest_run=$(printf '%s\n' "$existing_content" | awk '
+        { s = $0; while (match(s, /`+/)) { if (RLENGTH > m) m = RLENGTH; s = substr(s, RSTART + RLENGTH) } }
+        END { print m + 0 }')
+    while [[ ${#fence} -lt 3 || ${#fence} -le $longest_run ]]; do
+        fence="${fence}\`"
+    done
+    echo "## Existing Content"
+    echo ""
+    echo "${fence}markdown"
+    echo "$existing_content"
+    echo "$fence"
+    echo ""
+    echo "## Report Metrics"
+    echo ""
+    echo "After adding project-specific content to AGENTS.md, report:"
+    echo ""
+    echo '```'
+    echo "MIGRATION SUMMARY"
+    echo "━━━━━━━━━━━━━━━━━"
+    echo "Original guidance file: $source_lines lines"
+    echo "Project-specific content added: ~[Y] lines"
+    echo "Reduction: [Z]%"
+    echo ""
+    echo "Kept [M] project-specific items (paths, commands, policies, domain rules)"
+    echo "Skipped [N] generic items (covered by framework)"
+    echo '```'
+    echo ""
+    echo "## Next Steps"
+    echo ""
+    echo "1. Open \`AGENTS.md\` and find the \`<!-- GOLDEN:framework:end -->\` marker"
+    echo "2. Add your project-specific content after that marker"
+    echo "3. Report the metrics above"
+    echo "4. Delete this \`MIGRATION-PROMPT.md\` file"
+    echo "5. Commit the changes"
+}
+
+# Parse arguments (value options accept --opt=value and --opt value)
+while [[ $# -gt 0 ]]; do
+    arg="$1"
+    case $arg in
+        --language|--type|--path|--name)
+            if [[ $# -lt 2 || "$2" == --* ]]; then
+                echo "Error: $arg requires a value" >&2
+                exit 1
+            fi
+            arg="$arg=$2"
+            shift
+            ;;
+    esac
+    case $arg in
+        --language=*) LANGUAGES="${arg#*=}" ;;
+        --type=*) PROJECT_TYPE="${arg#*=}" ;;
+        --path=*) OUTPUT_PATH="${arg#*=}"; PATH_GIVEN=true ;;
+        --name=*) PROJECT_NAME="${arg#*=}" ;;
+        --progressive) ;; # Already the default, flag accepted for clarity
+        --superpowers) SUPERPOWERS=true ;;
+        --full)
+            FULL=true
+            echo "[DEPRECATED] --full mode generates 800+ line files that AI assistants cannot follow." >&2
+            echo "[DEPRECATED] Use progressive mode (default) instead." >&2
+            ;;
+        --sync) SYNC=true ;;
+        --dry-run) DRY_RUN=true ;;
+        --upgrade) UPGRADE=true ;;
+        --apply) APPLY=true ;;
+        --migrate) MIGRATE=true ;;
+        --adopt) ADOPT=true ;;
+        --dedupe) DEDUPE=true ;;
+        -h|--help) usage; exit 0 ;;
+        -v|--version) version; exit 0 ;;
+        *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
+    esac
+    shift
+done
+
+# Validate --apply requires --upgrade
+if [[ "$APPLY" == "true" && "$UPGRADE" != "true" ]]; then
+    echo "Error: --apply requires --upgrade" >&2
+    exit 1
+fi
+
+# Resolve language aliases
+if [[ -n "$LANGUAGES" ]]; then
+    LANGUAGES=$(resolve_languages "$LANGUAGES")
+fi
+
+# Handle sync mode
+if [[ "$SYNC" == "true" ]]; then
+    sync_templates
+    exit 0
+fi
+
+# Validate --language and --type against templates/
+if [[ -n "$LANGUAGES" ]]; then
+    IFS=',' read -ra requested_langs <<< "$LANGUAGES"
+    for lang in "${requested_langs[@]}"; do
+        if ! is_template languages "$lang"; then
+            echo "[ERROR] Unknown language: $lang" >&2
+            echo "  Valid languages: $(list_templates languages)" >&2
+            echo "  Aliases are listed under LANGUAGE ALIASES in --help." >&2
+            exit 1
+        fi
+    done
+fi
+if [[ -n "$PROJECT_TYPE" ]] && ! is_template project-types "$PROJECT_TYPE"; then
+    echo "[ERROR] Unknown project type: $PROJECT_TYPE" >&2
+    echo "  Valid types: $(list_templates project-types)" >&2
+    exit 1
+fi
+
+# Validate --adopt requires --language
+if [[ "$ADOPT" == "true" && -z "$LANGUAGES" ]]; then
+    echo "Error: --adopt requires --language" >&2
+    exit 1
+fi
+
+# Validate --dedupe requires --path
+if [[ "$DEDUPE" == "true" && "$PATH_GIVEN" != "true" ]]; then
+    echo "Error: --dedupe requires --path" >&2
+    exit 1
+fi
+
+# Validate (skip language check for upgrade mode and dedupe mode)
+if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
+    echo "[ERROR] --language is required for new file generation" >&2
+    echo "" >&2
+    echo "Available languages:" >&2
+    echo "  go          - Go projects" >&2
+    echo "  javascript  - JavaScript/TypeScript/Node.js (aliases: js, node, ts)" >&2
+    echo "  python      - Python projects (aliases: py)" >&2
+    echo "  shell       - Shell scripts (aliases: bash, sh)" >&2
+    echo "  dart-flutter - Dart/Flutter projects (aliases: flutter, dart)" >&2
+    echo "" >&2
+    echo "Available project types:" >&2
+    echo "  cli-tools     - Command-line tools" >&2
+    echo "  web-apps      - Web applications" >&2
+    echo "  mobile-apps   - Mobile applications" >&2
+    echo "  genesis-tools - Genesis framework tools" >&2
+    echo "" >&2
+    echo "Example: generate-agents.sh --language=go,js --type=web-apps --path=./my-project" >&2
+    exit 1
+fi
+
+# Redirect files with non-generated content; backed up in --adopt/--migrate, block plain runs
+BLOCKING_REDIRECTS=$(find_blocking_redirects "$OUTPUT_PATH")
+
+# Check for existing guidance files (unless --migrate or --upgrade or --adopt or --dedupe or --dry-run is used)
+# A blocked plain run writes nothing at all.
+if [[ "$MIGRATE" != "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$DEDUPE" != "true" && "$DRY_RUN" != "true" ]]; then
+    blocking=""
+    for name in AGENTS.md Agents.md; do
+        if [[ "$name" == "Agents.md" && "$OUTPUT_PATH/Agents.md" -ef "$OUTPUT_PATH/AGENTS.md" ]]; then
+            continue
+        fi
+        if [[ -f "$OUTPUT_PATH/$name" ]]; then
+            if grep -q "$MARKER_START" "$OUTPUT_PATH/$name"; then
+                blocking="${blocking}  $name (existing file with markers; use --upgrade)
+"
+            else
+                blocking="${blocking}  $name (existing file without markers; use --adopt or --migrate)
+"
+            fi
+        fi
+    done
+    for rel in $BLOCKING_REDIRECTS; do
+        blocking="${blocking}  $rel (non-generated content)
+"
+    done
+    if [[ -n "$blocking" ]]; then
+        echo "[ERROR] Found existing guidance files. No files were written." >&2
+        echo "" >&2
+        printf '%s' "$blocking" >&2
+        echo "" >&2
+        echo "  These files contain project-specific content that would be lost." >&2
+        echo "  Use --migrate to safely incorporate this content into the new AGENTS.md." >&2
+        echo "  Use --adopt to bring an existing AGENTS.md into the framework." >&2
+        echo "" >&2
+        echo "  Example: generate-agents.sh --migrate --language=go --path=$OUTPUT_PATH" >&2
+        echo "  Example: generate-agents.sh --adopt --language=go --path=$OUTPUT_PATH" >&2
+        exit 1
+    fi
+fi
+
+# Handle migrate mode - generate migration prompt if needed
+if [[ "$MIGRATE" == "true" ]]; then
+    # Check if there's content to migrate
+    existing=$(check_existing_guidance "$OUTPUT_PATH")
+    if [[ -n "$existing" ]]; then
+        # Extract filename and count lines
+        source_file=$(echo "$existing" | cut -d' ' -f1)
+        source_lines=$(wc -l < "$OUTPUT_PATH/$source_file" | tr -d ' ')
+
+        echo "[INFO] Found existing guidance: $existing"
+        echo "[INFO] Source file: $source_file ($source_lines lines)"
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "[DRY RUN] Would generate migration prompt: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[DRY RUN] Would add MIGRATION-PROMPT.md to $OUTPUT_PATH/.gitignore"
+        else
+            mkdir -p "$OUTPUT_PATH"
+            echo "[INFO] Generating migration prompt..."
+
+            # Generate the migration prompt
+            generate_migration_prompt "$OUTPUT_PATH" > "$OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[OK] Created: $OUTPUT_PATH/MIGRATION-PROMPT.md"
+            echo "[INFO] Target: reduce to 0-100 lines of project-specific content"
+
+            # Add to .gitignore
