@@ -1,6 +1,6 @@
 # Security Workflow
 
-> **Priority**: CRITICAL - IP protection and vulnerability management  
+> **Priority**: CRITICAL - a leaked secret is not fixed by rewriting the sentence later.  
 > **Source**: codebase-reviewer, scripts AGENTS.md, security-upgrade skill
 
 ## 🔒 Pre-Commit Hooks - NEVER BYPASS
