@@ -3,9 +3,9 @@
 > **Priority**: HIGH - Applies to all projects with CI/CD  
 > **Source**: strategic-proposal, architecture-decision-record, genesis AGENTS.md
 
-## ⚠️ MANDATORY: CI Before Deploy
+## CI before deploy
 
-**NEVER deploy without green CI.** This is non-negotiable.
+Wait for CI to pass before deploying.
 
 ### Three-Step Process
 
