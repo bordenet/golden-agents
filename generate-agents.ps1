@@ -33,6 +33,17 @@ param(
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BashScript = Join-Path $ScriptDir "generate-agents.sh"
 
+# PowerShell treats an unquoted comma as an array operator and then joins the
+# pieces with spaces, so --language=go,python arrives as --language=go python.
+# Those values are comma-separated tokens. Put the commas back.
+for ($i = 0; $i -lt $Arguments.Count; $i++) {
+    if ($Arguments[$i] -match '^(--(?:language|type)=)(.+)$') {
+        $Arguments[$i] = $Matches[1] + ($Matches[2] -replace ' ', ',')
+    } elseif ($Arguments[$i] -match '^--(?:language|type)$' -and ($i + 1) -lt $Arguments.Count) {
+        $Arguments[$i + 1] = $Arguments[$i + 1] -replace ' ', ','
+    }
+}
+
 # Convert Windows path to WSL path
 function Convert-ToWslPath {
     param([string]$WindowsPath)
@@ -40,7 +51,7 @@ function Convert-ToWslPath {
     if (-not $WindowsPath) { return $null }
     # C:\Users\foo -> /mnt/c/Users/foo
     $drive = $WindowsPath.Substring(0, 1).ToLower()
-    $rest = $WindowsPath.Substring(2).Replace('\', '/')
+    $rest = $WindowsPath.Substring(2).Replace('\\', '/')
     return "/mnt/$drive$rest"
 }
 
@@ -120,7 +131,7 @@ if ($wslAvailable) {
 if ($gitBashPath) {
     Write-Host "[INFO] Running via Git Bash..." -ForegroundColor Cyan
     # Quote each argument to preserve commas and special characters
-    $quotedArgs = $Arguments | ForEach-Object { "'$($_ -replace "'", "'\''")'" }
+    $quotedArgs = $Arguments | ForEach-Object { "'$($_ -replace "'", "'\\''")'" }
     $argString = $quotedArgs -join ' '
     & $gitBashPath -c "cd '$ScriptDir' && ./generate-agents.sh $argString"
     exit $LASTEXITCODE
