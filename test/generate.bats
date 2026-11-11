@@ -127,7 +127,7 @@ teardown() {
 @test "single-language generation keeps the unlabeled gate list" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    grep -A1 -x 'Before ANY commit:' "$TEST_DIR/AGENTS.md" | grep -q '^1\. \*\*Lint\*\*: `golangci-lint run ./...`$'
+    grep -A1 -x 'Before a commit:' "$TEST_DIR/AGENTS.md" | grep -q '^1\. \*\*Lint\*\*: `golangci-lint run ./...`$'
 }
 
 # Test 13: Too many languages for per-language gates falls back to naming them
