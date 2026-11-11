@@ -90,7 +90,7 @@ numbers() {
         $(numbers "$SCRIPT_DIR/README.md" '>[0-9]+ lines|\| [0-9]+ lines \||≤[0-9]+ lines')
     # shellcheck disable=SC2046
     assert_all_equal_max "AGENTS.md (this repo)" \
-        $(numbers "$SCRIPT_DIR/AGENTS.md" '>[0-9]+ lines|(≤\|<=\)[0-9]+ lines')
+        $(numbers "$SCRIPT_DIR/AGENTS.md" '>[0-9]+ lines|(≤|<=)[0-9]+ lines')
     run grep -n 'Compact' "$SCRIPT_DIR/AGENTS.md"
     [ "$status" -ne 0 ]
 }
