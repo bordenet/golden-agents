@@ -1,6 +1,6 @@
 # Build Hygiene Standards
 
-> **Priority**: CRITICAL - Apply to all projects with build steps  
+> **Priority**: Apply to projects with a build step  
 > **Source**: RecipeArchive, genesis-tools AGENTS.md
 
 ## ⚠️ NEVER Modify Source In Place
@@ -19,7 +19,7 @@ sed 's/VERSION/1.0/' < src/config.template.js > dist/config.js
 
 ## Go Build Hygiene
 
-**CRITICAL**: Always run `go build` after linting to verify compilation.
+Run `go build` after lint. The Go module keeps the reason: it catches compile failures that lint does not.
 
 ```bash
 # Standard Go workflow
@@ -28,7 +28,7 @@ go build ./...             # Step 2: ALWAYS compile after lint
 go test ./...              # Step 3: Run tests
 ```
 
-The linter may pass while the code doesn't compile. **`go build` is non-negotiable.**
+The linter may pass while the code does not compile.
 
 ## Compilation Validation
 
