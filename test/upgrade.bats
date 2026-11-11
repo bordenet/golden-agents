@@ -159,3 +159,27 @@ Languages we avoid: perl
     [ "$status" -eq 0 ]
     [[ "$output" == *"Type: general"* ]]
 }
+
+@test "upgrade --apply replaces a generated CLAUDE.md and removes a generated CODEX.md" {
+    create_agents_with_markers "$TEST_DIR"
+    printf '# Claude Code Instructions\n\nSee **[AGENTS.md](./AGENTS.md)** for all AI guidance.\n' > "$TEST_DIR/CLAUDE.md"
+    printf '# OpenAI Codex CLI Instructions\n\nSee **[AGENTS.md](./AGENTS.md)** for all AI guidance.\n' > "$TEST_DIR/CODEX.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -qxF '@AGENTS.md' "$TEST_DIR/CLAUDE.md"
+    grep -qxF '<!-- golden-agents:generated -->' "$TEST_DIR/CLAUDE.md"
+    [ ! -e "$TEST_DIR/CODEX.md" ]
+    [ -f "$TEST_DIR/CLAUDE.md."*.bak ]
+    [ -f "$TEST_DIR/CODEX.md."*.bak ]
+}
+
+@test "upgrade --apply leaves a hand-written CODEX.md in place" {
+    create_agents_with_markers "$TEST_DIR"
+    printf 'Codex: run make check before commit\n' > "$TEST_DIR/CODEX.md"
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ "$(cat "$TEST_DIR/CODEX.md")" = "Codex: run make check before commit" ]
+    [ ! -e "$TEST_DIR/CODEX.md."*.bak ]
+}
