@@ -72,9 +72,8 @@ These limits keep files within the effective working range for Claude, Augment, 
 ```
 my-project/
 ├── AGENTS.md                    # ≤250 lines, self-managing
-├── CLAUDE.md                    # Redirect → AGENTS.md
-├── GEMINI.md                    # Redirect → AGENTS.md
-├── COPILOT.md                   # Redirect → AGENTS.md
+├── CLAUDE.md                    # @AGENTS.md
+├── GEMINI.md                    # @AGENTS.md
 └── .ai-guidance/                # Auto-created when needed
     ├── invariants.md            # Self-management rules (always loaded)
     ├── testing.md               # On-demand topic file
@@ -133,12 +132,12 @@ Update templates: `~/.golden-agents/generate-agents.sh --sync`
 
 | Assistant | File Created |
 |-----------|--------------|
-| Claude Code | `CLAUDE.md` → `AGENTS.md` |
+| Claude Code | `CLAUDE.md` is `@AGENTS.md` |
 | Augment Code | Reads `AGENTS.md` directly |
-| OpenAI Codex CLI | `CODEX.md` → `AGENTS.md` |
-| Amp | `AGENT.md` → `AGENTS.md` |
-| Gemini | `GEMINI.md` → `AGENTS.md` |
-| GitHub Copilot | `COPILOT.md` + `.github/copilot-instructions.md` |
+| OpenAI Codex CLI | Reads `AGENTS.md` directly |
+| Amp | Reads `AGENTS.md` directly |
+| Gemini | `GEMINI.md` is `@AGENTS.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` is `@../AGENTS.md` |
 
 ---
 
