@@ -127,7 +127,9 @@ teardown() {
 @test "single-language generation keeps the unlabeled gate list" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    grep -A1 -x 'Before a commit:' "$TEST_DIR/AGENTS.md" | grep -q '^1\. \*\*Lint\*\*: `golangci-lint run ./...`$'
+    local expected
+    expected='1. **Lint**: `UNVERIFIED: confirm golangci-lint run ./...`'
+    grep -A1 -x 'Before a commit:' "$TEST_DIR/AGENTS.md" | grep -F -x -q "$expected"
 }
 
 # Test 13: Five languages plus a project type fit, so every language keeps its gates.
@@ -147,7 +149,7 @@ teardown() {
     [ "$status" -eq 0 ]
     assert_file_not_contains "$TEST_DIR/AGENTS.md" 'N/A%'
     assert_file_not_contains "$TEST_DIR/AGENTS.md" 'Coverage'
-    assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `bats test/`'
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm bats test/'
 }
 
 # Test 15: Coverage line stays for languages with a target
