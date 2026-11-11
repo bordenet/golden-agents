@@ -3,9 +3,9 @@
 > **Priority**: HIGH - Apply to CLI/terminal tools  
 > **Source**: codebase-reviewer, scripts AGENTS.md
 
-## 🚨 CLI Integration Testing - QUALITY GATE
+## CLI integration tests
 
-CLI tools MUST have integration tests that verify:
+CLI tools need integration tests that verify:
 - Command execution with various inputs
 - Exit codes (0 for success, non-zero for errors)
 - Output format correctness
