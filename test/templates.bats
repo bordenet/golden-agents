@@ -89,3 +89,4 @@ teardown() {
         [[ "$output" == *"Warning"* ]] || [[ "$output" == *"template"* ]] || [[ "$output" == *"type"* ]]
     fi
 }
+
