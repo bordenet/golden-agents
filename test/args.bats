@@ -139,3 +139,58 @@ teardown() {
     [[ "$output" == *"cli-tools"* ]] || [[ "$output" == *"web-apps"* ]]
 }
 
+
+# Unknown --language / --type values fail and list valid values
+@test "unknown --language fails and lists valid languages" {
+    run "$GENERATE_SCRIPT" --language=rust --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"rust"* ]]
+    [[ "$output" == *"go"*"python"*"shell"* ]]
+    [ ! -e "$TEST_DIR/AGENTS.md" ]
+}
+
+@test "one unknown language in a list fails" {
+    run "$GENERATE_SCRIPT" --language=go,cobol --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"cobol"* ]]
+}
+
+@test "unknown --type fails and lists valid types" {
+    run "$GENERATE_SCRIPT" --language=go --type=bogus --path="$TEST_DIR"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"bogus"* ]]
+    [[ "$output" == *"cli-tools"*"web-apps"* ]]
+    [ ! -e "$TEST_DIR/AGENTS.md" ]
+}
+
+@test "language names cannot reach outside templates/languages" {
+    run "$GENERATE_SCRIPT" --language=../adopt-prompt --path="$TEST_DIR" --dry-run
+    [ "$status" -eq 1 ]
+}
+
+# Value options accept "--opt value" as well as "--opt=value"
+@test "space form works for --language, --type, --path and --name" {
+    run "$GENERATE_SCRIPT" --language go --type cli-tools --path "$TEST_DIR" --name SpaceForm
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" "^# AI Agent Guidelines - SpaceForm$"
+    assert_file_contains "$TEST_DIR/AGENTS.md" "project-types/cli-tools.md"
+}
+
+@test "space form --path is honored by --dedupe" {
+    create_bloated_agents_with_markers "$TEST_DIR" 150
+    run "$GENERATE_SCRIPT" --dedupe --path "$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ -f "$TEST_DIR/ADOPT-PROMPT.md" ]
+}
+
+@test "value option at the end without a value fails with a message" {
+    run "$GENERATE_SCRIPT" --language=go --path
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--path requires a value"* ]]
+}
+
+@test "value option followed by another option fails with a message" {
+    run "$GENERATE_SCRIPT" --language --dry-run
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--language requires a value"* ]]
+}
