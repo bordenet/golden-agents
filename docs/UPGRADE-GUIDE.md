@@ -184,9 +184,10 @@ Gate detection matches only the exact names `lint`, `test`, `build`, and
 On a new file, an unmatched gate keeps the template command and is prefixed
 with `UNVERIFIED: confirm`. On upgrade, a command already in the quality-gate
 block is kept when it is that language's template command, or when it matches
-no selected language's template. A language with neither a detected command
-nor an existing command is omitted, and the preview lists it under
-`Gates left unset`.
+no selected language's template. A coverage line with no backtick command is
+kept whole, including any project sentence after the percentage. A language
+with neither a detected command nor an existing command is omitted, and the
+preview lists it under `Gates left unset`.
 
 Section I is `evals/fixture/` plus `docs/evals/SCORE.md`. Claude Code and
 Codex are `not run`. The Cursor column records one run. A missing eval is
