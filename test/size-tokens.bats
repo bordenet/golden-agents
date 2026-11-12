@@ -18,8 +18,10 @@ teardown() {
     [[ "$output" == *"200 lines is the soft ceiling"* ]]
     [[ "$output" == *"scoped rules"* ]]
     [[ "$output" == *"MAX_GUIDANCE_LINES stays 250"* ]]
-    ! grep -E '^[A-Za-z_][A-Za-z0-9_]*=200$' "$GENERATE_SCRIPT"
-    grep -q '^MAX_GUIDANCE_LINES=250$' "$GENERATE_SCRIPT"
+    # shellcheck disable=SC2046
+    ! grep -E '^[A-Za-z_][A-Za-z0-9_]*=200$' $(implementation_files)
+    # shellcheck disable=SC2046
+    grep -q '^MAX_GUIDANCE_LINES=250$' $(implementation_files)
 }
 
 @test "SIZE: progressive output stays under 250 lines and prints a token estimate" {
