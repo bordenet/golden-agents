@@ -26,6 +26,10 @@ g() {
 make_sync_fixture() {
     mkdir -p "$TEST_DIR/upstream"
     cp "$GENERATE_SCRIPT" "$TEST_DIR/upstream/"
+    if [[ -d "$SCRIPT_DIR/lib/golden-agents" ]]; then
+        mkdir -p "$TEST_DIR/upstream/lib"
+        cp -R "$SCRIPT_DIR/lib/golden-agents" "$TEST_DIR/upstream/lib/"
+    fi
     cp -R "$SCRIPT_DIR/templates" "$TEST_DIR/upstream/"
     g init -q -b main "$TEST_DIR/upstream"
     g -C "$TEST_DIR/upstream" add -A
@@ -57,6 +61,10 @@ upstream_commit() {
     # Create a copy of the script in a non-git directory
     cp "$GENERATE_SCRIPT" "$TEST_DIR/generate-agents.sh"
     chmod +x "$TEST_DIR/generate-agents.sh"
+    if [[ -d "$SCRIPT_DIR/lib/golden-agents" ]]; then
+        mkdir -p "$TEST_DIR/lib"
+        cp -R "$SCRIPT_DIR/lib/golden-agents" "$TEST_DIR/lib/"
+    fi
     
     cd "$TEST_DIR"
     run ./generate-agents.sh --sync
