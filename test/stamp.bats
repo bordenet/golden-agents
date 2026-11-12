@@ -13,7 +13,8 @@ teardown() {
 }
 
 framework_version() {
-    awk -F'"' '/^FRAMEWORK_VERSION=/ { print $2; exit }' "$GENERATE_SCRIPT"
+    # shellcheck disable=SC2046
+    awk -F'"' '/^FRAMEWORK_VERSION=/ { print $2; exit }' $(implementation_files)
 }
 
 set_stamp_date() {
