@@ -1,1 +1,1 @@
-$file:/tmp/embed-p02.txt
+@file:///tmp/embed-p02.txt

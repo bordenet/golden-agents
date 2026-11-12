@@ -1,1 +1,1 @@
-$file:/tmp/embed-cl.txt
+@file:///tmp/embed-cl.txt
