@@ -8,7 +8,8 @@ load 'test_helper'
 setup() {
     TEST_DIR="$(mktemp -d)"
     export TEST_DIR
-    MAX=$(sed -n 's/^MAX_GUIDANCE_LINES=\([0-9][0-9]*\)$/\1/p' "$GENERATE_SCRIPT")
+    # shellcheck disable=SC2046
+    MAX=$(sed -n 's/^MAX_GUIDANCE_LINES=\([0-9][0-9]*\)$/\1/p' $(implementation_files) | head -1)
 }
 
 teardown() {
