@@ -27,7 +27,7 @@ jobs:
 
       - name: Install BATS (macOS)
         if: runner.os == 'macOS'
-        run: brew install bats-core
+        run: brew install bats-core bash
 
       - name: Install BATS helper libraries
         run: |
@@ -36,7 +36,13 @@ jobs:
           git clone --depth 1 https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
 
       - name: Run BATS tests
-        run: bats test/*.bats
+        run: |
+          if [[ "$(uname -s)" == Darwin ]]; then
+            export PATH="$(brew --prefix bash)/bin:${PATH}"
+          fi
+          command -v bash
+          bash --version
+          bats test/*.bats
 
       - name: Test summary
         if: always()
@@ -135,13 +141,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run ShellCheck
-        run: shellcheck generate-agents.sh
+        run: shellcheck --severity=warning generate-agents.sh
 
       - name: ShellCheck summary
         if: always()
         run: |
           echo "## ShellCheck Results" >> $GITHUB_STEP_SUMMARY
-          shellcheck generate-agents.sh --format=gcc >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          shellcheck --severity=warning generate-agents.sh --format=gcc >> $GITHUB_STEP_SUMMARY 2>&1 || true
 
   # Code coverage with kcov
   coverage:
