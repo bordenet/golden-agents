@@ -42,12 +42,13 @@ framework_has_bootstrap() {
     ' "$TEST_DIR/AGENTS.md"
 }
 
-@test "upgrade removes an in-framework bootstrap and does not restore it" {
+@test "upgrade moves an in-framework bootstrap below the marker" {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     # Put the old block back inside the framework, as 1.4.x did.
     awk '
         index($0, "<!-- GOLDEN:framework:end -->") {
+            print "### Optional: Superpowers integration"
             print "node ~/.codex/superpowers-augment/superpowers-augment.js bootstrap"
         }
         { print }
@@ -56,11 +57,17 @@ framework_has_bootstrap() {
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    ! grep -q 'superpowers-augment.js' "$TEST_DIR/AGENTS.md"
+    ! framework_has_bootstrap "$TEST_DIR/AGENTS.md"
+    grep -q '### Optional: Superpowers integration' "$TEST_DIR/AGENTS.md"
+    local count
+    count=$(grep -c 'superpowers-augment.js bootstrap' "$TEST_DIR/AGENTS.md")
+    [ "$count" -eq 1 ]
 
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
-    ! grep -q 'superpowers-augment.js' "$TEST_DIR/AGENTS.md"
+    ! framework_has_bootstrap "$TEST_DIR/AGENTS.md"
+    count=$(grep -c 'superpowers-augment.js bootstrap' "$TEST_DIR/AGENTS.md")
+    [ "$count" -eq 1 ]
 }
 
 @test "upgrade --superpowers writes the block after the marker once" {
