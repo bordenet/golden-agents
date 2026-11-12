@@ -1,0 +1,34 @@
+name: Assemble generator
+
+on:
+  push:
+    paths:
+      - .github/restore-generator/part0
+      - .github/restore-generator/part1
+      - .github/restore-generator/part2
+      - .github/restore-generator/part3
+      - .github/restore-generator/part4
+      - .github/restore-generator/part5
+
+jobs:
+  assemble:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write generate-agents.sh from the verified parts
+        run: |
+          set -euo pipefail
+          cat .github/restore-generator/part* > generate-agents.sh
+          chmod +x generate-agents.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generate-agents.sh
+          if git diff --cached --quiet; then
+            echo "generate-agents.sh already matches the parts"
+            exit 0
+          fi
+          git commit -m "Restore the full generate-agents.sh."
+          git push
