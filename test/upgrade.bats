@@ -213,3 +213,83 @@ EOF
     grep -F '4. **Coverage**: Minimum 70%. Follow the [coverage policy](wiki/coverage.md).' "$TEST_DIR/AGENTS.md"
     grep -qxF 'UNIQUE_TAIL_LINE' "$TEST_DIR/AGENTS.md"
 }
+
+@test "upgrade keeps numbered quality gates that are not lint build test or coverage" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/AGENTS.md" << 'EOF'
+# AI Agent Guidelines - CV
+
+> **Languages**: javascript
+> **Type**: general
+
+<!-- GOLDEN:framework:start -->
+
+## Quality Gates (MANDATORY)
+
+Before ANY commit:
+1. **Verify claims**: Cross-reference against source materials
+2. **Grep audit**: `grep -r "AI/ML" sources`
+
+**Zero tolerance for fabricated claims.**
+
+<!-- GOLDEN:framework:end -->
+
+UNIQUE_TAIL_LINE
+EOF
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -F '1. **Verify claims**: Cross-reference against source materials' "$TEST_DIR/AGENTS.md"
+    grep -F '**Zero tolerance for fabricated claims.**' "$TEST_DIR/AGENTS.md"
+    grep -qxF 'UNIQUE_TAIL_LINE' "$TEST_DIR/AGENTS.md"
+    # The relocated block sits below the framework, and the tail is still last.
+    awk '
+        index($0, "<!-- GOLDEN:framework:end -->") { seen = 1 }
+        seen && index($0, "Verify claims") { found = 1 }
+        END { exit !found }
+    ' "$TEST_DIR/AGENTS.md"
+    cp "$TEST_DIR/AGENTS.md" "$TEST_DIR/AGENTS.md.once"
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    cmp "$TEST_DIR/AGENTS.md.once" "$TEST_DIR/AGENTS.md"
+}
+
+@test "upgrade reads a header whose colon sits inside the bold markers" {
+    mkdir -p "$TEST_DIR"
+    cat > "$TEST_DIR/AGENTS.md" << 'EOF'
+# AI Agent Guidelines - Bloginator
+
+> **Languages:** python
+> **Type:** cli-tools
+
+<!-- GOLDEN:framework:start -->
+
+## Quality Gates
+
+1. **Lint**: `ruff check .`
+2. **Test**: `pytest`
+
+<!-- GOLDEN:framework:end -->
+
+UNIQUE_TAIL_LINE
+EOF
+
+    run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -F '`.golden-agents/modules/python.md`' "$TEST_DIR/AGENTS.md"
+    grep -F '`.golden-agents/modules/cli-tools.md`' "$TEST_DIR/AGENTS.md"
+    grep -F '1. **Lint**: `ruff check .`' "$TEST_DIR/AGENTS.md"
+    grep -F '**Test**: `pytest`' "$TEST_DIR/AGENTS.md"
+    grep -qxF 'UNIQUE_TAIL_LINE' "$TEST_DIR/AGENTS.md"
+}
+
+@test "second upgrade does not back up a redirect that already matches" {
+    create_agents_with_markers "$TEST_DIR"
+    printf '# Claude Code Instructions\n\nSee **[AGENTS.md](./AGENTS.md)** for all AI guidance.\n' > "$TEST_DIR/CLAUDE.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    rm -f "$TEST_DIR"/CLAUDE.md.*.bak
+    run "$GENERATE_SCRIPT" --upgrade --apply --language=go --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    [ ! -e "$TEST_DIR"/CLAUDE.md.*.bak ]
+}
