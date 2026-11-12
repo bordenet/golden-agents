@@ -87,6 +87,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest still marks the template command unverified.
 - **A second upgrade leaves a finished redirect alone** - A kept redirect
   that already matches the `@AGENTS.md` import is not backed up again.
+- **The generator is stored in pieces** - `generate-agents.sh` sources
+  `lib/golden-agents/part*.sh`. The pieces are split on function boundaries.
+  A single upload of the whole script was stored truncated, so the entry
+  point stays small.
 - **Upgrade keeps coverage prose** - A coverage gate written as
   `Minimum 70%. Follow the policy...` has no backtick command, so upgrade
   used to replace the whole line with `Minimum 70%`. The words after
