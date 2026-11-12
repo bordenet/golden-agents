@@ -1,1 +1,1 @@
-@/tmp/content-1.txt
+PLACEHOLDER_REPLACE_WITH_FILE
