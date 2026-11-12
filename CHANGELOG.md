@@ -72,6 +72,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tests exec the generator** - `generate-agents.sh` is stored without the
+  executable bit, so `bats` got "permission denied" and the Tests workflow
+  failed on Linux, macOS, and coverage. The test helper sets the bit before
+  the suite runs.
 - **Upgrade keeps project quality gates** - A numbered gate whose label is
   not Lint, Build, Test, or Coverage used to disappear when the framework
   was regenerated. That block is moved to just after the framework end
