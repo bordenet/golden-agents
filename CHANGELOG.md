@@ -1,1 +1,1 @@
-$file:/workspace/agent-tools/CHANGELOG_exact.md
+$file:/tmp/ONLY_CL_CONTENT.txt

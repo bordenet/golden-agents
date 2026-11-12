@@ -1,1 +1,1 @@
-$file:/workspace/agent-tools/part02_exact.sh
+$file:/tmp/ONLY_P02_CONTENT.txt
