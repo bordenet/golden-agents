@@ -72,6 +72,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Upgrade keeps project quality gates** - A numbered gate whose label is
+  not Lint, Build, Test, or Coverage used to disappear when the framework
+  was regenerated. That block is moved to just after the framework end
+  marker. A second upgrade does not copy it again.
+- **Upgrade reads `**Languages:**`** - A header with the colon inside the
+  bold markers, `> **Languages:** python`, was ignored, so upgrade stopped
+  and asked for `--language`. Both that form and `> **Languages**: python`
+  are read. The same applies to `Type`.
+- **A manifest does not invent a missing gate** - When `package.json`, a
+  Makefile, a justfile, `pyproject.toml`, or a workflow file is present,
+  a lint, build, or test name it does not define is omitted, and so is a
+  coverage percentage the manifest does not define. A directory with no
+  manifest still marks the template command unverified.
+- **A second upgrade leaves a finished redirect alone** - A kept redirect
+  that already matches the `@AGENTS.md` import is not backed up again.
 - **Upgrade keeps coverage prose** - A coverage gate written as
   `Minimum 70%. Follow the policy...` has no backtick command, so upgrade
   used to replace the whole line with `Minimum 70%`. The words after
