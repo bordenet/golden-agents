@@ -1,1 +1,1 @@
-PLACEHOLDER_REPLACE_WITH_FILE
+$file:/tmp/push-win-CHANGELOG.md
