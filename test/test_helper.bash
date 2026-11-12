@@ -15,6 +15,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Exported for use by BATS test files that source this helper
 # shellcheck disable=SC2034
 GENERATE_SCRIPT="$SCRIPT_DIR/generate-agents.sh"
+
+# implementation_files
+# Files that hold the generator source. The entry point may source
+# lib/golden-agents/part*.sh instead of containing the source itself.
+implementation_files() {
+    if compgen -G "$SCRIPT_DIR/lib/golden-agents/part*.sh" > /dev/null; then
+        printf '%s\n' "$SCRIPT_DIR"/lib/golden-agents/part*.sh
+    else
+        printf '%s\n' "$GENERATE_SCRIPT"
+    fi
+}
 # shellcheck disable=SC2034
 FIXTURES_DIR="$SCRIPT_DIR/test/fixtures"
 
