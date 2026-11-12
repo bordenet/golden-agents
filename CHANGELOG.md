@@ -1,1 +1,1 @@
-$file:/tmp/DECODED_CL.md
+{{LOAD:/tmp/ga-ci/CHANGELOG.md}}

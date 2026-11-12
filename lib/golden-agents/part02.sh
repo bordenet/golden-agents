@@ -1,1 +1,1 @@
-$file:/tmp/DECODED_P02.sh
+{{LOAD:/tmp/ga-ci/lib/golden-agents/part02.sh}}
