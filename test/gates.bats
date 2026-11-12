@@ -16,8 +16,8 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm golangci-lint run ./...'
-    assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm go test -race'
     assert_file_contains "$TEST_DIR/AGENTS.md" 'Coverage\*\*: Minimum 80%'
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm go test -race'
 }
 
 @test "package.json scripts replace the template and cite the file" {
@@ -42,6 +42,18 @@ teardown() {
     assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `npm run test` (package.json)'
     assert_file_contains "$TEST_DIR/AGENTS.md" '1\. \*\*Lint\*\*: `make lint` (Makefile)'
     assert_file_not_contains "$TEST_DIR/AGENTS.md" 'make test'
+}
+
+@test "a manifest omits a gate it does not define instead of inventing one" {
+    printf '%s\n' '{"scripts":{"lint":"node --check server.mjs","test":"node --test test/*.test.mjs"}}' \
+        > "$TEST_DIR/package.json"
+    run "$GENERATE_SCRIPT" --language=javascript --type=web-apps --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    assert_file_contains "$TEST_DIR/AGENTS.md" '1\. \*\*Lint\*\*: `npm run lint` (package.json)'
+    assert_file_contains "$TEST_DIR/AGENTS.md" '3\. \*\*Test\*\*: `npm run test` (package.json)'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'Build'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'Coverage'
+    assert_file_not_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED'
 }
 
 @test "justfile and pyproject and a workflow step supply commands in order" {
