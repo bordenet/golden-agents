@@ -1,1 +1,1 @@
-@/tmp/content-0.txt
+PLACEHOLDER_WILL_FAIL
