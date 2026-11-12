@@ -1228,8 +1228,51 @@ load_existing_gate_commands() {
     done < <(awk -v start="$MARKER_START" -v end="$MARKER_END" '
         index($0, start) { inside = 1; next }
         inside && index($0, end) { exit }
-        inside { print }
-    ' "$file" | sed -n 's/.*\*\*\(Lint\|Build\|Test\|Coverage\)\*\*: `\([^`]*\)`.*/\1\t\2/p')
+        inside {
+            line = $0
+            nkeys = split("Lint Build Test Coverage", keys, " ")
+            for (n = 1; n <= nkeys; n++) {
+                pre = "**" keys[n] "**: `"
+                at = index(line, pre)
+                if (at == 0) continue
+                rest = substr(line, at + length(pre))
+                tick = index(rest, "`")
+                if (tick > 0) print keys[n] "\t" substr(rest, 1, tick - 1)
+            }
+        }
+    ' "$file")
+}
+
+# saved_gate_indexes <role>
+# Prints the indexes of one saved-command array, one per line.
+# Bash 3.2 has no namerefs, so the role selects the array by name.
+saved_gate_indexes() {
+    case "$1" in
+        LINT) [[ ${#OLD_LINT_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_LINT_CMDS[@]}" ;;
+        BUILD) [[ ${#OLD_BUILD_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_BUILD_CMDS[@]}" ;;
+        TEST) [[ ${#OLD_TEST_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_TEST_CMDS[@]}" ;;
+        COV) [[ ${#OLD_COV_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_COV_CMDS[@]}" ;;
+    esac
+}
+
+# saved_gate_at <role> <index>
+saved_gate_at() {
+    case "$1" in
+        LINT) printf '%s\n' "${OLD_LINT_CMDS[$2]}" ;;
+        BUILD) printf '%s\n' "${OLD_BUILD_CMDS[$2]}" ;;
+        TEST) printf '%s\n' "${OLD_TEST_CMDS[$2]}" ;;
+        COV) printf '%s\n' "${OLD_COV_CMDS[$2]}" ;;
+    esac
+}
+
+# drop_saved_gate <role> <index>
+drop_saved_gate() {
+    case "$1" in
+        LINT) unset "OLD_LINT_CMDS[$2]" ;;
+        BUILD) unset "OLD_BUILD_CMDS[$2]" ;;
+        TEST) unset "OLD_TEST_CMDS[$2]" ;;
+        COV) unset "OLD_COV_CMDS[$2]" ;;
+    esac
 }
 
 # fallback_for <role> <language>
@@ -1279,33 +1322,31 @@ command_owned() {
 # Returns: 0 when a command was printed, 1 when none fits
 take_saved_gate() {
     local role="$1" fallback="$2" lang="$3"
-    local name i cmd unverified
+    local i cmd unverified
     case "$role" in
-        LINT) name=OLD_LINT_CMDS ;;
-        BUILD) name=OLD_BUILD_CMDS ;;
-        TEST) name=OLD_TEST_CMDS ;;
-        COV) name=OLD_COV_CMDS ;;
+        LINT|BUILD|TEST|COV) ;;
         *) return 1 ;;
     esac
-    local -n saved=$name
     unverified="UNVERIFIED: confirm ${fallback}"
-    for i in "${!saved[@]}"; do
-        cmd="${saved[$i]}"
+    while IFS= read -r i; do
+        [[ -n "$i" ]] || continue
+        cmd=$(saved_gate_at "$role" "$i")
         if [[ -n "$fallback" && ( "$cmd" == "$fallback" || "$cmd" == "$unverified" ) ]]; then
             printf '%s\n' "$cmd"
-            unset "saved[$i]"
+            drop_saved_gate "$role" "$i"
             return 0
         fi
-    done
+    done < <(saved_gate_indexes "$role")
     if [[ "$lang" == "${LANGUAGES%%,*}" ]]; then
-        for i in "${!saved[@]}"; do
-            cmd="${saved[$i]}"
+        while IFS= read -r i; do
+            [[ -n "$i" ]] || continue
+            cmd=$(saved_gate_at "$role" "$i")
             if ! command_owned "$cmd" "$role"; then
                 printf '%s\n' "$cmd"
-                unset "saved[$i]"
+                drop_saved_gate "$role" "$i"
                 return 0
             fi
-        done
+        done < <(saved_gate_indexes "$role")
     fi
     return 1
 }
