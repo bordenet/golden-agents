@@ -182,12 +182,21 @@ the block when the file never had it.
 Gate detection matches only the exact names `lint`, `test`, `build`, and
 `coverage`. A step named `Run BATS tests` or `Run ShellCheck` does not match.
 On a new file, an unmatched gate keeps the template command and is prefixed
-with `UNVERIFIED: confirm`. On upgrade, a command already in the quality-gate
-block is kept when it is that language's template command, or when it matches
-no selected language's template. A coverage line with no backtick command is
-kept whole, including any project sentence after the percentage. A language
-with neither a detected command nor an existing command is omitted, and the
-preview lists it under `Gates left unset`.
+with `UNVERIFIED: confirm`. If `package.json`, a Makefile, a justfile,
+`pyproject.toml`, or a workflow file is present and does not define that
+gate name, the gate is omitted instead of invented, including a coverage
+percentage the manifest does not define. On upgrade, a command
+already in the quality-gate block is kept when it is that language's
+template command, or when it matches no selected language's template. A
+coverage line with no backtick command is kept whole, including any project
+sentence after the percentage. A numbered gate whose label is not Lint,
+Build, Test, or Coverage is project text: it is moved to just after the
+end marker and left there. A language with neither a detected command nor
+an existing command is omitted, and the preview lists it under
+`Gates left unset`.
+
+The header is read from either `> **Languages**: python` or
+`> **Languages:** python`, and the same two forms of `Type`.
 
 Section I is `evals/fixture/` plus `docs/evals/SCORE.md`. Claude Code and
 Codex are `not run`. The Cursor column records one run. A missing eval is
