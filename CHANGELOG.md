@@ -72,6 +72,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Upgrade keeps coverage prose** - A coverage gate written as
+  `Minimum 70%. Follow the policy...` has no backtick command, so upgrade
+  used to replace the whole line with `Minimum 70%`. The words after
+  `**Coverage**:` are now kept. A backtick coverage command still wins.
 - **Upgrade keeps an in-framework bootstrap** - A 1.4.x file stores the
   superpowers bootstrap inside the framework markers. `--upgrade` used to
   delete that text unless the run passed `--superpowers`. The bootstrap is
@@ -363,4 +367,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Project detection (auto-detect language from files)
 - [ ] Template inheritance system
 - [ ] VS Code extension integration
-
