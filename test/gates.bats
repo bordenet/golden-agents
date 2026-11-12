@@ -16,8 +16,8 @@ teardown() {
     run "$GENERATE_SCRIPT" --language=go --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm golangci-lint run ./...'
-    assert_file_contains "$TEST_DIR/AGENTS.md" 'Coverage\*\*: Minimum 80%'
     assert_file_contains "$TEST_DIR/AGENTS.md" 'UNVERIFIED: confirm go test -race'
+    assert_file_contains "$TEST_DIR/AGENTS.md" 'Coverage\*\*: Minimum 80%'
 }
 
 @test "package.json scripts replace the template and cite the file" {
