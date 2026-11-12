@@ -1,1 +1,1 @@
-PLACEHOLDER
+@/tmp/content-0.txt
