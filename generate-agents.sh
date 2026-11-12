@@ -107,8 +107,9 @@ OPTIONS
     --progressive       Generate minimal core (~60 lines) with on-demand loading (default)
     --superpowers       Write the superpowers bootstrap after the framework end
                         marker. It is omitted by default. Upgrade does not put it
-                        back inside the framework. An existing bootstrap below
-                        the end marker is left as it is.
+                        back inside the framework. A bootstrap already in the
+                        file, including one inside the framework, is kept below
+                        the end marker.
     --sync              Update local templates from GitHub (git fetch, fast-forward
                         only; refuses on uncommitted changes or local commits)
     --dry-run           Print what would be generated without writing
@@ -1749,6 +1750,65 @@ place_superpowers_block() {
     rm -f "$block"
 }
 
+# relocate_framework_bootstrap <old_file> <new_file>
+# A 1.4.x file keeps the bootstrap inside the framework. Regeneration would
+# drop it. Move that text to just after the end marker instead. A bootstrap
+# already below the marker is left where it is. The template block is not
+# invented when the old file has no bootstrap.
+# Arguments:
+#   $1 - AGENTS.md before upgrade
+#   $2 - upgraded AGENTS.md
+# Returns: 0
+relocate_framework_bootstrap() {
+    local old="$1" new="$2" extracted tmp
+    if awk -v mark="$MARKER_END" '
+        index($0, mark) { seen = 1; next }
+        seen && index($0, "superpowers-augment.js bootstrap") { found = 1 }
+        END { exit !found }
+    ' "$new"; then
+        return 0
+    fi
+    extracted=$(mktemp)
+    MARK_START="$MARKER_START" MARK_END="$MARKER_END" awk '
+        index($0, ENVIRON["MARK_START"]) { inside = 1; next }
+        index($0, ENVIRON["MARK_END"]) { inside = 0 }
+        inside { lines[++n] = $0 }
+        END {
+            start = 0
+            boot = 0
+            for (i = 1; i <= n; i++) {
+                if (index(lines[i], "superpowers-augment.js bootstrap")) boot = i
+            }
+            if (boot == 0) exit 0
+            start = boot
+            for (i = boot; i >= 1; i--) {
+                if (lines[i] ~ /^#+ /) { start = i; break }
+            }
+            if (start == 0) exit 0
+            while (start <= n && lines[start] == "") start++
+            end = n
+            while (end >= start && lines[end] == "") end--
+            if (start > end) exit 0
+            for (i = start; i <= end; i++) print lines[i]
+        }
+    ' "$old" > "$extracted"
+    if [[ ! -s "$extracted" ]]; then
+        rm -f "$extracted"
+        return 0
+    fi
+    tmp=$(mktemp)
+    MARK="$MARKER_END" BLOCK="$extracted" awk '
+        { print }
+        !done && index($0, ENVIRON["MARK"]) {
+            print ""
+            while ((getline line < ENVIRON["BLOCK"]) > 0) print line
+            done = 1
+        }
+    ' "$new" > "$tmp"
+    mv "$tmp" "$new"
+    rm -f "$extracted"
+}
+
 # generate_progressive()
 # Generates a progressive-loading AGENTS.md (~60-80 lines).
 # Multi-language projects get gates per language unless that pushes the file past
@@ -2201,6 +2261,8 @@ upgrade_agents_md() {
     else
         apply_modules_comment "$tmp_dir/upgraded"
     fi
+
+    relocate_framework_bootstrap "$existing_file" "$tmp_dir/upgraded"
 
     if [[ "$SUPERPOWERS" == "true" ]]; then
         place_superpowers_block "$tmp_dir/upgraded"
