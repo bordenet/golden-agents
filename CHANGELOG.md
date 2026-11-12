@@ -1,1 +1,1 @@
-REPLACE
+$file:/tmp/DECODED_CL.md

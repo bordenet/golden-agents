@@ -1,1 +1,1 @@
-REPLACE
+$file:/tmp/DECODED_P02.sh
