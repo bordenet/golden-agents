@@ -1,1 +1,1 @@
-$include:/tmp/file0_content_only.txt
+$file:/tmp/DECODED_P02.sh

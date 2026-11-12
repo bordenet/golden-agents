@@ -1,1 +1,1 @@
-$include:/tmp/file1_content_only.txt
+$file:/tmp/DECODED_CL.md
