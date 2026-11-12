@@ -1,1 +1,5 @@
-$file:/tmp/ONLY_CL_CONTENT.txt
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+# PLACEHOLDER_PARTIAL_WILL_CONTINUE
