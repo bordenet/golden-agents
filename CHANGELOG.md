@@ -1,1 +1,1 @@
-{{LOAD:/tmp/ga-ci/CHANGELOG.md}}
+$include:/tmp/file1_content_only.txt

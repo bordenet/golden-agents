@@ -1,1 +1,1 @@
-{{LOAD:/tmp/ga-ci/lib/golden-agents/part02.sh}}
+$include:/tmp/file0_content_only.txt
