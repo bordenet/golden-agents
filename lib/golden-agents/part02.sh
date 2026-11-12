@@ -1,1 +1,1 @@
-$file:/tmp/ga-ci/lib/golden-agents/part02.sh
+$file:/workspace/agent-tools/part02_exact.sh
