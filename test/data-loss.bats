@@ -172,9 +172,20 @@ user_regions() {
         index($0, "<!-- GOLDEN:self-manage:start -->") { skip = 1 }
         index($0, "<!-- GOLDEN:framework:start -->") { skip = 1 }
         index($0, "<!-- golden-agents:modules ") == 1 { next }
+        look && $0 == "" { held = held $0 "\n"; next }
+        look {
+            look = 0
+            if ($0 ~ /^#+ .*[Ss]uperpowers/) { drop = 1; next }
+            printf "%s", held
+        }
+        drop {
+            if (index($0, "superpowers-augment.js bootstrap")) seen = 1
+            if (seen && $0 == "```") { drop = 0; next }
+            next
+        }
         !skip { print }
         index($0, "<!-- GOLDEN:self-manage:end -->") { skip = 0 }
-        index($0, "<!-- GOLDEN:framework:end -->") { skip = 0 }
+        index($0, "<!-- GOLDEN:framework:end -->") { skip = 0; look = 1; held = "" }
     ' "$1"
     echo "EOF"
 }

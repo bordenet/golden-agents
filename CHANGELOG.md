@@ -72,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Upgrade keeps an in-framework bootstrap** - A 1.4.x file stores the
+  superpowers bootstrap inside the framework markers. `--upgrade` used to
+  delete that text unless the run passed `--superpowers`. The bootstrap is
+  now moved to just after `<!-- GOLDEN:framework:end -->` and kept. A file
+  that never had the bootstrap still does not gain one. A second upgrade
+  does not duplicate it.
 - **Redirect overwrite (data loss)** - Plain generation no longer overwrites hand-written
   CLAUDE.md, CODEX.md, AGENT.md, GEMINI.md, COPILOT.md, .github/copilot-instructions.md,
   or any existing AGENTS.md. It lists the blocking files, writes nothing, and exits 1.

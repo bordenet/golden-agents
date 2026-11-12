@@ -81,10 +81,12 @@ Preview first. The preview must not change the file.
 
 Read the diff before applying.
 
-- Text after `<!-- GOLDEN:framework:end -->` must be unchanged, unless this
-  run passes `--superpowers`. Then the only allowed addition is the
-  superpowers block immediately after that marker. A bootstrap the project
-  already had below the marker must still be there, once.
+- Text after `<!-- GOLDEN:framework:end -->` must be unchanged, except for
+  one case: a bootstrap that was inside the framework markers is moved to
+  immediately after the end marker. It is not deleted. A bootstrap the
+  project already had below the marker must still be there, once, and must
+  not be duplicated. `--superpowers` adds the template block only when the
+  file does not already contain the bootstrap.
 - If a command the project actually runs becomes `UNVERIFIED: confirm`, stop.
   Do not apply. A matching tail does not make that replacement safe. Show
   the diff to a human.
@@ -123,9 +125,12 @@ awk 'f { print } index($0, "<!-- GOLDEN:framework:end -->") { f = 1 }' AGENTS.md
 awk 'f { print } index($0, "<!-- GOLDEN:framework:end -->") { f = 1 }' AGENTS.md.*.bak > /tmp/before-project.txt
 ```
 
-If this run passed `--superpowers` and the only new tail text is that block
-immediately after the end marker, delete that added block from
-`/tmp/after-project.txt`. Then run:
+If the only new tail text is a bootstrap that moved out of the framework,
+or a template block added because this run passed `--superpowers`, delete
+that added block from `/tmp/after-project.txt`. The moved block is the
+lines the old file had inside the framework markers, starting at
+`### Optional: Superpowers integration` or at the `superpowers-augment.js bootstrap`
+line. Then run:
 
 ```bash
 cmp /tmp/before-project.txt /tmp/after-project.txt
@@ -167,9 +172,12 @@ writes the redirect imports, the module copies, the scoped rules, the
 the token estimate on stdout, the human-merge self-manage block, and the
 detected quality gates. Do not copy those in by hand.
 
-Pass `--superpowers` only when the consumer asked for that block. It is
-written after `<!-- GOLDEN:framework:end -->`. Without the flag, upgrade
-removes the block from the framework region and does not put it back.
+Pass `--superpowers` only when the consumer asked for a bootstrap the file
+does not already have. The block is written after
+`<!-- GOLDEN:framework:end -->`. A bootstrap already in the file is kept
+there. One that sits inside the framework is moved below the end marker
+on the first upgrade and left there after that. Upgrade does not invent
+the block when the file never had it.
 
 Gate detection matches only the exact names `lint`, `test`, `build`, and
 `coverage`. A step named `Run BATS tests` or `Run ShellCheck` does not match.
