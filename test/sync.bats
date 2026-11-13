@@ -25,16 +25,21 @@ g() {
 # $TEST_DIR/clone whose origin is the upstream.
 make_sync_fixture() {
     mkdir -p "$TEST_DIR/upstream"
-    cp "$GENERATE_SCRIPT" "$TEST_DIR/upstream/"
+    # Copy the real entry point, not the bats bash wrapper.
+    cp "$GENERATE_ENTRY" "$TEST_DIR/upstream/generate-agents.sh"
+    chmod +x "$TEST_DIR/upstream/generate-agents.sh"
     if [[ -d "$SCRIPT_DIR/lib/golden-agents" ]]; then
         mkdir -p "$TEST_DIR/upstream/lib"
         cp -R "$SCRIPT_DIR/lib/golden-agents" "$TEST_DIR/upstream/lib/"
+        chmod +x "$TEST_DIR/upstream"/lib/golden-agents/part*.sh 2>/dev/null || true
     fi
     cp -R "$SCRIPT_DIR/templates" "$TEST_DIR/upstream/"
     g init -q -b main "$TEST_DIR/upstream"
     g -C "$TEST_DIR/upstream" add -A
     g -C "$TEST_DIR/upstream" commit -q -m init
     g clone -q "$TEST_DIR/upstream" "$TEST_DIR/clone"
+    chmod +x "$TEST_DIR/clone/generate-agents.sh" \
+        "$TEST_DIR/clone"/lib/golden-agents/part*.sh 2>/dev/null || true
 }
 
 # upstream_commit <file> <content>
@@ -59,11 +64,12 @@ upstream_commit() {
 # Test 2: Sync in non-git directory fails
 @test "sync fails when not in git repo" {
     # Create a copy of the script in a non-git directory
-    cp "$GENERATE_SCRIPT" "$TEST_DIR/generate-agents.sh"
+    cp "$GENERATE_ENTRY" "$TEST_DIR/generate-agents.sh"
     chmod +x "$TEST_DIR/generate-agents.sh"
     if [[ -d "$SCRIPT_DIR/lib/golden-agents" ]]; then
         mkdir -p "$TEST_DIR/lib"
         cp -R "$SCRIPT_DIR/lib/golden-agents" "$TEST_DIR/lib/"
+        chmod +x "$TEST_DIR/lib"/golden-agents/part*.sh 2>/dev/null || true
     fi
     
     cd "$TEST_DIR"

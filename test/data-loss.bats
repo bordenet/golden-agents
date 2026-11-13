@@ -165,13 +165,14 @@ teardown() {
 
 # user_regions <file>
 # Prints every line outside the framework markers and the self-manage block.
-# The modules comment is generator-owned, so it is omitted too.
+# Modules and stamp comments are generator-owned, so they are omitted too.
 # A trailing "EOF" sentinel keeps trailing blank lines in the comparison.
 user_regions() {
     awk '
         index($0, "<!-- GOLDEN:self-manage:start -->") { skip = 1 }
         index($0, "<!-- GOLDEN:framework:start -->") { skip = 1 }
         index($0, "<!-- golden-agents:modules ") == 1 { next }
+        index($0, "<!-- golden-agents:stamp ") == 1 { next }
         look && $0 == "" { held = held $0 "\n"; next }
         look {
             look = 0

@@ -24,8 +24,12 @@ EOF
 chmod +x "$_GENERATE_WRAPPER"
 # shellcheck disable=SC2034
 GENERATE_SCRIPT="$_GENERATE_WRAPPER"
-if [[ -f "$SCRIPT_DIR/generate-agents.sh" ]]; then
-    chmod +x "$SCRIPT_DIR/generate-agents.sh" || true
+# Real entry point for fixtures that copy the script into a throwaway tree
+# (sync.bats). Never copy the wrapper — it hard-codes this checkout's path.
+# shellcheck disable=SC2034
+GENERATE_ENTRY="$SCRIPT_DIR/generate-agents.sh"
+if [[ -f "$GENERATE_ENTRY" ]]; then
+    chmod +x "$GENERATE_ENTRY" || true
 fi
 chmod +x "$SCRIPT_DIR"/lib/golden-agents/part*.sh 2>/dev/null || true
 
