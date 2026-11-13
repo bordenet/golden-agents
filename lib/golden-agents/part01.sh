@@ -193,6 +193,8 @@ while [[ $# -gt 0 ]]; do
         --migrate) MIGRATE=true ;;
         --adopt) ADOPT=true ;;
         --dedupe) DEDUPE=true ;;
+        --no-backup) NO_BACKUP=true ;;
+        --self-test) SELF_TEST=true ;;
         -h|--help) usage; exit 0 ;;
         -v|--version) version; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
@@ -203,6 +205,12 @@ done
 # Validate --apply requires --upgrade
 if [[ "$APPLY" == "true" && "$UPGRADE" != "true" ]]; then
     echo "Error: --apply requires --upgrade" >&2
+    exit 1
+fi
+
+# Validate --no-backup requires a mode that would write backups
+if [[ "$NO_BACKUP" == "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$MIGRATE" != "true" ]]; then
+    echo "Error: --no-backup requires --upgrade, --adopt, or --migrate" >&2
     exit 1
 fi
 
@@ -247,8 +255,8 @@ if [[ "$DEDUPE" == "true" && "$PATH_GIVEN" != "true" ]]; then
     exit 1
 fi
 
-# Validate (skip language check for upgrade mode and dedupe mode)
-if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
+# Validate (skip language check for upgrade, dedupe, and self-test)
+if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" && "$SELF_TEST" != "true" ]]; then
     echo "[ERROR] --language is required for new file generation" >&2
     echo "" >&2
     echo "Available languages:" >&2
@@ -266,6 +274,11 @@ if [[ -z "$LANGUAGES" && "$UPGRADE" != "true" && "$DEDUPE" != "true" ]]; then
     echo "" >&2
     echo "Example: generate-agents.sh --language=go,js --type=web-apps --path=./my-project" >&2
     exit 1
+fi
+
+# --self-test: skip migrate/adopt/generate; part04 runs the checks and exits
+if [[ "$SELF_TEST" == "true" ]]; then
+    return 0
 fi
 
 # Redirect files with non-generated content; backed up in --adopt/--migrate, block plain runs

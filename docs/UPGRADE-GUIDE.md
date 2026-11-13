@@ -16,6 +16,31 @@ fixes. Pass the consumer repo with `--path`.
 
 Do not edit `generate-agents.ps1`. It only runs the shell script.
 
+## 0. Self-test the generator checkout
+
+Before upgrading consumers, confirm the golden-agents checkout is complete and
+executable:
+
+```bash
+/path/to/golden-agents/generate-agents.sh --self-test
+```
+
+This checks that each `lib/golden-agents/part*.sh` is at least 1000 bytes, that
+the head is not a truncated path stub, that `bash -n` passes, and that
+`--version` runs. A bad checkout fails here instead of mid-`--upgrade --apply`
+or with exit 127 from a missing `+x` bit.
+
+`--upgrade` runs the same checks automatically. Use `--self-test` alone when
+you only want the health check.
+
+When section 2 timestamped backups already exist and you are applying many
+upgrades, pass `--no-backup` so `--upgrade --apply` skips `AGENTS.md.backup`
+and other script-written `.bak` copies:
+
+```bash
+/path/to/golden-agents/generate-agents.sh --upgrade --apply --no-backup --path=/path/to/consumer
+```
+
 ## 1. Detect the generator version
 
 Read `AGENTS.md`. If that name is absent and `Agents.md` is a different file,

@@ -43,6 +43,8 @@ APPLY=false
 MIGRATE=false
 ADOPT=false
 DEDUPE=false
+NO_BACKUP=false
+SELF_TEST=false
 
 # Markers for upgrade-safe sections
 MARKER_START="<!-- GOLDEN:framework:start -->"
@@ -123,6 +125,10 @@ OPTIONS
     --dedupe            Deduplicate bloated project-specific section (for files WITH markers)
     --upgrade           Upgrade existing AGENTS.md (dry-run by default, shows diff)
     --apply             Apply upgrade changes (requires --upgrade, creates backup first)
+    --no-backup         Skip .bak / AGENTS.md.backup writes (for batch runs that
+                        already backed up; requires --upgrade, --adopt, or --migrate)
+    --self-test         Verify this checkout is complete (part sizes, not stubs,
+                        bash -n, --version) then exit; also runs before --upgrade
     -h, --help          Show this help message
     -v, --version       Show version information
 
@@ -448,11 +454,16 @@ find_blocking_redirects() {
 
 # backup_file <file>
 # Copies a file to <file>.<YYYYmmdd-HHMMSS>.bak, adding -1, -2 on collision.
+# Skips the copy when NO_BACKUP=true (batch runs that already backed up).
 # Arguments:
 #   $1 - Path to the file to back up
 # Returns: 0 on success
 backup_file() {
     local src="$1"
+    if [[ "${NO_BACKUP:-false}" == "true" ]]; then
+        echo "[OK] Skipped backup (--no-backup): $src"
+        return 0
+    fi
     local stamp dest
     local n=0
     stamp=$(date +%Y%m%d-%H%M%S)
@@ -558,6 +569,85 @@ gitignore_add() {
         printf '\n' >> "$file"
     fi
     printf '%s\n' "$entry" >> "$file"
+}
+
+# run_self_test
+# Verifies this golden-agents checkout can run before --upgrade --apply.
+# Catches truncated path stubs and incomplete part*.sh files that would
+# otherwise fail mid-upgrade or with exit 127 when +x is missing / when
+# a stub is `source`d. Intended to run after part00 is loaded and before
+# other parts are sourced.
+# Arguments: none
+# Returns: 0 on success; exits 1 on failure
+run_self_test() {
+    local entry part size head1 fail=0
+    entry="$SCRIPT_DIR/generate-agents.sh"
+    echo "[INFO] Self-test: $SCRIPT_DIR"
+
+    if [[ ! -f "$entry" ]]; then
+        echo "[FAIL] Missing entry script: $entry" >&2
+        exit 1
+    fi
+
+    shopt -s nullglob
+    local parts=( "$SCRIPT_DIR"/lib/golden-agents/part*.sh )
+    shopt -u nullglob
+    if [[ ${#parts[@]} -eq 0 ]]; then
+        echo "[FAIL] No lib/golden-agents/part*.sh files found" >&2
+        exit 1
+    fi
+
+    for part in "${parts[@]}"; do
+        size=$(wc -c < "$part" | tr -d ' ')
+        if [[ "$size" -lt 1000 ]]; then
+            echo "[FAIL] $part is only ${size} bytes (need >= 1000); likely truncated" >&2
+            fail=1
+            continue
+        fi
+        head1=$(head -n 1 "$part")
+        # Truncated uploads were path stubs or LOAD_* tokens, not shell.
+        if [[ "$head1" != \#!* && "$head1" != \#* && "$head1" != [a-zA-Z_]*'()'* ]]; then
+            echo "[FAIL] $part head is not a shell script: $head1" >&2
+            fail=1
+            continue
+        fi
+        if head -n 5 "$part" | grep -qE '^LOAD_|FROM_PRIOR_SUCCESSFUL_UPLOAD|^lib/golden-agents/'; then
+            echo "[FAIL] $part looks like a truncated path stub" >&2
+            fail=1
+            continue
+        fi
+        if ! bash -n "$part"; then
+            echo "[FAIL] bash -n failed for $part" >&2
+            fail=1
+        else
+            echo "[OK] bash -n $part (${size} bytes)"
+        fi
+    done
+
+    if ! bash -n "$entry"; then
+        echo "[FAIL] bash -n failed for $entry" >&2
+        fail=1
+    else
+        echo "[OK] bash -n $entry"
+    fi
+
+    # --version sources every part; skip it when a part already failed.
+    if [[ "$fail" -eq 0 ]]; then
+        local ver
+        if ! ver=$(bash "$entry" --version 2>&1); then
+            echo "[FAIL] --version failed: $ver" >&2
+            fail=1
+        else
+            echo "[OK] $ver"
+        fi
+    fi
+
+    if [[ "$fail" -ne 0 ]]; then
+        echo "[FAIL] Self-test failed. Fix the checkout before --upgrade --apply." >&2
+        exit 1
+    fi
+    echo "[OK] Self-test passed"
+    return 0
 }
 
 # check_existing_guidance <path>

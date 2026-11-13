@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`--self-test`** - Verifies the golden-agents checkout before consumers
+  upgrade: each `lib/golden-agents/part*.sh` is at least 1000 bytes, the head
+  is not a truncated path stub, `bash -n` passes, and `--version` runs.
+  `--upgrade` runs the same checks automatically. `docs/UPGRADE-GUIDE.md`
+  section 0 documents the flow.
+- **`--no-backup`** - Skips `.bak` / `AGENTS.md.backup` writes for batch
+  `--upgrade` / `--adopt` / `--migrate` runs that already made section 2
+  timestamped backups.
 - **Upgrade guide matches the generator** - `docs/UPGRADE-GUIDE.md` no longer
   says design v2 is unimplemented. It names what `--upgrade --apply` writes,
   and it says not to run that upgrade against this repo's own `AGENTS.md`.
@@ -72,10 +80,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Tests exec the generator** - `generate-agents.sh` is stored without the
-  executable bit, so `bats` got "permission denied" and the Tests workflow
-  failed on Linux, macOS, and coverage. The test helper sets the bit before
-  the suite runs.
+- **Committed executable bits** - `generate-agents.sh` and
+  `lib/golden-agents/part*.sh` are stored with mode `100755` so consumer
+  fleet upgrades do not fail with exit 127 on a clean checkout.
+- **Gates left unset wording** - Preview text states the language remains
+  selected when template gates are omitted because a project manifest defines
+  no matching lint/build/test, so a line like `shell` no longer reads as
+  "shell is absent from the repo".
+- **Tests exec the generator** - Even when a checkout lacks `+x`, `bats` must
+  not get "permission denied" or exit 127. The test helper chmods the entry
+  and `part*.sh`, and routes through `test/.generate-via-bash` (gitignored).
 - **Gate detection on Windows** - Quality-gate detection looked only for
   `python3`. Git Bash on Windows often has `python` or `py -3` instead, so
   package.json and Makefile gates fell through to the template. Detection

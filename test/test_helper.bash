@@ -13,12 +13,21 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Exported for use by BATS test files that source this helper
+# The contents API often stores scripts as mode 644. Prefer a bash wrapper so
+# missing +x never yields exit 127, and chmod the real entry + parts too.
 # shellcheck disable=SC2034
-GENERATE_SCRIPT="$SCRIPT_DIR/generate-agents.sh"
-# The contents API stores this file as mode 644. Tests exec it directly.
-if [[ -f "$GENERATE_SCRIPT" && ! -x "$GENERATE_SCRIPT" ]]; then
-    chmod +x "$GENERATE_SCRIPT"
+_GENERATE_WRAPPER="$SCRIPT_DIR/test/.generate-via-bash"
+cat > "$_GENERATE_WRAPPER" << EOF
+#!/usr/bin/env bash
+exec bash "$SCRIPT_DIR/generate-agents.sh" "\$@"
+EOF
+chmod +x "$_GENERATE_WRAPPER"
+# shellcheck disable=SC2034
+GENERATE_SCRIPT="$_GENERATE_WRAPPER"
+if [[ -f "$SCRIPT_DIR/generate-agents.sh" ]]; then
+    chmod +x "$SCRIPT_DIR/generate-agents.sh" || true
 fi
+chmod +x "$SCRIPT_DIR"/lib/golden-agents/part*.sh 2>/dev/null || true
 
 # implementation_files
 # Files that hold the generator source. The entry point may source
