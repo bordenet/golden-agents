@@ -9,3 +9,599 @@ get_lang_commands() {
         *) echo "LINT:# lint"; echo "BUILD:# build"; echo "TEST:# test"; echo "COV:70" ;;
     esac
 }
+
+# ensure_detected_gates
+# Reads the project once for exact lint, test, build, and coverage commands.
+# Order: package.json scripts, Makefile, justfile, pyproject.toml
+# [project.scripts], then GitHub Actions step names. The first match wins.
+# A missing Python leaves every gate on the template fallback.
+# Prefer python3, then python, then Windows `py -3`.
+# Reads from global: OUTPUT_PATH
+# Arguments: none
+# Returns: 0. Sets DET_LINT, DET_BUILD, DET_TEST, DET_COV and *_SRC.
+ensure_detected_gates() {
+    if [[ "${GATES_DETECTED:-}" == "1" ]]; then
+        return 0
+    fi
+    GATES_DETECTED=1
+    DET_LINT="" DET_BUILD="" DET_TEST="" DET_COV=""
+    DET_LINT_SRC="" DET_BUILD_SRC="" DET_TEST_SRC="" DET_COV_SRC=""
+    DET_MANIFEST=""
+    local py=()
+    if command -v python3 >/dev/null 2>&1; then
+        py=(python3)
+    elif command -v python >/dev/null 2>&1; then
+        py=(python)
+    elif command -v py >/dev/null 2>&1; then
+        py=(py -3)
+    else
+        return 0
+    fi
+    local line name cmd src
+    while IFS=$'\t' read -r name cmd src; do
+        [[ -n "$name" && -n "$cmd" && -n "$src" ]] || continue
+        case "$name" in
+            lint) [[ -z "$DET_LINT" ]] && { DET_LINT="$cmd"; DET_LINT_SRC="$src"; } ;;
+            build) [[ -z "$DET_BUILD" ]] && { DET_BUILD="$cmd"; DET_BUILD_SRC="$src"; } ;;
+            test) [[ -z "$DET_TEST" ]] && { DET_TEST="$cmd"; DET_TEST_SRC="$src"; } ;;
+            coverage) [[ -z "$DET_COV" ]] && { DET_COV="$cmd"; DET_COV_SRC="$src"; } ;;
+            manifest) DET_MANIFEST=1 ;;
+        esac
+    done < <(ROOT="$OUTPUT_PATH" "${py[@]}" - << 'PY'
+import json, os, pathlib, re, sys
+root = pathlib.Path(os.environ.get("ROOT", "."))
+names = ("lint", "test", "build", "coverage")
+found = {}
+
+def add(name, cmd, src):
+    if name in names and name not in found and cmd.strip():
+        found[name] = (cmd.strip(), src)
+
+saw = False
+pkg = root / "package.json"
+if pkg.is_file():
+    saw = True
+    try:
+        data = json.loads(pkg.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    scripts = data.get("scripts") if isinstance(data, dict) else None
+    if isinstance(scripts, dict):
+        for name in names:
+            if isinstance(scripts.get(name), str) and scripts[name].strip():
+                add(name, "npm run " + name, "package.json")
+
+def make_targets(path, runner):
+    global saw
+    if not path.is_file():
+        return
+    saw = True
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = re.match(r"^(lint|test|build|coverage):([^:]|$)", raw)
+        if match:
+            add(match.group(1), runner + " " + match.group(1), path.name)
+
+for makefile in ("Makefile", "makefile", "GNUmakefile"):
+    make_targets(root / makefile, "make")
+for just in ("justfile", "Justfile", ".justfile"):
+    make_targets(root / just, "just")
+
+pyproject = root / "pyproject.toml"
+if pyproject.is_file():
+    saw = True
+    section = None
+    entry = re.compile(r"^[\w.]+:[\w.]+$")
+    for raw in pyproject.read_text(encoding="utf-8", errors="replace").splitlines():
+        header = re.match(r"^\[([^]]+)\]\s*$", raw)
+        if header:
+            section = header.group(1)
+            continue
+        if section != "project.scripts":
+            continue
+        item = re.match(r'^(lint|test|build|coverage)\s*=\s*"(.*)"\s*$', raw)
+        if item and not entry.match(item.group(2)):
+            add(item.group(1), item.group(2), "pyproject.toml")
+
+workflows = root / ".github" / "workflows"
+if workflows.is_dir():
+    workflow_files = sorted(workflows.glob("*.yml")) + sorted(workflows.glob("*.yaml"))
+    if workflow_files:
+        saw = True
+    for path in workflow_files:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        rel = ".github/workflows/" + path.name
+        for index, raw in enumerate(lines):
+            step = re.match(r"\s*-\s*name:\s*['\"]?(lint|test|build|coverage)['\"]?\s*$", raw)
+            if not step:
+                continue
+            for nxt in lines[index + 1:index + 8]:
+                if re.match(r"\s*-\s*name:", nxt):
+                    break
+                run = re.match(r"\s*run:\s*['\"]?(.+?)['\"]?\s*$", nxt)
+                if run and not run.group(1).startswith("|"):
+                    add(step.group(1), run.group(1), rel)
+                    break
+
+for name in names:
+    if name in found:
+        cmd, src = found[name]
+        sys.stdout.write(name + "\t" + cmd + "\t" + src + "\n")
+if saw:
+    sys.stdout.write("manifest\tyes\tmanifest\n")
+PY
+    )
+}
+
+# load_existing_gate_commands <file>
+# Reads every Lint, Build, Test, and Coverage backtick command inside the
+# framework markers, including commands already marked UNVERIFIED.
+# A Coverage line with no backtick command is kept whole, so a percentage
+# plus project prose is not replaced by the bare template percentage.
+# Arguments:
+#   $1 - Existing AGENTS.md
+# Returns: 0. Fills OLD_LINT_CMDS, OLD_BUILD_CMDS, OLD_TEST_CMDS, OLD_COV_CMDS,
+#   and OLD_COV_PROSE.
+load_existing_gate_commands() {
+    local file="$1"
+    OLD_LINT_CMDS=()
+    OLD_BUILD_CMDS=()
+    OLD_TEST_CMDS=()
+    OLD_COV_CMDS=()
+    OLD_COV_PROSE=()
+    local label cmd
+    while IFS=$'\t' read -r label cmd; do
+        [[ -n "$label" && -n "$cmd" ]] || continue
+        case "$label" in
+            Lint) OLD_LINT_CMDS+=("$cmd") ;;
+            Build) OLD_BUILD_CMDS+=("$cmd") ;;
+            Test) OLD_TEST_CMDS+=("$cmd") ;;
+            Coverage) OLD_COV_CMDS+=("$cmd") ;;
+            CoverageProse) OLD_COV_PROSE+=("$cmd") ;;
+        esac
+    done < <(awk -v start="$MARKER_START" -v end="$MARKER_END" '
+        index($0, start) { inside = 1; next }
+        inside && index($0, end) { exit }
+        inside {
+            line = $0
+            if (index(line, "**Coverage**: `") == 0) {
+                pre = "**Coverage**: "
+                at = index(line, pre)
+                if (at > 0) print "CoverageProse\t" substr(line, at + length(pre))
+            }
+            nkeys = split("Lint Build Test Coverage", keys, " ")
+            for (n = 1; n <= nkeys; n++) {
+                pre = "**" keys[n] "**: `"
+                at = index(line, pre)
+                if (at == 0) continue
+                rest = substr(line, at + length(pre))
+                tick = index(rest, "`")
+                if (tick > 0) print keys[n] "\t" substr(rest, 1, tick - 1)
+            }
+        }
+    ' "$file")
+}
+
+# saved_gate_indexes <role>
+# Prints the indexes of one saved-command array, one per line.
+# Bash 3.2 has no namerefs, so the role selects the array by name.
+saved_gate_indexes() {
+    case "$1" in
+        LINT) [[ ${#OLD_LINT_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_LINT_CMDS[@]}" ;;
+        BUILD) [[ ${#OLD_BUILD_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_BUILD_CMDS[@]}" ;;
+        TEST) [[ ${#OLD_TEST_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_TEST_CMDS[@]}" ;;
+        COV) [[ ${#OLD_COV_CMDS[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_COV_CMDS[@]}" ;;
+        COVPROSE) [[ ${#OLD_COV_PROSE[@]} -eq 0 ]] && return 0; printf '%s\n' "${!OLD_COV_PROSE[@]}" ;;
+    esac
+}
+
+# saved_gate_at <role> <index>
+saved_gate_at() {
+    case "$1" in
+        LINT) printf '%s\n' "${OLD_LINT_CMDS[$2]}" ;;
+        BUILD) printf '%s\n' "${OLD_BUILD_CMDS[$2]}" ;;
+        TEST) printf '%s\n' "${OLD_TEST_CMDS[$2]}" ;;
+        COV) printf '%s\n' "${OLD_COV_CMDS[$2]}" ;;
+        COVPROSE) printf '%s\n' "${OLD_COV_PROSE[$2]}" ;;
+    esac
+}
+
+# drop_saved_gate <role> <index>
+drop_saved_gate() {
+    case "$1" in
+        LINT) unset "OLD_LINT_CMDS[$2]" ;;
+        BUILD) unset "OLD_BUILD_CMDS[$2]" ;;
+        TEST) unset "OLD_TEST_CMDS[$2]" ;;
+        COV) unset "OLD_COV_CMDS[$2]" ;;
+        COVPROSE) unset "OLD_COV_PROSE[$2]" ;;
+    esac
+}
+
+# fallback_for <role> <language>
+# role is LINT, BUILD, TEST, or COV.
+# Arguments:
+#   $1 - Role name
+#   $2 - Canonical language
+# Returns: The template value via stdout
+fallback_for() {
+    local role="$1" lang="$2" line
+    while IFS= read -r line; do
+        if [[ "$line" == "$role:"* ]]; then
+            echo "${line#"$role":}"
+            return 0
+        fi
+    done < <(get_lang_commands "$lang")
+}
+
+# command_owned <command> <role>
+# A command is owned when it is a selected language's template command, or
+# that same command already marked unverified.
+# Arguments:
+#   $1 - Command text
+#   $2 - Role name
+# Returns: 0 when some selected language owns the command
+command_owned() {
+    local cmd="$1" role="$2" lang fb
+    local IFS=','
+    for lang in $LANGUAGES; do
+        fb=$(fallback_for "$role" "$lang")
+        [[ -n "$fb" ]] || continue
+        if [[ "$cmd" == "$fb" || "$cmd" == "UNVERIFIED: confirm $fb" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# take_saved_gate <role> <fallback> <language>
+# Removes and prints one saved command for this language. An unverified
+# template command is returned unchanged, so a second upgrade does not
+# promote it. A command that matches no language stays on the first language.
+# Arguments:
+#   $1 - Role name
+#   $2 - This language's template command
+#   $3 - Canonical language
+# Returns: 0 when a command was printed, 1 when none fits
+take_saved_gate() {
+    local role="$1" fallback="$2" lang="$3"
+    local i cmd unverified
+    case "$role" in
+        LINT|BUILD|TEST|COV|COVPROSE) ;;
+        *) return 1 ;;
+    esac
+    unverified="UNVERIFIED: confirm ${fallback}"
+    while IFS= read -r i; do
+        [[ -n "$i" ]] || continue
+        cmd=$(saved_gate_at "$role" "$i")
+        if [[ -n "$fallback" && ( "$cmd" == "$fallback" || "$cmd" == "$unverified" ) ]]; then
+            printf '%s\n' "$cmd"
+            drop_saved_gate "$role" "$i"
+            return 0
+        fi
+    done < <(saved_gate_indexes "$role")
+    if [[ "$lang" == "${LANGUAGES%%,*}" ]]; then
+        while IFS= read -r i; do
+            [[ -n "$i" ]] || continue
+            cmd=$(saved_gate_at "$role" "$i")
+            if ! command_owned "$cmd" "$role"; then
+                printf '%s\n' "$cmd"
+                drop_saved_gate "$role" "$i"
+                return 0
+            fi
+        done < <(saved_gate_indexes "$role")
+    fi
+    return 1
+}
+
+# emit_one_gate <label> <detected> <source> <fallback> <role> <language>
+# Prints one gate line. On upgrade, a command already in the file is kept.
+# A language with no saved command and no detected command is left unset.
+# A fresh file still marks the template unverified.
+# Arguments: see the header
+# Returns: 0 when a line was printed, 1 when this gate was left unset
+emit_one_gate() {
+    local label="$1" detected="$2" src="$3" fallback="$4" role="$5" lang="$6"
+    local kept
+    if [[ -n "$detected" ]]; then
+        gate_line "$label" "$detected" "$src" "$fallback"
+        return 0
+    fi
+    if [[ "${PRESERVE_GATES:-}" == "1" ]]; then
+        if kept=$(take_saved_gate "$role" "$fallback" "$lang"); then
+            echo "${label}: \`${kept}\`"
+            return 0
+        fi
+        return 1
+    fi
+    if [[ -z "$fallback" || "${DET_MANIFEST:-}" == "1" ]]; then
+        return 1
+    fi
+    gate_line "$label" "" "" "$fallback"
+    return 0
+}
+
+# gate_line <label> <command> <source> <fallback>
+# Prints one gate. A detected command cites its file. Otherwise the template
+# command is marked unverified.
+# Arguments:
+#   $1 - Label, including any indent and number
+#   $2 - Detected command, or empty
+#   $3 - Source file for the detected command
+#   $4 - Template command
+# Returns: The line via stdout
+gate_line() {
+    local label="$1" cmd="$2" src="$3" fallback="$4"
+    if [[ -n "$cmd" ]]; then
+        echo "${label}: \`${cmd}\` (${src})"
+    else
+        echo "${label}: \`UNVERIFIED: confirm ${fallback}\`"
+    fi
+}
+
+# note_unset_gate <language>
+# Records a language whose upgrade produced no gate line.
+# Arguments:
+#   $1 - Language name
+# Returns: 0
+note_unset_gate() {
+    [[ -n "${GATE_NOTE_FILE:-}" ]] || return 0
+    echo "$1" >> "$GATE_NOTE_FILE"
+}
+
+# emit_lang_gates <language> [indent]
+# Prints the numbered lint/build/test/coverage gate list for one language.
+# Detected project commands replace the template. Coverage stays a percentage
+# unless the project has a coverage command.
+# Arguments:
+#   $1 - Canonical language name
+#   $2 - (optional) Prefix for each line, for nesting under a label
+# Returns: Gate list via stdout
+emit_lang_gates() {
+    local lang="$1"
+    local indent="${2:-}"
+    local line lint_cmd="" build_cmd="" test_cmd="" coverage="" kept=""
+    local printed=0
+    ensure_detected_gates
+    while IFS= read -r line; do
+        case "$line" in
+            LINT:*) lint_cmd="${line#LINT:}" ;;
+            BUILD:*) build_cmd="${line#BUILD:}" ;;
+            TEST:*) test_cmd="${line#TEST:}" ;;
+            COV:*) coverage="${line#COV:}" ;;
+        esac
+    done < <(get_lang_commands "$lang")
+    emit_one_gate "${indent}1. **Lint**" "$DET_LINT" "$DET_LINT_SRC" "$lint_cmd" LINT "$lang" && printed=1 || true
+    emit_one_gate "${indent}2. **Build**" "$DET_BUILD" "$DET_BUILD_SRC" "$build_cmd" BUILD "$lang" && printed=1 || true
+    emit_one_gate "${indent}3. **Test**" "$DET_TEST" "$DET_TEST_SRC" "$test_cmd" TEST "$lang" && printed=1 || true
+    if [[ -n "$DET_COV" ]]; then
+        gate_line "${indent}4. **Coverage**" "$DET_COV" "$DET_COV_SRC" ""
+        printed=1
+    elif [[ "${PRESERVE_GATES:-}" == "1" ]] && kept=$(take_saved_gate COV "" "$lang"); then
+        echo "${indent}4. **Coverage**: \`${kept}\`"
+        printed=1
+    elif [[ "${PRESERVE_GATES:-}" == "1" ]] && kept=$(take_saved_gate COVPROSE "" "$lang"); then
+        echo "${indent}4. **Coverage**: ${kept}"
+        printed=1
+    elif [[ "${DET_MANIFEST:-}" == "1" ]]; then
+        true
+    elif [[ "$coverage" != "N/A" && ( "${PRESERVE_GATES:-}" != "1" || "$printed" -eq 1 ) ]]; then
+        echo "${indent}4. **Coverage**: Minimum ${coverage}%"
+        printed=1
+    fi
+    return $(( printed == 0 ))
+}
+
+# file_sha256 <file>
+# Prints the sha256 hex digest of a file.
+# Arguments:
+#   $1 - Path to a file
+# Returns: Digest via stdout
+file_sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{ print $1 }'
+    else
+        shasum -a 256 "$1" | awk '{ print $1 }'
+    fi
+}
+
+# each_selected_module
+# Lists the modules progressive mode copies into the consumer repo.
+# Languages come from --language. The project type comes from --type.
+# The five workflow modules are the ones the trigger block names.
+# Reads from global: LANGUAGES, PROJECT_TYPE, TEMPLATES_DIR
+# Arguments: none
+# Returns: Lines of "<name> <template-path-relative-to-templates>" via stdout
+each_selected_module() {
+    local lang wf
+    local IFS=','
+    for lang in $LANGUAGES; do
+        if [[ -f "$TEMPLATES_DIR/languages/${lang}.md" ]]; then
+            echo "${lang} languages/${lang}.md"
+        fi
+    done
+    for wf in security testing build-hygiene deployment; do
+        echo "${wf} workflows/${wf}.md"
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} project-types/${PROJECT_TYPE}.md"
+    fi
+}
+
+# modules_record
+# One comment recording the sha256 of every selected module.
+# Arguments: none
+# Returns: The comment via stdout
+modules_record() {
+    local name rel hash line=""
+    while read -r name rel; do
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        line="${line:+$line }${name}=${hash}"
+    done < <(each_selected_module)
+    echo "<!-- golden-agents:modules ${line} -->"
+}
+
+# preview_modules
+# Prints what --upgrade or --dry-run would do to .golden-agents/modules.
+# Writes nothing.
+# Arguments: none
+# Returns: 0
+preview_modules() {
+    local name rel dest have hash
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        if [[ ! -f "$dest" ]]; then
+            echo "  would write .golden-agents/modules/${name}.md"
+        else
+            have=$(file_sha256 "$dest")
+            if [[ "$have" == "$hash" ]]; then
+                echo "  unchanged .golden-agents/modules/${name}.md"
+            else
+                echo "  would update .golden-agents/modules/${name}.md"
+                echo "    have     $have"
+                echo "    template $hash"
+            fi
+        fi
+    done < <(each_selected_module)
+}
+
+# write_selected_modules
+# Copies selected templates into OUTPUT_PATH/.golden-agents/modules/.
+# Arguments: none
+# Returns: 0
+write_selected_modules() {
+    local name rel dest
+    mkdir -p "$OUTPUT_PATH/.golden-agents/modules"
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        cp "$TEMPLATES_DIR/$rel" "$dest"
+        echo "  wrote .golden-agents/modules/${name}.md"
+    done < <(each_selected_module)
+}
+
+# apply_modules_comment <file>
+# Inserts or replaces the modules comment. A stamp line keeps it on the next
+# line. A file with no stamp gets it immediately before the framework marker.
+# Arguments:
+#   $1 - AGENTS.md path
+# Returns: 0
+apply_modules_comment() {
+    local file="$1"
+    local desired tmp
+    desired=$(modules_record)
+    tmp=$(mktemp)
+    MARK="$MARKER_START" DESIRED="$desired" awk '
+        index($0, "<!-- golden-agents:modules ") == 1 { next }
+        !inserted && index($0, "<!-- golden-agents:stamp ") == 1 {
+            print
+            print ENVIRON["DESIRED"]
+            inserted = 1
+            next
+        }
+        !inserted && index($0, ENVIRON["MARK"]) {
+            print ENVIRON["DESIRED"]
+            inserted = 1
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+# rule_glob <language>
+# Path glob for a language module. Empty for an unknown language.
+rule_glob() {
+    case "$1" in
+        go) echo '**/*.go' ;;
+        python) echo '**/*.py' ;;
+        javascript) echo '**/*.{js,ts,jsx,tsx}' ;;
+        shell) echo '**/*.sh' ;;
+        dart-flutter) echo '**/*.dart' ;;
+        *) echo '' ;;
+    esac
+}
+
+# rule_owned <file>
+# A rule file is ours when it is missing or carries the generated sentinel.
+# A hand-written file is left alone.
+rule_owned() {
+    local file="$1"
+    [[ ! -e "$file" ]] && return 0
+    grep -qxF "$GENERATED_SENTINEL" "$file"
+}
+
+# render_rule <dest> <frontmatter> <body>
+# Frontmatter may be empty. The sentinel is the last line.
+render_rule() {
+    local dest="$1" front="$2" body="$3"
+    mkdir -p "$(dirname "$dest")"
+    {
+        if [[ -n "$front" ]]; then
+            printf '%s\n' "$front"
+            echo
+        fi
+        cat "$body"
+        echo
+        echo "$GENERATED_SENTINEL"
+    } > "$dest"
+}
+
+# each_scoped_rule
+# Lines of "<name> <body-path> <mode> <glob>".
+# mode is "always" or "scoped". Invariants and security always load.
+# A language rule is scoped to that language's files.
+# A project type applies to the whole project.
+each_scoped_rule() {
+    local lang glob rel
+    echo "invariants $TEMPLATES_DIR/core/invariants.md always"
+    echo "security $TEMPLATES_DIR/workflows/security.md always"
+    local IFS=','
+    for lang in $LANGUAGES; do
+        rel="$TEMPLATES_DIR/languages/${lang}.md"
+        glob=$(rule_glob "$lang")
+        if [[ -f "$rel" && -n "$glob" ]]; then
+            echo "${lang} ${rel} scoped ${glob}"
+        fi
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} $TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md always"
+    fi
+}
+
+# rule_frontmatter <tool> <mode> <glob> <name>
+# tool is claude, cursor, or copilot.
+rule_frontmatter() {
+    local tool="$1" mode="$2" glob="$3" name="$4"
+    case "$tool" in
+        claude)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "paths:" "  - \"${glob}\"" "---"
+            fi
+            ;;
+        cursor)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "description: ${name} rules" "globs: \"${glob}\"" "alwaysApply: false" "---"
+            else
+                printf '%s\n' "---" "description: ${name} rules" "alwaysApply: true" "---"
+            fi
+            ;;
+        copilot)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "applyTo: \"${glob}\"" "---"
+            else
+                printf '%s\n' "---" "applyTo: \"**\"" "---"
+            fi
+            ;;
+    esac
+}
+
+# rule_dest <tool> <name>
+rule_dest() {
+    case "$1" in
+        claude) echo "$OUTPUT_PATH/.claude/rules/${2}.md" ;;
+        cursor) echo "$OUTPUT_PATH/.cursor/rules/${2}.mdc" ;;
+        copilot) echo "$OUTPUT_PATH/.github/instructions/${2}.instructions.md" ;;
+    esac
+}
+
+# sync_scoped_rules <preview|apply>
+# Writes Claude, Cursor, and Copilot rule files for the selected modules.
+# A file without the generated sentinel is left in place.
