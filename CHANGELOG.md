@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Stamp on upgrade when missing** - `--upgrade` inserts
+  `<!-- golden-agents:stamp version=VER updated=TODAY -->` immediately before
+  the framework start marker when the file has no stamp. An existing stamp
+  still keeps its date and version when the framework block is unchanged, and
+  bumps both when that block changes.
+- **Clearer redirect preview** - Kept redirects that already exist preview as
+  `would rewrite … to @AGENTS.md import (kept redirect; replaces old stub)`.
+  Missing kept redirects stay `would write … (@AGENTS.md import)`. Retired
+  generated stubs preview as `would remove … (matches old generated stub;
+  AGENT.md/CODEX.md/COPILOT.md are retired)` and apply as
+  `removed … (matched old generated stub; retired redirect)`.
 - **`--self-test`** - Verifies the golden-agents checkout before consumers
   upgrade: each `lib/golden-agents/part*.sh` is at least 1000 bytes, the head
   is not a truncated path stub, `bash -n` passes, and `--version` runs.

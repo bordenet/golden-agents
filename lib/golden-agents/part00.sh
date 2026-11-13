@@ -513,7 +513,11 @@ sync_redirects() {
             continue
         fi
         if [[ "$mode" == "preview" ]]; then
-            echo "  would write $rel (@AGENTS.md import)"
+            if [[ -f "$OUTPUT_PATH/$rel" ]]; then
+                echo "  would rewrite $rel to @AGENTS.md import (kept redirect; replaces old stub)"
+            else
+                echo "  would write $rel (@AGENTS.md import)"
+            fi
             continue
         fi
         if [[ "$mode" == "apply-backup" && -f "$OUTPUT_PATH/$rel" ]]; then
@@ -545,12 +549,12 @@ sync_redirects() {
             continue
         fi
         if [[ "$mode" == "preview" ]]; then
-            echo "  would remove generated $rel"
+            echo "  would remove $rel (matches old generated stub; AGENT.md/CODEX.md/COPILOT.md are retired)"
             continue
         fi
         backup_file "$OUTPUT_PATH/$rel"
         rm -f "$OUTPUT_PATH/$rel"
-        echo "  removed generated $rel"
+        echo "  removed $rel (matched old generated stub; retired redirect)"
     done
 }
 

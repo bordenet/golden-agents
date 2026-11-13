@@ -84,3 +84,14 @@ set_stamp_date() {
     ! grep -q 'updated=2020-01-15' "$TEST_DIR/AGENTS.md"
     ! grep -q 'FRAMEWORK_MUTATION' "$TEST_DIR/AGENTS.md"
 }
+
+@test "upgrade inserts a stamp when the file has none" {
+    local ver today
+    ver=$(framework_version)
+    today=$(date +%Y-%m-%d)
+    create_agents_with_markers "$TEST_DIR"
+    ! grep -q '<!-- golden-agents:stamp ' "$TEST_DIR/AGENTS.md"
+    run "$GENERATE_SCRIPT" --upgrade --apply --no-backup --path="$TEST_DIR"
+    [ "$status" -eq 0 ]
+    grep -F "<!-- golden-agents:stamp version=${ver} updated=${today} -->" "$TEST_DIR/AGENTS.md"
+}

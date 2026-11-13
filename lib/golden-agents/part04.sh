@@ -104,18 +104,31 @@ upgrade_agents_md() {
         tail -n +"$((end_line + 1))" "$existing_file"
     } > "$tmp_dir/upgraded"
 
-    # The stamp sits in the preserved header. Keep its date and version when
-    # the framework block is unchanged; otherwise bump both.
+    # The stamp sits in the preserved header.
+    # Existing stamp + unchanged framework → keep date/version.
+    # Existing stamp + changed framework → bump both.
+    # Missing stamp → insert immediately before the framework start marker.
     sed -n "/$start_re/,/$end_re/p" "$existing_file" > "$tmp_dir/old-fw"
     sed -n "/$start_re/,/$end_re/p" "$tmp_dir/upgraded" > "$tmp_dir/new-fw"
-    if ! cmp -s "$tmp_dir/old-fw" "$tmp_dir/new-fw"; then
-        local today
-        today=$(date +%Y-%m-%d)
+    local today
+    today=$(date +%Y-%m-%d)
+    if grep -q '^<!-- golden-agents:stamp ' "$tmp_dir/upgraded"; then
+        if ! cmp -s "$tmp_dir/old-fw" "$tmp_dir/new-fw"; then
+            VER="$FRAMEWORK_VERSION" TODAY="$today" MARK="$MARKER_START" awk '
+                index($0, ENVIRON["MARK"]) { seen = 1 }
+                !seen && index($0, "<!-- golden-agents:stamp ") == 1 {
+                    printf "<!-- golden-agents:stamp version=%s updated=%s -->\n", ENVIRON["VER"], ENVIRON["TODAY"]
+                    next
+                }
+                { print }
+            ' "$tmp_dir/upgraded" > "$tmp_dir/upgraded.stamp"
+            mv "$tmp_dir/upgraded.stamp" "$tmp_dir/upgraded"
+        fi
+    else
         VER="$FRAMEWORK_VERSION" TODAY="$today" MARK="$MARKER_START" awk '
-            index($0, ENVIRON["MARK"]) { seen = 1 }
-            !seen && index($0, "<!-- golden-agents:stamp ") == 1 {
+            !done && index($0, ENVIRON["MARK"]) {
                 printf "<!-- golden-agents:stamp version=%s updated=%s -->\n", ENVIRON["VER"], ENVIRON["TODAY"]
-                next
+                done = 1
             }
             { print }
         ' "$tmp_dir/upgraded" > "$tmp_dir/upgraded.stamp"
