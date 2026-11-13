@@ -1,1 +1,1 @@
-file:///workspace/lib/golden-agents/part03.sh
+WORKSPACE:/workspace/lib/golden-agents/part03.sh
