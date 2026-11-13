@@ -397,3 +397,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Project detection (auto-detect language from files)
 - [ ] Template inheritance system
 - [ ] VS Code extension integration
+
