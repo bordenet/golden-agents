@@ -89,8 +89,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   container browser. `gh api --method DELETE` must pass `--input /dev/null` or
   it opens `$EDITOR`. HTTP 422 on that call means the ref is already gone.
 
+### Changed
+
+- **Upgrade guide** - Documents hand-written lines moving out of markers,
+  verify steps for that case, section 7 on mirrors / Copilot /
+  context-management / review cost, and the no-manifest
+  `UNVERIFIED: confirm` gate note. README Copilot row notes the kept path
+  is `.github/copilot-instructions.md`, not `COPILOT.md`.
+
 ### Fixed
 
+- **Upgrade keeps hand-written lines inside the managed block** - Non-empty
+  lines between the framework markers that do not appear in the upgraded
+  file used to disappear silently. They are appended once just after
+  `<!-- GOLDEN:framework:end -->`. Preview prints
+  `preserving N hand-written line(s) from inside managed block → after end
+  marker:` and lists each line. Bootstrap and custom-gate relocates are
+  skipped when already present. A second upgrade does not duplicate them.
 - **Committed executable bits** - `generate-agents.sh` and
   `lib/golden-agents/part*.sh` are stored with mode `100755` so consumer
   fleet upgrades do not fail with exit 127 on a clean checkout.

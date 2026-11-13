@@ -106,12 +106,18 @@ Preview first. The preview must not change the file.
 
 Read the diff before applying.
 
-- Text after `<!-- GOLDEN:framework:end -->` must be unchanged, except for
-  one case: a bootstrap that was inside the framework markers is moved to
-  immediately after the end marker. It is not deleted. A bootstrap the
-  project already had below the marker must still be there, once, and must
-  not be duplicated. `--superpowers` adds the template block only when the
-  file does not already contain the bootstrap.
+- Text after `<!-- GOLDEN:framework:end -->` must be unchanged, except when
+  content moves out of the markers: a bootstrap that was inside the
+  framework is moved to immediately after the end marker; a numbered
+  quality-gate block whose labels are not Lint, Build, Test, or Coverage
+  moves the same way; any other non-empty interior line that does not
+  appear anywhere in the upgraded file is appended once after the end
+  marker. None of these are deleted. Preview prints
+  `preserving N hand-written line(s) from inside managed block → after end
+  marker:` and lists each line. A bootstrap the project already had below
+  the marker must still be there, once, and must not be duplicated.
+  `--superpowers` adds the template block only when the file does not
+  already contain the bootstrap.
 - If a command the project actually runs becomes `UNVERIFIED: confirm`, stop.
   Do not apply. A matching tail does not make that replacement safe. Show
   the diff to a human.
@@ -172,12 +178,15 @@ awk 'f { print } index($0, "<!-- GOLDEN:framework:end -->") { f = 1 }' AGENTS.md
 awk 'f { print } index($0, "<!-- GOLDEN:framework:end -->") { f = 1 }' AGENTS.md.*.bak > /tmp/before-project.txt
 ```
 
-If the only new tail text is a bootstrap that moved out of the framework,
-or a template block added because this run passed `--superpowers`, delete
-that added block from `/tmp/after-project.txt`. The moved block is the
-lines the old file had inside the framework markers, starting at
-`### Optional: Superpowers integration` or at the `superpowers-augment.js bootstrap`
-line. Then run:
+If the only new tail text is content that moved out of the framework
+(bootstrap, custom quality gates, or hand-written interior lines listed
+under `preserving N hand-written line(s)…`), or a template block added
+because this run passed `--superpowers`, delete that added block from
+`/tmp/after-project.txt`. The moved bootstrap is the lines the old file
+had inside the framework markers, starting at
+`### Optional: Superpowers integration` or at the
+`superpowers-augment.js bootstrap` line. Hand-written lines are the exact
+strings the preview listed. Then run:
 
 ```bash
 cmp /tmp/before-project.txt /tmp/after-project.txt
@@ -238,9 +247,17 @@ template command, or when it matches no selected language's template. A
 coverage line with no backtick command is kept whole, including any project
 sentence after the percentage. A numbered gate whose label is not Lint,
 Build, Test, or Coverage is project text: it is moved to just after the
-end marker and left there. A language with neither a detected command nor
-an existing command is omitted, and the preview lists it under
-`Gates left unset`.
+end marker and left there. Any other non-empty line that sat inside the
+markers and is absent from the upgraded file is appended the same way
+(see `preserving N hand-written line(s)…` in the preview). A language
+with neither a detected command nor an existing command is omitted, and
+the preview lists it under `Gates left unset`.
+
+When no project manifest is present (`package.json`, Makefile, justfile,
+`pyproject.toml`, or a workflow file), unmatched gates keep the template
+command prefixed with `UNVERIFIED: confirm` rather than being omitted.
+A manifest that defines no matching lint/build/test omits those gates
+instead of inventing them.
 
 The header is read from either `> **Languages**: python` or
 `> **Languages:** python`, and the same two forms of `Type`.
@@ -254,3 +271,19 @@ Do not run this generator against the golden-agents checkout in order to
 refresh this repo's own `AGENTS.md`. That file is the operator manual. It has
 framework markers and no `> **Languages**:` line. Forcing `--language=shell`
 replaces the manual's real shell gates with `UNVERIFIED` template commands.
+
+## 7. Mirrors, Copilot, context-management, and review cost
+
+Redirect mirrors (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`)
+are short `@AGENTS.md` imports. `COPILOT.md`, `CODEX.md`, and `AGENT.md` are
+retired: a generated stub is removed; a hand-written copy is left alone.
+GitHub Copilot's kept path is `.github/copilot-instructions.md`, not
+`COPILOT.md`.
+
+`context-management` is not a progressive trigger. Token and session
+guidance lives in modules when selected; do not expect a "conversation
+exceeds 50 exchanges" line inside the framework block.
+
+Expect a large framework diff. Review cost is in the project text after the
+end marker and in any `preserving N hand-written line(s)…` preview lines,
+not in every regenerated framework paragraph. Confirm those before merge.
