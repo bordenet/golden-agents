@@ -194,4 +194,69 @@ saved_gate_indexes() {
     esac
 }
 
-# saved_
+# saved_gate_at <role> <index>
+saved_gate_at() {
+    case "$1" in
+        LINT) printf '%s\n' "${OLD_LINT_CMDS[$2]}" ;;
+        BUILD) printf '%s\n' "${OLD_BUILD_CMDS[$2]}" ;;
+        TEST) printf '%s\n' "${OLD_TEST_CMDS[$2]}" ;;
+        COV) printf '%s\n' "${OLD_COV_CMDS[$2]}" ;;
+        COVPROSE) printf '%s\n' "${OLD_COV_PROSE[$2]}" ;;
+    esac
+}
+
+# drop_saved_gate <role> <index>
+drop_saved_gate() {
+    case "$1" in
+        LINT) unset "OLD_LINT_CMDS[$2]" ;;
+        BUILD) unset "OLD_BUILD_CMDS[$2]" ;;
+        TEST) unset "OLD_TEST_CMDS[$2]" ;;
+        COV) unset "OLD_COV_CMDS[$2]" ;;
+        COVPROSE) unset "OLD_COV_PROSE[$2]" ;;
+    esac
+}
+
+# fallback_for <role> <language>
+# role is LINT, BUILD, TEST, or COV.
+# Arguments:
+#   $1 - Role name
+#   $2 - Canonical language
+# Returns: The template value via stdout
+fallback_for() {
+    local role="$1" lang="$2" line
+    while IFS= read -r line; do
+        if [[ "$line" == "$role:"* ]]; then
+            echo "${line#"$role":}"
+            return 0
+        fi
+    done < <(get_lang_commands "$lang")
+}
+
+# command_owned <command> <role>
+# A command is owned when it is a selected language's template command, or
+# that same command already marked unverified.
+# Arguments:
+#   $1 - Command text
+#   $2 - Role name
+# Returns: 0 when some selected language owns the command
+command_owned() {
+    local cmd="$1" role="$2" lang fb
+    local IFS=','
+    for lang in $LANGUAGES; do
+        fb=$(fallback_for "$role" "$lang")
+        [[ -n "$fb" ]] || continue
+        if [[ "$cmd" == "$fb" || "$cmd" == "UNVERIFIED: confirm $fb" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# take_saved_gate <role> <fallback> <language>
+# Removes and prints one saved command for this language. An unverified
+# template command is returned unchanged, so a second upgrade does not
+# promote it. A command that matches no language stays on the first language.
+# Arguments:
+#   $1 - Role name
+#   $2 - This language's template command
+#   $3 - Canonical 
