@@ -126,7 +126,7 @@ OPTIONS
     --upgrade           Upgrade existing AGENTS.md (dry-run by default, shows diff)
     --apply             Apply upgrade changes (requires --upgrade, creates backup first)
     --no-backup         Skip .bak / AGENTS.md.backup writes (for batch runs that
-                        already backed up; requires --upgrade, --adopt, or --migrate)
+                        already backed up; requires --apply, --adopt, or --migrate)
     --self-test         Verify this checkout is complete (part sizes, not stubs,
                         bash -n, --version) then exit; also runs before --upgrade
     -h, --help          Show this help message
@@ -177,6 +177,8 @@ WRITE SAFETY
 UPGRADE SAFETY
     - Without --apply: shows diff of what would change (safe)
     - With --apply: creates .backup, then applies changes
+    - --no-backup: skips .backup and timestamped .bak (batch upgrades only)
+    - --self-test: verifies this checkout before any consumer write
     - Files WITHOUT markers: REFUSES to upgrade (suggests migration)
     - Project-specific sections (outside markers) are ALWAYS preserved
 
@@ -605,6 +607,13 @@ run_self_test() {
             continue
         fi
         head1=$(head -n 1 "$part")
+        case "$head1" in
+            @*|PLACEHOLDER*|LOAD_FROM:*)
+                echo "[FAIL] $part looks like a stub (head: $head1)" >&2
+                fail=1
+                continue
+                ;;
+        esac
         # Truncated uploads were path stubs or LOAD_* tokens, not shell.
         if [[ "$head1" != \#!* && "$head1" != \#* && "$head1" != [a-zA-Z_]*'()'* ]]; then
             echo "[FAIL] $part head is not a shell script: $head1" >&2
@@ -631,6 +640,10 @@ run_self_test() {
         echo "[OK] bash -n $entry"
     fi
 
+    if [[ ! -x "$entry" ]]; then
+        echo "[WARN] $entry is not executable" >&2
+    fi
+
     # --version sources every part; skip it when a part already failed.
     if [[ "$fail" -eq 0 ]]; then
         local ver
@@ -646,7 +659,7 @@ run_self_test() {
         echo "[FAIL] Self-test failed. Fix the checkout before --upgrade --apply." >&2
         exit 1
     fi
-    echo "[OK] Self-test passed"
+    echo "[OK] Self-test PASS"
     return 0
 }
 

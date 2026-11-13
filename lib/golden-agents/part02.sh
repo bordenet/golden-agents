@@ -348,7 +348,7 @@ note_unset_gate() {
     [[ -n "${GATE_NOTE_FILE:-}" ]] || return 0
     local lang="$1"
     if [[ "${DET_MANIFEST:-}" == "1" ]]; then
-        echo "$lang: still selected; template gates omitted (manifests define no matching lint/build/test)" >> "$GATE_NOTE_FILE"
+        echo "$lang (no saved/detected command; template skipped — manifest present)" >> "$GATE_NOTE_FILE"
     else
         echo "$lang: still selected; no detected or preserved gate commands" >> "$GATE_NOTE_FILE"
     fi

@@ -208,9 +208,9 @@ if [[ "$APPLY" == "true" && "$UPGRADE" != "true" ]]; then
     exit 1
 fi
 
-# Validate --no-backup requires a mode that would write backups
-if [[ "$NO_BACKUP" == "true" && "$UPGRADE" != "true" && "$ADOPT" != "true" && "$MIGRATE" != "true" ]]; then
-    echo "Error: --no-backup requires --upgrade, --adopt, or --migrate" >&2
+# Validate --no-backup requires a write mode that would create backups
+if [[ "$NO_BACKUP" == "true" && "$APPLY" != "true" && "$ADOPT" != "true" && "$MIGRATE" != "true" ]]; then
+    echo "Error: --no-backup requires --apply, --migrate, or --adopt" >&2
     exit 1
 fi
 

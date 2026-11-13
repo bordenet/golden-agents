@@ -34,8 +34,8 @@ or with exit 127 from a missing `+x` bit.
 you only want the health check.
 
 When section 2 timestamped backups already exist and you are applying many
-upgrades, pass `--no-backup` so `--upgrade --apply` skips `AGENTS.md.backup`
-and other script-written `.bak` copies:
+upgrades, pass `--no-backup` with `--apply`, `--migrate`, or `--adopt` so the
+script skips `AGENTS.md.backup` and other script-written `.bak` copies:
 
 ```bash
 /path/to/golden-agents/generate-agents.sh --upgrade --apply --no-backup --path=/path/to/consumer

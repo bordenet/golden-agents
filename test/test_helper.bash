@@ -36,7 +36,8 @@ implementation_files() {
     if compgen -G "$SCRIPT_DIR/lib/golden-agents/part*.sh" > /dev/null; then
         printf '%s\n' "$SCRIPT_DIR"/lib/golden-agents/part*.sh
     else
-        printf '%s\n' "$GENERATE_SCRIPT"
+        # Fallback is the real entry, not the bash launcher.
+        printf '%s\n' "$SCRIPT_DIR/generate-agents.sh"
     fi
 }
 # shellcheck disable=SC2034
