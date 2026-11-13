@@ -1,1 +1,1 @@
-$FROM_JSON_FILE:/tmp/ga-push-core.json:0
+PLACEHOLDER
