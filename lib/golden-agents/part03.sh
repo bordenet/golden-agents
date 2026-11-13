@@ -1,1 +1,1 @@
-#TEST_MARKER_DELETE_ME
+@include /tmp/part03.sh
