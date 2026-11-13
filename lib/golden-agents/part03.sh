@@ -1,1 +1,1 @@
-PLACEHOLDER
+file:///tmp/part03.sh
