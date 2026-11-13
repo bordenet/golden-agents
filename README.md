@@ -137,7 +137,7 @@ Update templates: `~/.golden-agents/generate-agents.sh --sync`
 | OpenAI Codex CLI | Reads `AGENTS.md` directly |
 | Amp | Reads `AGENTS.md` directly |
 | Gemini | `GEMINI.md` is `@AGENTS.md` |
-| GitHub Copilot | `.github/copilot-instructions.md` is `@../AGENTS.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` is `@../AGENTS.md` (not `COPILOT.md`) |
 
 ---
 
