@@ -79,4 +79,96 @@ def make_targets(path, runner):
     for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
         match = re.match(r"^(lint|test|build|coverage):([^:]|$)", raw)
         if match:
-            add(match.group(1), runner + " " + match.group(1), 
+            add(match.group(1), runner + " " + match.group(1), path.name)
+
+for makefile in ("Makefile", "makefile", "GNUmakefile"):
+    make_targets(root / makefile, "make")
+for just in ("justfile", "Justfile", ".justfile"):
+    make_targets(root / just, "just")
+
+pyproject = root / "pyproject.toml"
+if pyproject.is_file():
+    saw = True
+    section = None
+    entry = re.compile(r"^[\w.]+:[\w.]+$")
+    for raw in pyproject.read_text(encoding="utf-8", errors="replace").splitlines():
+        header = re.match(r"^\[([^]]+)\]\s*$", raw)
+        if header:
+            section = header.group(1)
+            continue
+        if section != "project.scripts":
+            continue
+        item = re.match(r'^(lint|test|build|coverage)\s*=\s*"(.*)"\s*$', raw)
+        if item and not entry.match(item.group(2)):
+            add(item.group(1), item.group(2), "pyproject.toml")
+
+workflows = root / ".github" / "workflows"
+if workflows.is_dir():
+    workflow_files = sorted(workflows.glob("*.yml")) + sorted(workflows.glob("*.yaml"))
+    if workflow_files:
+        saw = True
+    for path in workflow_files:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        rel = ".github/workflows/" + path.name
+        for index, raw in enumerate(lines):
+            step = re.match(r"\s*-\s*name:\s*['\"]?(lint|test|build|coverage)['\"]?\s*$", raw)
+            if not step:
+                continue
+            for nxt in lines[index + 1:index + 8]:
+                if re.match(r"\s*-\s*name:", nxt):
+                    break
+                run = re.match(r"\s*run:\s*['\"]?(.+?)['\"]?\s*$", nxt)
+                if run and not run.group(1).startswith("|"):
+                    add(step.group(1), run.group(1), rel)
+                    break
+
+for name in names:
+    if name in found:
+        cmd, src = found[name]
+        sys.stdout.write(name + "\t" + cmd + "\t" + src + "\n")
+if saw:
+    sys.stdout.write("manifest\tyes\tmanifest\n")
+PY
+    )
+}
+
+# load_existing_gate_commands <file>
+# Reads every Lint, Build, Test, and Coverage backtick command inside the
+# framework markers, including commands already marked UNVERIFIED.
+# A Coverage line with no backtick command is kept whole, so a percentage
+# plus project prose is not replaced by the bare template percentage.
+# Arguments:
+#   $1 - Existing AGENTS.md
+# Returns: 0. Fills OLD_LINT_CMDS, OLD_BUILD_CMDS, OLD_TEST_CMDS, OLD_COV_CMDS,
+#   and OLD_COV_PROSE.
+load_existing_gate_commands() {
+    local file="$1"
+    OLD_LINT_CMDS=()
+    OLD_BUILD_CMDS=()
+    OLD_TEST_CMDS=()
+    OLD_COV_CMDS=()
+    OLD_COV_PROSE=()
+    local label cmd
+    while IFS=$'\t' read -r label cmd; do
+        [[ -n "$label" && -n "$cmd" ]] || continue
+        case "$label" in
+            Lint) OLD_LINT_CMDS+=("$cmd") ;;
+            Build) OLD_BUILD_CMDS+=("$cmd") ;;
+            Test) OLD_TEST_CMDS+=("$cmd") ;;
+            Coverage) OLD_COV_CMDS+=("$cmd") ;;
+            CoverageProse) OLD_COV_PROSE+=("$cmd") ;;
+        esac
+    done < <(awk -v start="$MARKER_START" -v end="$MARKER_END" '
+        index($0, start) { inside = 1; next }
+        inside && index($0, end) { exit }
+        inside {
+            line = $0
+            if (index(line, "**Coverage**: `") == 0) {
+                pre = "**Coverage**: "
+                at = index(line, pre)
+                if (at > 0) print "CoverageProse\t" substr(line, at + length(pre))
+            }
+            nkeys = split("Lint Build Test Coverage", keys, " ")
+            for (n = 1; n <= nkeys; n++) {
+                pre = "**" keys[n] "**: `"
+         
