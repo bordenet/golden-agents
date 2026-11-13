@@ -339,12 +339,19 @@ gate_line() {
 
 # note_unset_gate <language>
 # Records a language whose upgrade produced no gate line.
+# Explains when project manifests caused template commands to be skipped so the
+# preview does not read as "that language is absent from the repo".
 # Arguments:
 #   $1 - Language name
 # Returns: 0
 note_unset_gate() {
     [[ -n "${GATE_NOTE_FILE:-}" ]] || return 0
-    echo "$1" >> "$GATE_NOTE_FILE"
+    local lang="$1"
+    if [[ "${DET_MANIFEST:-}" == "1" ]]; then
+        echo "$lang (no saved/detected command; template skipped — manifest present)" >> "$GATE_NOTE_FILE"
+    else
+        echo "$lang: still selected; no detected or preserved gate commands" >> "$GATE_NOTE_FILE"
+    fi
 }
 
 # emit_lang_gates <language> [indent]

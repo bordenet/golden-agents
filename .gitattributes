@@ -6,9 +6,9 @@
 *.bash text eol=lf
 *.bats text eol=lf
 
-# PowerShell - CRLF on Windows, but normalize in repo
-*.ps1 text eol=crlf
-*.psm1 text eol=crlf
+# PowerShell - LF in repo (CRLF on Windows via core.autocrlf / editor)
+*.ps1 text eol=lf
+*.psm1 text eol=lf
 
 # Markdown - always LF for consistency
 *.md text eol=lf

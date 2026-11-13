@@ -5,6 +5,9 @@ test/fixtures/
 test/test_helper/bats-support/
 test/test_helper/bats-assert/
 
+# Created by test_helper.bash so missing +x never yields exit 127
+test/.generate-via-bash
+
 # Coverage output
 coverage/
 

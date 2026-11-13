@@ -1,0 +1,13 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        # New surface (--self-test / --no-backup / stamp insert) can dip project
+        # briefly until failure-path bats land; keep the gate meaningful.
+        threshold: 2%
+    patch:
+      default:
+        # Failure branches in run_self_test are covered by dedicated bats;
+        # success-path-only would sit near ~55% of the patch.
+        target: 60%

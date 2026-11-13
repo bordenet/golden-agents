@@ -104,18 +104,31 @@ upgrade_agents_md() {
         tail -n +"$((end_line + 1))" "$existing_file"
     } > "$tmp_dir/upgraded"
 
-    # The stamp sits in the preserved header. Keep its date and version when
-    # the framework block is unchanged; otherwise bump both.
+    # The stamp sits in the preserved header.
+    # Existing stamp + unchanged framework → keep date/version.
+    # Existing stamp + changed framework → bump both.
+    # Missing stamp → insert immediately before the framework start marker.
     sed -n "/$start_re/,/$end_re/p" "$existing_file" > "$tmp_dir/old-fw"
     sed -n "/$start_re/,/$end_re/p" "$tmp_dir/upgraded" > "$tmp_dir/new-fw"
-    if ! cmp -s "$tmp_dir/old-fw" "$tmp_dir/new-fw"; then
-        local today
-        today=$(date +%Y-%m-%d)
+    local today
+    today=$(date +%Y-%m-%d)
+    if grep -q '^<!-- golden-agents:stamp ' "$tmp_dir/upgraded"; then
+        if ! cmp -s "$tmp_dir/old-fw" "$tmp_dir/new-fw"; then
+            VER="$FRAMEWORK_VERSION" TODAY="$today" MARK="$MARKER_START" awk '
+                index($0, ENVIRON["MARK"]) { seen = 1 }
+                !seen && index($0, "<!-- golden-agents:stamp ") == 1 {
+                    printf "<!-- golden-agents:stamp version=%s updated=%s -->\n", ENVIRON["VER"], ENVIRON["TODAY"]
+                    next
+                }
+                { print }
+            ' "$tmp_dir/upgraded" > "$tmp_dir/upgraded.stamp"
+            mv "$tmp_dir/upgraded.stamp" "$tmp_dir/upgraded"
+        fi
+    else
         VER="$FRAMEWORK_VERSION" TODAY="$today" MARK="$MARKER_START" awk '
-            index($0, ENVIRON["MARK"]) { seen = 1 }
-            !seen && index($0, "<!-- golden-agents:stamp ") == 1 {
+            !done && index($0, ENVIRON["MARK"]) {
                 printf "<!-- golden-agents:stamp version=%s updated=%s -->\n", ENVIRON["VER"], ENVIRON["TODAY"]
-                next
+                done = 1
             }
             { print }
         ' "$tmp_dir/upgraded" > "$tmp_dir/upgraded.stamp"
@@ -149,6 +162,10 @@ upgrade_agents_md() {
         if [[ -s "$GATE_NOTE_FILE" ]]; then
             echo ""
             echo "--- Gates left unset ---"
+            echo "  Languages below remain in the header. A line here means that"
+            echo "  language had no gate row to print (often because a project"
+            echo "  manifest was present and defined no matching lint/build/test,"
+            echo "  so template commands were not invented)."
             sed 's/^/  /' "$GATE_NOTE_FILE"
         fi
         echo ""
@@ -166,10 +183,15 @@ upgrade_agents_md() {
         echo "[INFO] This is a preview. No changes made."
         echo "  To apply: generate-agents.sh --upgrade --apply --path=$OUTPUT_PATH"
     else
-        # Create backup
-        local backup_file="${existing_file}.backup"
-        cp "$existing_file" "$backup_file"
-        echo "[OK] Backup created: $backup_file"
+        # Create backup unless --no-backup (batch runs that already backed up)
+        local backup_file=""
+        if [[ "${NO_BACKUP:-false}" == "true" ]]; then
+            echo "[OK] Skipped AGENTS.md.backup (--no-backup)"
+        else
+            backup_file="${existing_file}.backup"
+            cp "$existing_file" "$backup_file"
+            echo "[OK] Backup created: $backup_file"
+        fi
 
         # Write upgraded content
         cat "$tmp_dir/upgraded" > "$existing_file"
@@ -179,7 +201,9 @@ upgrade_agents_md() {
         report_size "$existing_file" "  "
         echo ""
         echo "  Project-specific content preserved."
-        echo "  Backup: $backup_file"
+        if [[ -n "$backup_file" ]]; then
+            echo "  Backup: $backup_file"
+        fi
 
         # The self-manage block tells agents to load this file
         ensure_invariants "$OUTPUT_PATH"
@@ -239,6 +263,10 @@ ensure_invariants() {
         echo "[OK] Created: $dir/.ai-guidance/invariants.md"
     fi
 }
+
+# run_self_test is defined in part00.sh and runs from generate-agents.sh
+# before other parts are sourced (so truncated stubs never get `source`d).
+# --upgrade is preflighted there; do not call it again here.
 
 # Select generator (progressive is default)
 if [[ "$FULL" == "true" ]]; then
