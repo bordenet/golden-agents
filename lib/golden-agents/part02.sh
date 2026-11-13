@@ -259,4 +259,61 @@ command_owned() {
 # Arguments:
 #   $1 - Role name
 #   $2 - This language's template command
-#   $3 - Canonical 
+#   $3 - Canonical language
+# Returns: 0 when a command was printed, 1 when none fits
+take_saved_gate() {
+    local role="$1" fallback="$2" lang="$3"
+    local i cmd unverified
+    case "$role" in
+        LINT|BUILD|TEST|COV|COVPROSE) ;;
+        *) return 1 ;;
+    esac
+    unverified="UNVERIFIED: confirm ${fallback}"
+    while IFS= read -r i; do
+        [[ -n "$i" ]] || continue
+        cmd=$(saved_gate_at "$role" "$i")
+        if [[ -n "$fallback" && ( "$cmd" == "$fallback" || "$cmd" == "$unverified" ) ]]; then
+            printf '%s\n' "$cmd"
+            drop_saved_gate "$role" "$i"
+            return 0
+        fi
+    done < <(saved_gate_indexes "$role")
+    if [[ "$lang" == "${LANGUAGES%%,*}" ]]; then
+        while IFS= read -r i; do
+            [[ -n "$i" ]] || continue
+            cmd=$(saved_gate_at "$role" "$i")
+            if ! command_owned "$cmd" "$role"; then
+                printf '%s\n' "$cmd"
+                drop_saved_gate "$role" "$i"
+                return 0
+            fi
+        done < <(saved_gate_indexes "$role")
+    fi
+    return 1
+}
+
+# emit_one_gate <label> <detected> <source> <fallback> <role> <language>
+# Prints one gate line. On upgrade, a command already in the file is kept.
+# A language with no saved command and no detected command is left unset.
+# A fresh file still marks the template unverified.
+# Arguments: see the header
+# Returns: 0 when a line was printed, 1 when this gate was left unset
+emit_one_gate() {
+    local label="$1" detected="$2" src="$3" fallback="$4" role="$5" lang="$6"
+    local kept
+    if [[ -n "$detected" ]]; then
+        gate_line "$label" "$detected" "$src" "$fallback"
+        return 0
+    fi
+    if [[ "${PRESERVE_GATES:-}" == "1" ]]; then
+        if kept=$(take_saved_gate "$role" "$fallback" "$lang"); then
+            echo "${label}: \`${kept}\`"
+            return 0
+        fi
+        return 1
+    fi
+    if [[ -z "$fallback" || "${DET_MANIFEST:-}" == "1" ]]; then
+        return 1
+    fi
+    gate_line "$label" "" "" "$fallback"
+    
