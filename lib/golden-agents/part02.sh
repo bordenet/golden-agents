@@ -316,4 +316,59 @@ emit_one_gate() {
         return 1
     fi
     gate_line "$label" "" "" "$fallback"
-    
+    return 0
+}
+
+# gate_line <label> <command> <source> <fallback>
+# Prints one gate. A detected command cites its file. Otherwise the template
+# command is marked unverified.
+# Arguments:
+#   $1 - Label, including any indent and number
+#   $2 - Detected command, or empty
+#   $3 - Source file for the detected command
+#   $4 - Template command
+# Returns: The line via stdout
+gate_line() {
+    local label="$1" cmd="$2" src="$3" fallback="$4"
+    if [[ -n "$cmd" ]]; then
+        echo "${label}: \`${cmd}\` (${src})"
+    else
+        echo "${label}: \`UNVERIFIED: confirm ${fallback}\`"
+    fi
+}
+
+# note_unset_gate <language>
+# Records a language whose upgrade produced no gate line.
+# Arguments:
+#   $1 - Language name
+# Returns: 0
+note_unset_gate() {
+    [[ -n "${GATE_NOTE_FILE:-}" ]] || return 0
+    echo "$1" >> "$GATE_NOTE_FILE"
+}
+
+# emit_lang_gates <language> [indent]
+# Prints the numbered lint/build/test/coverage gate list for one language.
+# Detected project commands replace the template. Coverage stays a percentage
+# unless the project has a coverage command.
+# Arguments:
+#   $1 - Canonical language name
+#   $2 - (optional) Prefix for each line, for nesting under a label
+# Returns: Gate list via stdout
+emit_lang_gates() {
+    local lang="$1"
+    local indent="${2:-}"
+    local line lint_cmd="" build_cmd="" test_cmd="" coverage="" kept=""
+    local printed=0
+    ensure_detected_gates
+    while IFS= read -r line; do
+        case "$line" in
+            LINT:*) lint_cmd="${line#LINT:}" ;;
+            BUILD:*) build_cmd="${line#BUILD:}" ;;
+            TEST:*) test_cmd="${line#TEST:}" ;;
+            COV:*) coverage="${line#COV:}" ;;
+        esac
+    done < <(get_lang_commands "$lang")
+    emit_one_gate "${indent}1. **Lint**" "$DET_LINT" "$DET_LINT_SRC" "$lint_cmd" LINT "$lang" && printed=1 || true
+    emit_one_gate "${indent}2. **Build**" "$DET_BUILD" "$DET_BUILD_SRC" "$build_cmd" BUILD "$lang" && printed=1 || true
+    emit_one_gate "${indent}3. **Test**" "$DET_TEST" "$DET_TEST_
