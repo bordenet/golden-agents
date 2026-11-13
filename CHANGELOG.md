@@ -106,6 +106,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `preserving N hand-written line(s) from inside managed block → after end
   marker:` and lists each line. Bootstrap and custom-gate relocates are
   skipped when already present. A second upgrade does not duplicate them.
+  Numbered Lint/Build/Test/Coverage gates are no longer relocated; upgrade
+  replaces them. `stamp.bats` and `size-limits.bats` assert the managed
+  block under that policy.
 - **Committed executable bits** - `generate-agents.sh` and
   `lib/golden-agents/part*.sh` are stored with mode `100755` so consumer
   fleet upgrades do not fail with exit 127 on a clean checkout.
