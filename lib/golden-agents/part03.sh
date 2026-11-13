@@ -1,1 +1,1 @@
-__READ_WORKSPACE__/workspace/lib/golden-agents/part03.sh
+PLACEHOLDER_USE_PYTHON_NEXT
