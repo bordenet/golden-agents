@@ -1,1 +1,1 @@
-WORKSPACE:/workspace/lib/golden-agents/part03.sh
+LOAD_FROM_FIX_PART03
