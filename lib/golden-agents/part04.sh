@@ -145,6 +145,8 @@ upgrade_agents_md() {
 
     relocate_framework_bootstrap "$existing_file" "$tmp_dir/upgraded"
     relocate_custom_quality_gates "$existing_file" "$tmp_dir/upgraded"
+    # Catch-all: any other hand-written line inside the managed markers
+    # (override pointers, language notes, etc.) must not be silently deleted.
     preserve_custom_framework_lines "$existing_file" "$tmp_dir/upgraded"
 
     if [[ "$SUPERPOWERS" == "true" ]]; then
