@@ -1,1 +1,1 @@
-LOAD_FROM:/tmp/FINAL_P02.sh
+$file:/tmp/FINAL_P02.sh
