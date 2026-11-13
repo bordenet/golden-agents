@@ -487,4 +487,73 @@ write_selected_modules() {
 apply_modules_comment() {
     local file="$1"
     local desired tmp
-    desired=$(modules_rec
+    desired=$(modules_record)
+    tmp=$(mktemp)
+    MARK="$MARKER_START" DESIRED="$desired" awk '
+        index($0, "<!-- golden-agents:modules ") == 1 { next }
+        !inserted && index($0, "<!-- golden-agents:stamp ") == 1 {
+            print
+            print ENVIRON["DESIRED"]
+            inserted = 1
+            next
+        }
+        !inserted && index($0, ENVIRON["MARK"]) {
+            print ENVIRON["DESIRED"]
+            inserted = 1
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+# rule_glob <language>
+# Path glob for a language module. Empty for an unknown language.
+rule_glob() {
+    case "$1" in
+        go) echo '**/*.go' ;;
+        python) echo '**/*.py' ;;
+        javascript) echo '**/*.{js,ts,jsx,tsx}' ;;
+        shell) echo '**/*.sh' ;;
+        dart-flutter) echo '**/*.dart' ;;
+        *) echo '' ;;
+    esac
+}
+
+# rule_owned <file>
+# A rule file is ours when it is missing or carries the generated sentinel.
+# A hand-written file is left alone.
+rule_owned() {
+    local file="$1"
+    [[ ! -e "$file" ]] && return 0
+    grep -qxF "$GENERATED_SENTINEL" "$file"
+}
+
+# render_rule <dest> <frontmatter> <body>
+# Frontmatter may be empty. The sentinel is the last line.
+render_rule() {
+    local dest="$1" front="$2" body="$3"
+    mkdir -p "$(dirname "$dest")"
+    {
+        if [[ -n "$front" ]]; then
+            printf '%s\n' "$front"
+            echo
+        fi
+        cat "$body"
+        echo
+        echo "$GENERATED_SENTINEL"
+    } > "$dest"
+}
+
+# each_scoped_rule
+# Lines of "<name> <body-path> <mode> <glob>".
+# mode is "always" or "scoped". Invariants and security always load.
+# A language rule is scoped to that language's files.
+# A project type applies to the whole project.
+each_scoped_rule() {
+    local lang glob rel
+    echo "invariants $TEMPLATES_DIR/core/invariants.md always"
+    echo "security $TEMPLATES_DIR/workflows/security.md always"
+    local IFS=','
+    for lang in $LANGUAGES; do
+        rel="$TEMPLATES_DIR/languages/${lang}.md"
+        glob=$(rul
