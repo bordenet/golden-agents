@@ -427,4 +427,64 @@ each_selected_module() {
 }
 
 # modules_record
-# One comm
+# One comment recording the sha256 of every selected module.
+# Arguments: none
+# Returns: The comment via stdout
+modules_record() {
+    local name rel hash line=""
+    while read -r name rel; do
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        line="${line:+$line }${name}=${hash}"
+    done < <(each_selected_module)
+    echo "<!-- golden-agents:modules ${line} -->"
+}
+
+# preview_modules
+# Prints what --upgrade or --dry-run would do to .golden-agents/modules.
+# Writes nothing.
+# Arguments: none
+# Returns: 0
+preview_modules() {
+    local name rel dest have hash
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        hash=$(file_sha256 "$TEMPLATES_DIR/$rel")
+        if [[ ! -f "$dest" ]]; then
+            echo "  would write .golden-agents/modules/${name}.md"
+        else
+            have=$(file_sha256 "$dest")
+            if [[ "$have" == "$hash" ]]; then
+                echo "  unchanged .golden-agents/modules/${name}.md"
+            else
+                echo "  would update .golden-agents/modules/${name}.md"
+                echo "    have     $have"
+                echo "    template $hash"
+            fi
+        fi
+    done < <(each_selected_module)
+}
+
+# write_selected_modules
+# Copies selected templates into OUTPUT_PATH/.golden-agents/modules/.
+# Arguments: none
+# Returns: 0
+write_selected_modules() {
+    local name rel dest
+    mkdir -p "$OUTPUT_PATH/.golden-agents/modules"
+    while read -r name rel; do
+        dest="$OUTPUT_PATH/.golden-agents/modules/${name}.md"
+        cp "$TEMPLATES_DIR/$rel" "$dest"
+        echo "  wrote .golden-agents/modules/${name}.md"
+    done < <(each_selected_module)
+}
+
+# apply_modules_comment <file>
+# Inserts or replaces the modules comment. A stamp line keeps it on the next
+# line. A file with no stamp gets it immediately before the framework marker.
+# Arguments:
+#   $1 - AGENTS.md path
+# Returns: 0
+apply_modules_comment() {
+    local file="$1"
+    local desired tmp
+    desired=$(modules_rec
