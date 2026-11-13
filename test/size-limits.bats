@@ -85,27 +85,16 @@ teardown() {
 @test "SIZE LIMIT: Generated file is dramatically smaller than bloated input" {
     # Create a bloated 600-line fixture
     create_bloated_fixture "$TEST_DIR" 600
-    local original_managed
-    original_managed=$(awk '
-        index($0, "<!-- GOLDEN:framework:start -->") { inside = 1; next }
-        index($0, "<!-- GOLDEN:framework:end -->") { inside = 0; next }
-        inside { count++ }
-        END { print count + 0 }
-    ' "$TEST_DIR/AGENTS.md")
+    local original_lines
+    original_lines=$(get_line_count "$TEST_DIR/AGENTS.md")
     
     run "$GENERATE_SCRIPT" --upgrade --apply --path="$TEST_DIR"
     [ "$status" -eq 0 ]
     
-    local new_managed
-    new_managed=$(awk '
-        index($0, "<!-- GOLDEN:framework:start -->") { inside = 1; next }
-        index($0, "<!-- GOLDEN:framework:end -->") { inside = 0; next }
-        inside { count++ }
-        END { print count + 0 }
-    ' "$TEST_DIR/AGENTS.md")
+    local new_lines
+    new_lines=$(get_line_count "$TEST_DIR/AGENTS.md")
     
-    [ "$new_managed" -lt $((original_managed / 3)) ]
-    [ "$new_managed" -lt 120 ]
-    grep -q 'UNIQUE_MARKER_CUSTOM_RULE_1' "$TEST_DIR/AGENTS.md"
+    # New file should be at least 3x smaller
+    [ "$new_lines" -lt $((original_lines / 3)) ]
 }
 

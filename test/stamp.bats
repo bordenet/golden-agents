@@ -82,12 +82,7 @@ set_stamp_date() {
     [ "$status" -eq 0 ]
     grep -F "<!-- golden-agents:stamp version=${ver} updated=${today} -->" "$TEST_DIR/AGENTS.md"
     ! grep -q 'updated=2020-01-15' "$TEST_DIR/AGENTS.md"
-    awk '
-        index($0, "<!-- GOLDEN:framework:start -->") { inside = 1 }
-        index($0, "<!-- GOLDEN:framework:end -->") { inside = 0 }
-        inside && index($0, "FRAMEWORK_MUTATION") { exit 1 }
-        END { exit 0 }
-    ' "$TEST_DIR/AGENTS.md"
+    ! grep -q 'FRAMEWORK_MUTATION' "$TEST_DIR/AGENTS.md"
 }
 
 @test "upgrade inserts a stamp when the file has none" {
