@@ -9,5 +9,3 @@ get_lang_commands() {
         *) echo "LINT:# lint"; echo "BUILD:# build"; echo "TEST:# test"; echo "COV:70" ;;
     esac
 }
-
-# PLACEHOLDER_PARTIAL_WILL_CONTINUE
