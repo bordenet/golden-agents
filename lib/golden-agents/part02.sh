@@ -556,4 +556,52 @@ each_scoped_rule() {
     local IFS=','
     for lang in $LANGUAGES; do
         rel="$TEMPLATES_DIR/languages/${lang}.md"
-        glob=$(rul
+        glob=$(rule_glob "$lang")
+        if [[ -f "$rel" && -n "$glob" ]]; then
+            echo "${lang} ${rel} scoped ${glob}"
+        fi
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} $TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md always"
+    fi
+}
+
+# rule_frontmatter <tool> <mode> <glob> <name>
+# tool is claude, cursor, or copilot.
+rule_frontmatter() {
+    local tool="$1" mode="$2" glob="$3" name="$4"
+    case "$tool" in
+        claude)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "paths:" "  - \"${glob}\"" "---"
+            fi
+            ;;
+        cursor)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "description: ${name} rules" "globs: \"${glob}\"" "alwaysApply: false" "---"
+            else
+                printf '%s\n' "---" "description: ${name} rules" "alwaysApply: true" "---"
+            fi
+            ;;
+        copilot)
+            if [[ "$mode" == "scoped" ]]; then
+                printf '%s\n' "---" "applyTo: \"${glob}\"" "---"
+            else
+                printf '%s\n' "---" "applyTo: \"**\"" "---"
+            fi
+            ;;
+    esac
+}
+
+# rule_dest <tool> <name>
+rule_dest() {
+    case "$1" in
+        claude) echo "$OUTPUT_PATH/.claude/rules/${2}.md" ;;
+        cursor) echo "$OUTPUT_PATH/.cursor/rules/${2}.mdc" ;;
+        copilot) echo "$OUTPUT_PATH/.github/instructions/${2}.instructions.md" ;;
+    esac
+}
+
+# sync_scoped_rules <preview|apply>
+# Writes Claude, Cursor, and Copilot rule files for the selected modules.
+# A file without the generated sentinel is left in place.
