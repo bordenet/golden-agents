@@ -1,1 +1,1 @@
-@LOAD:part03
+file:///workspace/lib/golden-agents/part03.sh
