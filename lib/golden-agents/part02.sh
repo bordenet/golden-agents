@@ -371,4 +371,60 @@ emit_lang_gates() {
     done < <(get_lang_commands "$lang")
     emit_one_gate "${indent}1. **Lint**" "$DET_LINT" "$DET_LINT_SRC" "$lint_cmd" LINT "$lang" && printed=1 || true
     emit_one_gate "${indent}2. **Build**" "$DET_BUILD" "$DET_BUILD_SRC" "$build_cmd" BUILD "$lang" && printed=1 || true
-    emit_one_gate "${indent}3. **Test**" "$DET_TEST" "$DET_TEST_
+    emit_one_gate "${indent}3. **Test**" "$DET_TEST" "$DET_TEST_SRC" "$test_cmd" TEST "$lang" && printed=1 || true
+    if [[ -n "$DET_COV" ]]; then
+        gate_line "${indent}4. **Coverage**" "$DET_COV" "$DET_COV_SRC" ""
+        printed=1
+    elif [[ "${PRESERVE_GATES:-}" == "1" ]] && kept=$(take_saved_gate COV "" "$lang"); then
+        echo "${indent}4. **Coverage**: \`${kept}\`"
+        printed=1
+    elif [[ "${PRESERVE_GATES:-}" == "1" ]] && kept=$(take_saved_gate COVPROSE "" "$lang"); then
+        echo "${indent}4. **Coverage**: ${kept}"
+        printed=1
+    elif [[ "${DET_MANIFEST:-}" == "1" ]]; then
+        true
+    elif [[ "$coverage" != "N/A" && ( "${PRESERVE_GATES:-}" != "1" || "$printed" -eq 1 ) ]]; then
+        echo "${indent}4. **Coverage**: Minimum ${coverage}%"
+        printed=1
+    fi
+    return $(( printed == 0 ))
+}
+
+# file_sha256 <file>
+# Prints the sha256 hex digest of a file.
+# Arguments:
+#   $1 - Path to a file
+# Returns: Digest via stdout
+file_sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{ print $1 }'
+    else
+        shasum -a 256 "$1" | awk '{ print $1 }'
+    fi
+}
+
+# each_selected_module
+# Lists the modules progressive mode copies into the consumer repo.
+# Languages come from --language. The project type comes from --type.
+# The five workflow modules are the ones the trigger block names.
+# Reads from global: LANGUAGES, PROJECT_TYPE, TEMPLATES_DIR
+# Arguments: none
+# Returns: Lines of "<name> <template-path-relative-to-templates>" via stdout
+each_selected_module() {
+    local lang wf
+    local IFS=','
+    for lang in $LANGUAGES; do
+        if [[ -f "$TEMPLATES_DIR/languages/${lang}.md" ]]; then
+            echo "${lang} languages/${lang}.md"
+        fi
+    done
+    for wf in security testing build-hygiene deployment; do
+        echo "${wf} workflows/${wf}.md"
+    done
+    if [[ -n "$PROJECT_TYPE" && -f "$TEMPLATES_DIR/project-types/${PROJECT_TYPE}.md" ]]; then
+        echo "${PROJECT_TYPE} project-types/${PROJECT_TYPE}.md"
+    fi
+}
+
+# modules_record
+# One comm
